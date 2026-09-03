@@ -1,0 +1,1 @@
+// Activity session model placeholder.

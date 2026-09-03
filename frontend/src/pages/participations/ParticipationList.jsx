@@ -1,0 +1,1 @@
+// Participation list page placeholder.

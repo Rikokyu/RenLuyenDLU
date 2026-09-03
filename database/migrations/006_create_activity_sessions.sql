@@ -1,0 +1,1 @@
+-- Create activity sessions table.

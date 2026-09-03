@@ -1,0 +1,1 @@
+// Participation detail page placeholder.
