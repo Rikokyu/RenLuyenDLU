@@ -28,7 +28,7 @@
   --logout-border: var(--primary-green);
   --icon-filter: brightness(0);
   --icon-on-green: brightness(0) invert(1);
-  --active-item-text: var(--white); 
+  --active-item-text: var(--white);
   --check-filter: invert(48%) sepia(79%) saturate(467%) hue-rotate(95deg)
     brightness(92%);
   --divider: #bdbdbd;
@@ -91,18 +91,23 @@ img {
 
 .app {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 30;
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);
+  height: 100vh;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   padding: 28px 8px 8px;
-  min-height: 100vh;
+  overflow-y: auto;
 }
 
 .sidebar__brand {
@@ -153,7 +158,9 @@ img {
   font-size: var(--subtitle-size);
   font-weight: 600;
   text-align: left;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .nav-item:hover {
@@ -221,12 +228,18 @@ img {
 
 .workspace {
   flex: 1;
+  height: 100vh;
+  margin-left: var(--sidebar-width);
   min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
 .topbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: var(--sidebar-width);
   height: var(--topbar-height);
   background: var(--header-bg);
   border-bottom: 1px solid var(--border);
@@ -234,7 +247,6 @@ img {
   align-items: center;
   justify-content: space-between;
   padding: 0 18px 0 18px;
-  position: relative;
   z-index: 20;
 }
 
@@ -284,7 +296,7 @@ img {
   background: var(--popover-bg);
   padding: 8px 8px 8px 8px;
   min-width: 100%;
-  min-height: 60px
+  min-height: 60px;
 }
 
 .profile-badge__avatar {
@@ -475,7 +487,10 @@ img {
 
 .content {
   flex: 1;
-  min-height: calc(100vh - var(--topbar-height));
+  height: calc(100vh - var(--topbar-height));
+  margin-top: var(--topbar-height);
+  min-height: 0;
+  overflow-y: auto;
   background: var(--content-bg);
 }
 
@@ -548,7 +563,8 @@ img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: brightness(0) saturate(100%) invert(67%) sepia(82%) saturate(1759%) hue-rotate(338deg) brightness(101%) contrast(101%);
+  filter: brightness(0) saturate(100%) invert(67%) sepia(82%) saturate(1759%)
+    hue-rotate(338deg) brightness(101%) contrast(101%);
 }
 .password-form {
   display: flex;
@@ -584,7 +600,10 @@ img {
   font-size: 20px;
   background: var(--popover-bg);
   transform: translateY(-50%);
-  transition: top 0.2s ease, color 0.2s ease, font-size 0.2s ease;
+  transition:
+    top 0.2s ease,
+    color 0.2s ease,
+    font-size 0.2s ease;
   pointer-events: none;
 }
 
@@ -639,39 +658,120 @@ img {
 }
 
 @media (max-width: 1300px) {
-  :root {   --sidebar-width: 270px; }
-  .topbar { padding-left: 24px; padding-right: 18px; }
-  .rule-card h2, .rule-card p {font-size: 15px;}
-  .profile-badge { min-width: 100%; }
-  .popover--notif { width: min(470px, calc(100vw - 30px)); right: -80px; }
+  :root {
+    --sidebar-width: 270px;
+  }
+  .topbar {
+    padding-left: 24px;
+    padding-right: 18px;
+  }
+  .rule-card h2,
+  .rule-card p {
+    font-size: 15px;
+  }
+  .profile-badge {
+    min-width: 100%;
+  }
+  .popover--notif {
+    width: min(470px, calc(100vw - 30px));
+    right: -80px;
+  }
 }
 
-@media (max-width: 1000px){
-  :root { --title-size: 18px; }
-  .topbar__actions { gap: 0; }
-  .rule-card h2, .rule-card p {font-size: 13px;}
-  .scroll-top { right: 16px; bottom: 16px; width: 48px; height: 48px; }
-
+@media (max-width: 1000px) {
+  :root {
+    --title-size: 18px;
+  }
+  .topbar__actions {
+    gap: 0;
+  }
+  .rule-card h2,
+  .rule-card p {
+    font-size: 13px;
+  }
+  .scroll-top {
+    right: 16px;
+    bottom: 16px;
+    width: 48px;
+    height: 48px;
+  }
 }
 
 @media (max-width: 770px) {
-  :root { --sidebar-width: 82px; }
-  .sidebar { padding: 14px 8px; }
-  .sidebar__logo { width: 58px; height: 58px; margin-bottom: 8px; }
-  .sidebar__title, .sidebar__divider, .rule-card, .nav-item span { display: none; }
-  .sidebar__nav { margin-top: 16px; }
-  .nav-item { justify-content: center; padding: 0; }
-  .topbar { height: 60px; padding: 0 12px; gap: 10px; }
-  .topbar__title { font-size: 20px; }
-  .topbar__actions { gap: 0; }
-  .profile-badge { min-width: 50px; width: 50px; min-height: 50px; padding: 4px; justify-content: center; border-radius: 16px; }
-  .profile-badge__meta, .caret { display: none; }
-  .profile-badge__avatar { width: 38px; height: 38px; border-radius: 11px; }
-  .popover--notif { right: -60px; }
-  .popover--account { right: -4px; width: 250px; }
-  .password-dialog { width: min(600px, calc(100vw - 24px)); padding-left: 24px; padding-right: 24px; }
-  .password-dialog__close { right: -16px; }
-  .scroll-top { right: 14px; bottom: 14px; width: 42px; height: 42px; }
+  :root {
+    --sidebar-width: 82px;
+    --topbar-height: 60px;
+  }
+  .sidebar {
+    padding: 14px 8px;
+  }
+  .sidebar__logo {
+    width: 58px;
+    height: 58px;
+    margin-bottom: 8px;
+  }
+  .sidebar__title,
+  .sidebar__divider,
+  .rule-card,
+  .nav-item span {
+    display: none;
+  }
+  .sidebar__nav {
+    margin-top: 16px;
+  }
+  .nav-item {
+    justify-content: center;
+    padding: 0;
+  }
+  .topbar {
+    height: 60px;
+    padding: 0 12px;
+    gap: 10px;
+  }
+  .topbar__title {
+    font-size: 20px;
+  }
+  .topbar__actions {
+    gap: 0;
+  }
+  .profile-badge {
+    min-width: 50px;
+    width: 50px;
+    min-height: 50px;
+    padding: 4px;
+    justify-content: center;
+    border-radius: 16px;
+  }
+  .profile-badge__meta,
+  .caret {
+    display: none;
+  }
+  .profile-badge__avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+  }
+  .popover--notif {
+    right: -60px;
+  }
+  .popover--account {
+    right: -4px;
+    width: 250px;
+  }
+  .password-dialog {
+    width: min(600px, calc(100vw - 24px));
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .password-dialog__close {
+    right: -16px;
+  }
+  .scroll-top {
+    right: 14px;
+    bottom: 14px;
+    width: 42px;
+    height: 42px;
+  }
 }
 
 /* React pages */
@@ -717,7 +817,6 @@ img {
 .notif-item {
   cursor: pointer;
 }
-
 
 /* ===== Fixes: theme button, sidebar link colors, notifications ===== */
 
