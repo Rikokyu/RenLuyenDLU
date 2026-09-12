@@ -7,6 +7,7 @@ import ActivityDetail from "../pages/activities/ActivityDetail";
 import Evidence from "../pages/evidence/Evidence";
 import Reports from "../pages/reports/Reports";
 import Profile from "../pages/profile/Profile";
+import Manager from "../pages/manager/Manager";
 
 function RequireAuth({ children }) {
   const authenticated =
@@ -34,6 +35,7 @@ export default function AppRoutes() {
         <Route path="/evidence" element={<Evidence />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/manager" element={<Manager />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

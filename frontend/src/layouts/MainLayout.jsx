@@ -8,6 +8,7 @@ const titles = {
   "/evidence": "Minh chứng sinh viên",
   "/reports": "Báo cáo và thống kê",
   "/profile": "Hồ sơ và lịch sử",
+  "/manager": "Quản lý người dùng",
 };
 
 export default function MainLayout() {

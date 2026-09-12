@@ -6,6 +6,7 @@ const items = [
   { to: "/evidence", icon: "/icons/check.svg", label: "Minh chứng sinh viên" },
   { to: "/reports", icon: "/icons/report.svg", label: "Báo cáo và thống kê" },
   { to: "/profile", icon: "/icons/profile.svg", label: "Hồ sơ và lịch sử" },
+  { to: "/manager", icon: "/icons/manager.svg", label: "Quản lý người dùng" },
 ];
 
 export default function Sidebar() {
