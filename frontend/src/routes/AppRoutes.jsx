@@ -5,6 +5,7 @@ import Dashboard from "../pages/dashboard/Dashboard";
 import ActivityList from "../pages/activities/ActivityList";
 import ActivityDetail from "../pages/activities/ActivityDetail";
 import Evidence from "../pages/evidence/Evidence";
+import EvidenceForStu from "../pages/evidence/EvidenceForStu";
 import Reports from "../pages/reports/Reports";
 import Profile from "../pages/profile/Profile";
 
