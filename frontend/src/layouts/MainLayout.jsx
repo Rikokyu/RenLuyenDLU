@@ -3,11 +3,12 @@ import Sidebar from "../components/sidebar/Sidebar";
 import Topbar from "../components/topbar/Topbar";
 
 const titles = {
-  "/dashboard": "Dashboard điều hành",
+  "/dashboard": "Trang chủ",
   "/activities": "Danh sách hoạt động",
   "/evidence": "Minh chứng sinh viên",
   "/reports": "Báo cáo và thống kê",
   "/profile": "Hồ sơ và lịch sử",
+  "/manager": "Quản lý người dùng",
 };
 
 export default function MainLayout() {
