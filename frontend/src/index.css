@@ -18,7 +18,7 @@
 [data-theme="light"] {
   --sidebar-bg: var(--white);
   --header-bg: var(--white);
-  --content-bg: #cfcfcf;
+  --content-bg: #f8fafc;
   --text: var(--black);
   --text-muted: #4a4a4a;
   --border: var(--light-black);
@@ -109,7 +109,6 @@ img {
   padding: 28px 8px 8px;
   overflow-y: auto;
 }
-
 .sidebar__brand {
   display: flex;
   flex-direction: column;
@@ -700,7 +699,6 @@ img {
 @media (max-width: 770px) {
   :root {
     --sidebar-width: 82px;
-    --topbar-height: 60px;
   }
   .sidebar {
     padding: 14px 8px;

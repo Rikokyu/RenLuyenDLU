@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 
 const items = [
-  { to: "/dashboard", icon: "/icons/dashboard.svg", label: "Dashboard điều hành" },
+  { to: "/dashboard", icon: "/icons/dashboard.svg", label: "Trang chủ" },
   { to: "/activities", icon: "/icons/list.svg", label: "Danh sách hoạt động" },
   { to: "/evidence", icon: "/icons/check.svg", label: "Minh chứng sinh viên" },
   { to: "/reports", icon: "/icons/report.svg", label: "Báo cáo và thống kê" },
@@ -42,11 +42,7 @@ export default function Sidebar() {
 
       <article className="rule-card">
         <div className="rule-card__heading">
-          <img
-            className="icon icon--on-accent"
-            src="/icons/rule.svg"
-            alt=""
-          />
+          <img className="icon icon--on-accent" src="/icons/rule.svg" alt="" />
           <h2>Quy chế điểm rèn luyện</h2>
         </div>
         <p>
