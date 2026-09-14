@@ -125,6 +125,7 @@ function EvidenceManagement() {
     );
   };
 
+  
   const handleReject = (id) => {
     setEvidenceList((prev) =>
       prev.map((item) =>
