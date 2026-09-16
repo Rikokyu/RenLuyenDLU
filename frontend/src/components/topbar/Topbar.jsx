@@ -83,6 +83,7 @@ export default function Topbar({ title }) {
 
   function logout() {
     sessionStorage.removeItem("renluyen-authenticated");
+    sessionStorage.removeItem("renluyen-role");
     navigate("/login", { replace: true });
   }
 
