@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import DetailForLec from './DetailForLec';
 import './Evidence.css';
-
+// Dữ liệu mẫu ban đầu
 const initialData = [
   { id: 1, name: 'Nguyễn Văn A', studentId: '20120001', facultyClass: 'CNTT - K65A', event: 'Mùa hè xanh 2026', proof: 'Minh chứng đã tải lên', score: 10, status: 'Chờ phê duyệt' },
   { id: 2, name: 'Trần Thị B', studentId: '20120002', facultyClass: 'Kinh tế - K65B', event: 'Hiến máu nhân đạo', proof: 'Minh chứng đã tải lên', score: 5, status: 'Chờ phê duyệt' },
