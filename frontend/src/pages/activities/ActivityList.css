@@ -1,8 +1,8 @@
 .activities-page {
   min-height: calc(100vh - var(--topbar-height));
   padding: 20px clamp(16px, 3vw, 34px) 42px;
-  color: #252a33;
-  background: #f4f6f8;
+  color: var(--text);
+  background: var(--content-bg);
 }
 
 .activities-header {
@@ -11,9 +11,9 @@
   justify-content: space-between;
   gap: 20px;
   padding: 14px 18px;
-  background: #fff;
-  border: 1px solid #e4e8ed;
-  border-radius: 12px;
+  background: var(--white);
+  border: 1px solid var(--light-gray);
+  border-radius: var(--radius);
   box-shadow: 0 2px 8px rgba(32, 47, 62, 0.03);
 }
 
@@ -30,23 +30,23 @@
   width: 34px;
   height: 34px;
   flex: 0 0 34px;
-  color: #13a85a;
-  background: #e8f6ed;
-  border-radius: 8px;
-  font-size: 23px;
+  color: var(--accent-orange);
+  background: #fff0e7;
+  border-radius: 12px;
+  font-size: 24px;
   font-weight: 700;
 }
 
 .activities-header h1 {
   margin-bottom: 3px;
-  color: #20252d;
-  font-size: clamp(17px, 2vw, 21px);
+  color: var(--text);
+  font-size: var(--title-size);
   line-height: 1.2;
 }
 
 .activities-header p {
-  color: #8b96a5;
-  font-size: 11px;
+  color: var(--text-muted);
+  font-size: var(--subtitle-size);
 }
 
 .create-activity-button {
@@ -57,12 +57,12 @@
   min-height: 32px;
   padding: 8px 14px;
   flex-shrink: 0;
-  color: #fff;
-  background: #12ad5b;
-  border-radius: 18px;
-  font-size: 11px;
+  color: var(--white);
+  background: var(--accent-orange);
+  border-radius: var(--radius);
+  font-size: var(--subtitle-size);
   font-weight: 800;
-  box-shadow: 0 4px 10px rgba(18, 173, 91, 0.16);
+  box-shadow: 0 4px 10px rgba(255, 139, 80, 0.2);
   transition: filter 0.18s ease, transform 0.18s ease;
 }
 
@@ -87,9 +87,9 @@
 .activity-filter {
   min-width: 0;
   height: 32px;
-  background: #fff;
-  border: 1px solid #dfe5eb;
-  border-radius: 18px;
+  background: var(--white);
+  border: 1px solid var(--light-gray);
+  border-radius: var(--radius);
 }
 
 .activity-search {
@@ -100,8 +100,8 @@
 }
 
 .activity-search > span {
-  color: #94a3b5;
-  font-size: 18px;
+  color: var(--text-muted);
+  font-size: 20px;
   line-height: 1;
 }
 
@@ -113,11 +113,11 @@
   color: #3c4856;
   background: transparent;
   font: inherit;
-  font-size: 10px;
+  font-size: 14px;
 }
 
 .activity-search input::placeholder {
-  color: #9eabb9;
+  color: var(--text-muted);
 }
 
 .activity-filter {
@@ -130,8 +130,8 @@
   position: absolute;
   top: 50%;
   right: 12px;
-  color: #7e8997;
-  font-size: 13px;
+  color: var(--text-muted);
+  font-size: 16px;
   pointer-events: none;
   transform: translateY(-55%);
 }
@@ -142,21 +142,21 @@
   appearance: none;
   padding: 0 28px 0 12px;
   overflow: hidden;
-  color: #536071;
+  color: var(--text-muted);
   background: transparent;
   border: 0;
   outline: 0;
   font: inherit;
-  font-size: 10px;
+  font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .activities-table-wrap {
   overflow: hidden;
-  background: #fff;
-  border: 1px solid #e2e7ec;
-  border-radius: 12px;
+  background: var(--white);
+  border: 1px solid var(--light-gray);
+  border-radius: var(--radius);
   box-shadow: 0 3px 10px rgba(32, 47, 62, 0.03);
 }
 
@@ -165,16 +165,16 @@
   min-width: 1040px;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 10px;
+  font-size: 14px;
 }
 
 .activities-table th {
   height: 38px;
   padding: 0 11px;
-  color: #69788a;
-  background: #f8fafc;
-  border-bottom: 1px solid #e6ebf0;
-  font-size: 9px;
+  color: var(--text-muted);
+  background: #f2f4f6;
+  border-bottom: 1px solid var(--light-gray);
+  font-size: 14px;
   font-weight: 800;
   text-align: left;
   white-space: nowrap;
@@ -192,7 +192,7 @@
 .activities-table td {
   height: 43px;
   padding: 6px 11px;
-  color: #364252;
+  color: var(--text);
   border-bottom: 1px solid #edf0f3;
   vertical-align: middle;
 }
@@ -207,7 +207,7 @@
 
 .activity-code,
 .activity-name {
-  color: #1769ef;
+  color: var(--accent-orange);
   text-decoration: none;
   font-weight: 800;
 }
@@ -216,7 +216,7 @@
   display: inline-block;
   max-width: 100%;
   overflow: hidden;
-  font-size: 9px;
+  font-size: 13px;
   letter-spacing: -0.15px;
   text-overflow: ellipsis;
   vertical-align: middle;
@@ -231,8 +231,8 @@
 .activity-name {
   display: block;
   overflow: hidden;
-  color: #262d37;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -241,8 +241,8 @@
   display: block;
   margin-top: 2px;
   overflow: hidden;
-  color: #8995a4;
-  font-size: 9px;
+  color: var(--text-muted);
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -256,39 +256,39 @@
 
 .activity-date {
   display: block;
-  color: #3c4856;
-  font-size: 9px;
+  color: var(--text);
+  font-size: 13px;
   font-weight: 700;
 }
 
 .activity-score {
   display: block;
-  color: #13a85a;
-  font-size: 10px;
+  color: var(--accent-orange);
+  font-size: 14px;
 }
 
 .activity-registered {
-  color: #3a4552;
-  font-size: 10px;
+  color: var(--text);
+  font-size: 14px;
 }
 
 .activity-status {
   display: inline-block;
   padding: 5px 8px;
   border-radius: 999px;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
 }
 
 .activity-status.is-open {
-  color: #168950;
+  color: #a94d21;
   background: #e0f5e9;
 }
 
 .activity-status.is-registering {
-  color: #e36b30;
+  color: #c95b2c;
   background: #fff0e7;
 }
 
@@ -298,7 +298,7 @@
 }
 
 .activity-status.is-ended {
-  color: #778394;
+  color: var(--text-muted);
   background: #edf0f3;
 }
 
@@ -313,8 +313,8 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  color: #1264e8;
-  font-size: 9px;
+  color: #d96832;
+  font-size: 13px;
   font-weight: 800;
   text-decoration: none;
 }
@@ -330,7 +330,7 @@
   width: 18px;
   height: 18px;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 800;
 }
 
@@ -340,14 +340,14 @@
 }
 
 .check-button {
-  color: #0b9d53;
-  background: #e0f6e9;
+  color: #b95627;
+  background: #fff0e7;
 }
 
 .activities-empty {
   padding: 42px 20px;
-  color: #8b96a5;
-  font-size: 13px;
+  color: var(--text-muted);
+  font-size: var(--subtitle-size);
   text-align: center;
 }
 
@@ -395,7 +395,7 @@
   }
 
   .activities-header h1 {
-    font-size: 16px;
+    font-size: var(--subtitle-size);
   }
 
   .activities-header p {

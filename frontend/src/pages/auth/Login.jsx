@@ -9,6 +9,7 @@ export default function Login() {
   );
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("student");
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
@@ -18,6 +19,7 @@ export default function Login() {
 
   function enterApp() {
     sessionStorage.setItem("renluyen-authenticated", "true");
+    sessionStorage.setItem("renluyen-role", role);
     navigate("/dashboard", { replace: true });
   }
 
@@ -65,6 +67,14 @@ export default function Login() {
             />
             <label>Mật khẩu</label>
             <p className="login-error">Mật khẩu là bắt buộc</p>
+          </div>
+
+          <div className="login-role-field">
+            <label htmlFor="login-role">Loại tài khoản</label>
+            <select id="login-role" value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="student">Sinh viên</option>
+              <option value="teacher">Giáo viên</option>
+            </select>
           </div>
 
           <button className="login-submit" type="submit">
