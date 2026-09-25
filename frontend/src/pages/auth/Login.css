@@ -51,7 +51,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -60,14 +61,15 @@ button {
 }
 
 .login-page {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 8fr) minmax(360px, 4fr);
   min-height: 100vh;
   overflow: hidden;
   background: var(--page-bg);
 }
 
 .login-visual {
-  width: min(1270px, 66vw);
+  width: 100%;
   min-height: 100vh;
   overflow: hidden;
   flex-shrink: 0;
@@ -86,7 +88,7 @@ button {
   position: relative;
   display: flex;
   width: 100%;
-  min-width: 390px;
+  min-width: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -224,7 +226,7 @@ button {
 
 .login-role-field label {
   color: var(--muted);
-  font-size: var(--subtitle-size);
+  font-size: 16px;
 }
 
 .login-role-field select {
@@ -236,7 +238,7 @@ button {
   border: 1px solid var(--field-border);
   border-radius: var(--radius);
   font: inherit;
-  font-size: var(--subtitle-size);
+  font-size: 16px;
   outline: none;
 }
 
@@ -264,48 +266,35 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  color: var(--primary-green);
+  gap: 8px;
+  color: var(--text);
   background: var(--panel-bg);
   border: 1px solid var(--border-color);
 }
 
 .google-submit img {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
 }
 
-.login-submit:hover,
-.google-submit:hover {
-  filter: brightness(0.94);
-}
+@media (max-width: 900px) {
+  .login-page {
+    display: block;
+    overflow: auto;
+  }
 
-@media (max-width: 1280px) {
-  .login-page {display: flex;flex-direction: row;}
-  .login-visual {width: 50%;flex: 0 0 50%;height: 100vh;overflow: hidden;}
-  .login-visual img {width: 100%;height: 100%;object-fit: cover;object-position: center center;}
-  .login-panel {width: 50%;min-height: 100vh;}
-}
+  .login-visual {
+    display: none;
+  }
 
-@media (max-width: 1000px) {
-  .login-page { display: block; overflow: auto; }
-  .login-visual {width: 100%; height: 100px; min-height: 0; overflow: hidden; }
-  .login-visual img { display: none;}
-  .login-panel {width: 100%; min-height: 0; padding: 32px 20px 40px;  }
-  .login-brand {margin-bottom: 24px; }
-  .login-form {max-width: 500px; padding-left: 24px; padding-right: 24px; }
-}
+  .login-panel {
+    min-width: 0;
+    padding: 32px 20px 40px;
+  }
 
-
-/* Center the theme icon inside the circular button. */
-.theme-toggle {
-  display: grid;
-  place-items: center;
-  padding: 0;
-  line-height: 0;
-}
-
-.theme-toggle__icon {
-  display: block;
-  margin: 0;
+  .login-form {
+    max-width: 500px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
 }

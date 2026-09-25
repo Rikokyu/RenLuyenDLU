@@ -70,10 +70,14 @@ export default function Login() {
           </div>
 
           <div className="login-role-field">
-            <label htmlFor="login-role">Loại tài khoản</label>
-            <select id="login-role" value={role} onChange={(e) => setRole(e.target.value)}>
+            <label htmlFor="role">Loại tài khoản</label>
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
               <option value="student">Sinh viên</option>
-              <option value="teacher">Giáo viên</option>
+              <option value="teacher">Giảng viên</option>
             </select>
           </div>
 

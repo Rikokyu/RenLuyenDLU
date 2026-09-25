@@ -91,6 +91,7 @@ export default function ActivityList() {
   const [category, setCategory] = useState(categoryOptions[0]);
   const [status, setStatus] = useState(statusOptions[0]);
   const [semester, setSemester] = useState("Tất cả học kỳ / niên khóa");
+  const [viewMode, setViewMode] = useState("list");
 
   const filteredActivities = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -156,54 +157,96 @@ export default function ActivityList() {
             <option>HK1 2025 - 2026</option>
           </select>
         </label>
+
+        <div className="activities-view-switch" aria-label="Chuyển chế độ hiển thị">
+          <button
+            type="button"
+            className={viewMode === "list" ? "view-toggle is-active" : "view-toggle"}
+            onClick={() => setViewMode("list")}
+            aria-label="Hiển thị dạng danh sách"
+          >
+            <span aria-hidden="true">☰</span>
+          </button>
+          <button
+            type="button"
+            className={viewMode === "grid" ? "view-toggle is-active" : "view-toggle"}
+            onClick={() => setViewMode("grid")}
+            aria-label="Hiển thị dạng lưới"
+          >
+            <span aria-hidden="true">▦</span>
+          </button>
+        </div>
       </div>
 
-      <div className="activities-table-wrap">
-        <table className="activities-table">
-          <thead>
-            <tr>
-              <th>Mã HĐ</th>
-              <th>Tên Hoạt động & Loại Hình</th>
-              <th>Đơn vị Tổ chức</th>
-              <th>Thời gian & Địa điểm</th>
-              <th>ĐRL / CTXH</th>
-              <th>Đăng ký</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredActivities.map((activity) => (
-              <tr key={activity.id}>
-                <td><Link className="activity-code" to={`/activities/${activity.id}`}>{activity.id}</Link></td>
-                <td>
-                  <Link className="activity-name" to={`/activities/${activity.id}`}>{activity.title}</Link>
-                  <span className="activity-subtext">{activity.category}</span>
-                </td>
-                <td><span className="activity-cell-truncate">{activity.organizer}</span></td>
-                <td>
-                  <span className="activity-date">{activity.date}</span>
-                  <span className="activity-subtext">{activity.location}</span>
-                </td>
-                <td>
-                  <strong className="activity-score">{activity.score}</strong>
-                  <span className="activity-subtext">{activity.hours}</span>
-                </td>
-                <td><strong className="activity-registered">{activity.registered}</strong></td>
-                <td><span className={`activity-status ${activity.statusClass}`}>{activity.status}</span></td>
-                <td>
-                  <div className="activity-row-actions">
-                    <Link to={`/activities/${activity.id}`} className="view-activity">▦ <span>Xem</span></Link>
-                    <button type="button" className="qr-button" aria-label={`Mở mã QR cho ${activity.title}`}>▣</button>
-                    <button type="button" className="check-button" aria-label={`Điểm danh ${activity.title}`}>✓</button>
-                  </div>
-                </td>
+      {viewMode === "list" ? (
+        <div className="activities-table-wrap">
+          <table className="activities-table">
+            <thead>
+              <tr>
+                <th>Mã HĐ</th>
+                <th>Tên Hoạt động & Loại Hình</th>
+                <th>Đơn vị Tổ chức</th>
+                <th>Thời gian & Địa điểm</th>
+                <th>ĐRL / CTXH</th>
+                <th>Đăng ký</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {filteredActivities.length === 0 && <p className="activities-empty">Không tìm thấy hoạt động phù hợp.</p>}
-      </div>
+            </thead>
+            <tbody>
+              {filteredActivities.map((activity) => (
+                <tr key={activity.id}>
+                  <td><Link className="activity-code" to={`/activities/${activity.id}`}>{activity.id}</Link></td>
+                  <td>
+                    <Link className="activity-name" to={`/activities/${activity.id}`}>{activity.title}</Link>
+                    <span className="activity-subtext">{activity.category}</span>
+                  </td>
+                  <td><span className="activity-cell-truncate">{activity.organizer}</span></td>
+                  <td>
+                    <span className="activity-date">{activity.date}</span>
+                    <span className="activity-subtext">{activity.location}</span>
+                  </td>
+                  <td>
+                    <strong className="activity-score">{activity.score}</strong>
+                    <span className="activity-subtext">{activity.hours}</span>
+                  </td>
+                  <td><strong className="activity-registered">{activity.registered}</strong></td>
+                  <td><span className={`activity-status ${activity.statusClass}`}>{activity.status}</span></td>
+                  <td>
+                    <div className="activity-row-actions">
+                      <Link to={`/activities/${activity.id}`} className="view-activity">Xem</Link>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filteredActivities.length === 0 && <p className="activities-empty">Không tìm thấy hoạt động phù hợp.</p>}
+        </div>
+      ) : (
+        <div className="activities-grid">
+          {filteredActivities.map((activity) => (
+            <article className="activity-card" key={activity.id}>
+              <div className="activity-card__image" aria-label={activity.title} />
+              <div className="activity-card__badge">{activity.status}</div>
+              <div className="activity-card__score">{activity.score}</div>
+              <div className="activity-card__body">
+                <h3>{activity.title}</h3>
+                <p>{activity.category}</p>
+                <div className="activity-card__meta">
+                  <span>{activity.date}</span>
+                  <span>{activity.location}</span>
+                </div>
+                <div className="activity-card__footer">
+                  <span>{activity.registered}</span>
+                  <button type="button">Chi tiết</button>
+                </div>
+              </div>
+            </article>
+          ))}
+          {filteredActivities.length === 0 && <p className="activities-empty">Không tìm thấy hoạt động phù hợp.</p>}
+        </div>
+      )}
     </section>
   );
 }
