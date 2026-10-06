@@ -28,6 +28,16 @@ Backend: Go
 Database: PostgreSQL
 Version Control: Git / GitHub
 
+## Nguồn dữ liệu quản lý
+
+Giao diện gọi API backend; backend truy vấn PostgreSQL. Danh sách người dùng trong mục Quản lý đọc toàn bộ bản ghi từ `"User"` và `role`; MSSV, lớp, khoa và thông tin giảng viên được nối từ `student`, `class`, `major`, `faculty`, `lecturer`. Đây là cùng schema cũ được dùng bởi chức năng Minh chứng, không đọc bảng `users` hay dữ liệu seed tài khoản quản lý.
+
+Thông tin tài khoản, vai trò và mật khẩu trong mục người dùng cũng được đọc/ghi vào `"User"` và `role`. Xóa/khóa người dùng sẽ đặt trạng thái không hoạt động thay vì xóa vật lý, để giữ nguyên lịch sử và các quan hệ liên quan. Mục quản lý sinh viên/lớp dùng các bảng `student`, `class`, `major`, `faculty` cùng schema đó.
+
+Seed `database/migrations/insert_data.sql` tạo 36 tài khoản mẫu. Email sinh viên dùng MSSV (`MSSV@dlu.edu.vn`), trợ lý dùng `ctsv01`...`ctsv05` và giảng viên dùng `gv01`...`gv10`, tất cả trong miền `@dlu.edu.vn`. Ngày sinh được hiển thị theo `dd/MM/yyyy`. Mật khẩu demo được băm trong PostgreSQL.
+
+Các file SQL khởi tạo chỉ tự chạy khi PostgreSQL được khởi tạo lần đầu. Volume Docker đã tồn tại không tự nạp lại seed khi pull code mới.
+
 ##📌 Chức năng chính
 🔐 Đăng nhập và xác thực người dùng
 📊 Dashboard điều hành

@@ -28,8 +28,6 @@ function Icon({ name }) {
   );
 }
 
-const STUDY_PROGRAMS = ["CQ22CT-PM", "CQ23CT-PM", "CQ23CT-MM1", "CQ24CT"];
-
 function ModalShell({
   title,
   subtitle,
@@ -78,17 +76,18 @@ function ModalShell({
   );
 }
 
-function AccountModal({ initialData, roles, classes, onClose, onSave }) {
+function AccountModal({ initialData, roles, onClose, onSave }) {
   const [form, setForm] = useState(() => ({
     name: initialData?.name || "",
     email: initialData?.email || "",
+    gender: initialData?.gender || "Nam",
+    birthDay: initialData?.birthDay?.slice(0, 10) || "",
+    phone: initialData?.phone || "",
     roleCode:
       initialData?.roleCode ||
       roles.find((role) => role.code === "STUDENT_AFFAIRS_ASSISTANT")?.code ||
       roles[0]?.code ||
       "",
-    unit: initialData?.unit || "Khoa Công nghệ Thông tin",
-    classCode: initialData?.classCode || "",
     active: initialData?.active ?? true,
   }));
 
@@ -138,6 +137,38 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
         </label>
 
         <label className="manager-field">
+          <span>Giới tính</span>
+          <select
+            value={form.gender}
+            onChange={(event) => update("gender", event.target.value)}
+            required
+          >
+            <option value="Nam">Nam</option>
+            <option value="Nữ">Nữ</option>
+          </select>
+        </label>
+
+        <label className="manager-field">
+          <span>Ngày sinh</span>
+          <input
+            type="date"
+            value={form.birthDay}
+            onChange={(event) => update("birthDay", event.target.value)}
+            required
+          />
+        </label>
+
+        <label className="manager-field">
+          <span>Số điện thoại</span>
+          <input
+            type="tel"
+            value={form.phone}
+            onChange={(event) => update("phone", event.target.value)}
+            required
+          />
+        </label>
+
+        <label className="manager-field">
           <span>Vai trò hệ thống</span>
           <select
             value={form.roleCode}
@@ -145,36 +176,16 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
             required
           >
             {roles
-              .filter((role) => role.code !== "STUDENT")
+              .filter(
+                (role) =>
+                  role.code !== "STUDENT" ||
+                  initialData?.roleCode === "STUDENT",
+              )
               .map((role) => (
                 <option key={role.code} value={role.code}>
                   {role.name}
                 </option>
               ))}
-          </select>
-        </label>
-
-        <label className="manager-field">
-          <span>Đơn vị / Khoa quản lý</span>
-          <input
-            value={form.unit}
-            onChange={(event) => update("unit", event.target.value)}
-            placeholder="Phòng Công tác Sinh viên"
-          />
-        </label>
-
-        <label className="manager-field">
-          <span>Lớp phụ trách</span>
-          <select
-            value={form.classCode}
-            onChange={(event) => update("classCode", event.target.value)}
-          >
-            <option value="">Không gán lớp</option>
-            {classes.map((item) => (
-              <option key={item.code} value={item.code}>
-                {item.code}
-              </option>
-            ))}
           </select>
         </label>
 
@@ -217,25 +228,11 @@ function StudentModal({ initialData, classes, onClose, onSave }) {
     phone: initialData?.phone || "",
     email: initialData?.email || "",
     classCode: initialData?.classCode || firstClass,
-    faculty:
-      initialData?.facultyName ||
-      classes.find(
-        (item) => item.code === (initialData?.classCode || firstClass),
-      )?.faculty ||
-      "",
-    studyProgramId: initialData?.studyProgramId || "CQ23CT-PM",
     gender: initialData?.gender || "Nam",
     birthDay: initialData?.birthDay
       ? String(initialData.birthDay).replace(/T00:00:00(?:\\.000)?Z$/, "")
       : "",
     birthPlace: initialData?.birthPlace || "",
-    permanentResidence: initialData?.permanentResidence || "",
-    hometownCountry: initialData?.hometownCountry || "Việt Nam",
-    hometownProvince: initialData?.hometownProvince || "",
-    hometownCity: initialData?.hometownCity || "",
-    hometownAddress: initialData?.hometownAddress || "",
-    classRoleId: initialData?.classRoleId ?? 0,
-    isInClass: initialData?.isInClass ?? true,
   }));
 
   function update(key, value) {
@@ -249,8 +246,8 @@ function StudentModal({ initialData, classes, onClose, onSave }) {
     if (!form.name.trim() || !form.mssv.trim() || !form.email.trim()) return;
 
     const nameParts = form.name.trim().split(/\s+/);
-    const lastName = nameParts.length > 1 ? nameParts.pop() : nameParts[0];
-    const firstName = nameParts.length > 1 ? nameParts.join(" ") : "";
+    const lastName = nameParts.length > 1 ? nameParts.pop() : "";
+    const firstName = nameParts.join(" ");
 
     onSave({
       ...(initialData || {}),
@@ -270,7 +267,7 @@ function StudentModal({ initialData, classes, onClose, onSave }) {
   return (
     <ModalShell
       title={initialData ? "Chỉnh sửa sinh viên" : "Thêm sinh viên mới"}
-      subtitle="Khoa được lưu theo lớp đã chọn. Email là tên đăng nhập; mật khẩu tạm dựa trên MSSV."
+      subtitle="Thông tin được lưu vào hồ sơ sinh viên và người dùng của cơ sở dữ liệu."
       icon="profile"
       onClose={onClose}
     >
@@ -320,12 +317,7 @@ function StudentModal({ initialData, classes, onClose, onSave }) {
           <span>Lớp sinh hoạt</span>
           <select
             value={form.classCode}
-            onChange={(event) => {
-              const classCode = event.target.value;
-              const faculty =
-                classes.find((item) => item.code === classCode)?.faculty || "";
-              setForm((prev) => ({ ...prev, classCode, faculty }));
-            }}
+            onChange={(event) => update("classCode", event.target.value)}
             required
           >
             <option value="" disabled>
@@ -334,29 +326,6 @@ function StudentModal({ initialData, classes, onClose, onSave }) {
             {classes.map((item) => (
               <option key={item.code} value={item.code}>
                 {item.code}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="manager-field">
-          <span>Khoa của lớp</span>
-          <input
-            value={form.faculty}
-            onChange={(event) => update("faculty", event.target.value)}
-            placeholder="Công nghệ thông tin"
-          />
-        </label>
-
-        <label className="manager-field">
-          <span>Chương trình</span>
-          <select
-            value={form.studyProgramId}
-            onChange={(event) => update("studyProgramId", event.target.value)}
-          >
-            {STUDY_PROGRAMS.map((program) => (
-              <option key={program} value={program}>
-                {program}
               </option>
             ))}
           </select>
@@ -379,69 +348,17 @@ function StudentModal({ initialData, classes, onClose, onSave }) {
             type="date"
             value={form.birthDay ? form.birthDay.slice(0, 10) : ""}
             onChange={(event) => update("birthDay", event.target.value)}
+            required
           />
         </label>
 
         <label className="manager-field">
-          <span>Quốc gia</span>
+          <span>Nơi sinh</span>
           <input
-            value={form.hometownCountry}
-            onChange={(event) => update("hometownCountry", event.target.value)}
-            placeholder="Việt Nam"
+            value={form.birthPlace}
+            onChange={(event) => update("birthPlace", event.target.value)}
+            placeholder="Tỉnh/thành phố"
           />
-        </label>
-
-        <label className="manager-field">
-          <span>Tỉnh</span>
-          <input
-            value={form.hometownProvince}
-            onChange={(event) => update("hometownProvince", event.target.value)}
-            placeholder="Lâm Đồng"
-          />
-        </label>
-
-        <label className="manager-field">
-          <span>Thành phố</span>
-          <input
-            value={form.hometownCity}
-            onChange={(event) => update("hometownCity", event.target.value)}
-            placeholder="Đà Lạt"
-          />
-        </label>
-
-        <label className="manager-field manager-field--full">
-          <span>Địa chỉ chi tiết</span>
-          <input
-            value={form.hometownAddress}
-            onChange={(event) => update("hometownAddress", event.target.value)}
-            placeholder="Số nhà, đường, phường/xã"
-          />
-        </label>
-
-        <label className="manager-field">
-          <span>Vai trò lớp</span>
-          <select
-            value={form.classRoleId}
-            onChange={(event) =>
-              update("classRoleId", Number(event.target.value))
-            }
-          >
-            <option value={0}>Học viên</option>
-            <option value={1}>Lớp trưởng</option>
-          </select>
-        </label>
-
-        <label className="manager-field">
-          <span>Trạng thái lớp</span>
-          <select
-            value={form.isInClass ? "1" : "0"}
-            onChange={(event) =>
-              update("isInClass", event.target.value === "1")
-            }
-          >
-            <option value="1">Đang học</option>
-            <option value="0">Ngoài lớp</option>
-          </select>
         </label>
 
         <div className="manager-modal-actions">
@@ -708,33 +625,10 @@ export default function Manager() {
   const [toast, setToast] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
   const [dataError, setDataError] = useState("");
-  const accountRows = useMemo(() => {
-    const linkedStudentIds = new Set(
-      accounts.map((account) => account.studentId).filter(Boolean),
-    );
-    const existingAccounts = accounts.map((account) => ({
-      ...account,
-      hasLoginAccount: true,
-    }));
-    const studentsWithoutAccounts = students
-      .filter((student) => !linkedStudentIds.has(student.id))
-      .map((student) => ({
-        id: null,
-        name: student.name,
-        email: student.email,
-        role: "Sinh viên",
-        roleCode: "STUDENT",
-        unit: student.facultyName,
-        classCode: student.classCode,
-        className: student.className,
-        studentId: student.id,
-        status: "Chưa cấp tài khoản",
-        active: false,
-        lastLogin: "Chưa có tài khoản",
-        hasLoginAccount: false,
-      }));
-    return [...existingAccounts, ...studentsWithoutAccounts];
-  }, [accounts, students]);
+  const accountRows = useMemo(
+    () => accounts.map((account) => ({ ...account, hasLoginAccount: true })),
+    [accounts],
+  );
 
   useEffect(() => {
     reloadManagerData().catch((error) => {
@@ -747,14 +641,12 @@ export default function Manager() {
 
   async function reloadManagerData() {
     setDataError("");
-    const [studentResult, classRows, accountRows, roleRows] = await Promise.all(
-      [
-        getManagerStudents(),
-        getManagerClasses(),
-        getManagerAccounts(),
-        getManagerRoles(),
-      ],
-    );
+    const [studentResult, classRows, accountRows, roleRows] = await Promise.all([
+      getManagerStudents(),
+      getManagerClasses(),
+      getManagerAccounts(),
+      getManagerRoles(),
+    ]);
     const studentsFromDatabase = Array.isArray(studentResult.data)
       ? studentResult.data
       : [];
@@ -789,10 +681,10 @@ export default function Manager() {
       type === "class" ? record?.code : record?.name || idOrCode;
     const recordType =
       type === "account"
-        ? "tài khoản"
+        ? "khóa người dùng"
         : type === "student"
-          ? "sinh viên"
-          : "lớp sinh hoạt";
+          ? "hồ sơ sinh viên (ẩn khỏi danh sách, giữ lịch sử minh chứng)"
+          : "lớp sinh hoạt (ẩn khỏi danh sách, giữ dữ liệu liên quan)";
     const confirmed = window.confirm(
       `Bạn có chắc muốn xóa ${recordType} "${recordName}" không?`,
     );
@@ -805,10 +697,10 @@ export default function Manager() {
       await reloadManagerData();
       notify(
         type === "account"
-          ? "Đã xóa tài khoản"
+          ? "Đã khóa người dùng"
           : type === "student"
-            ? "Đã xóa sinh viên"
-            : "Đã xóa lớp",
+            ? "Đã ẩn hồ sơ sinh viên"
+            : "Đã ẩn lớp sinh hoạt",
       );
     } catch (error) {
       notify(error.response?.data?.message || "Không thể xóa dữ liệu");
@@ -823,9 +715,10 @@ export default function Manager() {
         username: data.email,
         email: data.email,
         password: "",
+        gender: data.gender,
+        birthDay: data.birthDay,
+        phone: data.phone,
         roleCode: data.roleCode,
-        unit: data.unit,
-        classCode: data.classCode,
         active: data.active,
       });
       await reloadManagerData();
@@ -843,9 +736,10 @@ export default function Manager() {
         name: account.name,
         username: account.email,
         email: account.email,
+        gender: account.gender,
+        birthDay: account.birthDay,
+        phone: account.phone,
         roleCode: account.roleCode,
-        unit: account.unit,
-        classCode: account.classCode,
         active: !account.active,
       });
       await reloadManagerData();
@@ -877,21 +771,12 @@ export default function Manager() {
         email: data.email,
         phone: data.phone,
         classCode: data.classCode,
-        faculty: data.faculty,
         gender: data.gender,
         birthDay: data.birthDay ? data.birthDay.slice(0, 10) : "",
         firstName: data.firstName,
         lastName: data.lastName,
         studentName: data.studentName,
-        isInClass: data.isInClass,
         birthPlace: data.birthPlace,
-        classRoleId: data.classRoleId,
-        studyProgramId: data.studyProgramId,
-        permanentResidence: data.permanentResidence,
-        hometownCountry: data.hometownCountry,
-        hometownProvince: data.hometownProvince,
-        hometownCity: data.hometownCity,
-        hometownAddress: data.hometownAddress,
       });
       await reloadManagerData();
       closeModal();
@@ -959,11 +844,10 @@ export default function Manager() {
   const managerTitleCount = useMemo(
     () => ({
       accountCount: accounts.length,
-      pendingStudentCount: accountRows.length - accounts.length,
       studentCount: students.length,
       classCount: classes.length,
     }),
-    [accounts.length, accountRows.length, students.length, classes.length],
+    [accounts.length, students.length, classes.length],
   );
 
   return (
@@ -977,8 +861,7 @@ export default function Manager() {
           <Icon name="key" />
           Phân Quyền Người Dùng &amp; Quản Lý Tài Khoản
           <b>
-            {managerTitleCount.accountCount} tài khoản ·{" "}
-            {managerTitleCount.pendingStudentCount} SV chưa cấp
+            {managerTitleCount.accountCount} người dùng
           </b>
         </button>
 
@@ -1002,15 +885,6 @@ export default function Manager() {
           onToggleStatus={toggleAccountStatus}
           onResetPassword={resetAccountPassword}
           onOpenModal={(payload) => {
-            if (payload.data?.roleCode === "STUDENT") {
-              const student = students.find(
-                (item) => item.id === payload.data.studentId,
-              );
-              if (student) {
-                openModal({ type: "student", data: student });
-              }
-              return;
-            }
             openModal(payload);
           }}
           onDelete={handleDelete}
@@ -1041,7 +915,6 @@ export default function Manager() {
         <AccountModal
           initialData={modal.data}
           roles={roles}
-          classes={classes}
           onClose={closeModal}
           onSave={saveAccount}
         />

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { formatDate } from "../../utils/formatDate";
 
 function Icon({ name }) {
   return (
@@ -12,21 +13,7 @@ function Icon({ name }) {
 }
 
 function formatBirthDay(value) {
-  if (!value) return "Chưa cập nhật";
-  return String(value).replace(/T00:00:00(?:\.000)?Z$/, "");
-}
-
-function formatHometown(student) {
-  return (
-    [
-      student.hometownAddress,
-      student.hometownCity,
-      student.hometownProvince,
-      student.hometownCountry,
-    ]
-      .filter(Boolean)
-      .join(", ") || "Chưa cập nhật"
-  );
+  return formatDate(value) || "Chưa cập nhật";
 }
 
 function classYear(code) {
@@ -74,7 +61,6 @@ export default function ManagerStudentClass({
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("Tất cả lớp");
   const [facultyFilter, setFacultyFilter] = useState("Tất cả khoa");
-  const [leaderFilter, setLeaderFilter] = useState("Tất cả vai trò");
   const classCodes = classes.map((item) => item.code);
   const faculties = [
     ...new Set(students.map((item) => item.facultyName).filter(Boolean)),
@@ -83,19 +69,14 @@ export default function ManagerStudentClass({
     () =>
       students.filter((item) => {
         const text =
-          `${item.name} ${item.mssv} ${item.phone} ${item.email} ${item.className} ${item.studyProgramId} ${item.hometownCountry} ${item.hometownProvince} ${item.hometownCity} ${item.hometownAddress}`.toLowerCase();
+          `${item.name} ${item.mssv} ${item.phone} ${item.email} ${item.className} ${item.studyProgramId} ${item.birthPlace}`.toLowerCase();
         return (
           text.includes(search.toLowerCase()) &&
           (classFilter === "Tất cả lớp" || item.classCode === classFilter) &&
-          (facultyFilter === "Tất cả khoa" ||
-            item.facultyName === facultyFilter) &&
-          (leaderFilter === "Tất cả vai trò" ||
-            (leaderFilter === "Lớp trưởng"
-              ? item.classRoleId === 1
-              : item.classRoleId === 0))
+          (facultyFilter === "Tất cả khoa" || item.facultyName === facultyFilter)
         );
       }),
-    [students, search, classFilter, facultyFilter, leaderFilter],
+    [students, search, classFilter, facultyFilter],
   );
 
   return (
@@ -178,14 +159,6 @@ export default function ManagerStudentClass({
                 <option key={facultyName}>{facultyName}</option>
               ))}
             </select>
-            <select
-              value={leaderFilter}
-              onChange={(event) => setLeaderFilter(event.target.value)}
-            >
-              <option>Tất cả vai trò</option>
-              <option>Lớp trưởng</option>
-              <option>Học viên</option>
-            </select>
           </div>
           <div className="manager-table-wrap">
             <table className="manager-table manager-table--students">
@@ -195,7 +168,7 @@ export default function ManagerStudentClass({
                   <th>THÔNG TIN SINH VIÊN</th>
                   <th>LỚP & KHOA</th>
                   <th>THÔNG TIN CÁ NHÂN</th>
-                  <th>QUÊ QUÁN</th>
+                  <th>NƠI SINH</th>
                   <th>TRẠNG THÁI</th>
                   <th>THAO TÁC</th>
                 </tr>
@@ -233,15 +206,13 @@ export default function ManagerStudentClass({
                       <small>Ngày sinh: {formatBirthDay(item.birthDay)}</small>
                     </td>
                     <td>
-                      <strong>{formatHometown(item)}</strong>
+                      <strong>{item.birthPlace || "Chưa cập nhật"}</strong>
                     </td>
                     <td>
                       <span className="manager-student-status">
                         {item.isInClass ? "Đang học" : "Ngoài lớp"}
                       </span>
-                      <strong>
-                        {item.classRoleId === 1 ? "Lớp trưởng" : "Học viên"}
-                      </strong>
+                      <strong>Sinh viên</strong>
                     </td>
                     <td>
                       <div className="manager-row-actions">
@@ -276,7 +247,6 @@ export default function ManagerStudentClass({
                 onReset={() => {
                   setSearch("");
                   setClassFilter("Tất cả lớp");
-                  setLeaderFilter("Tất cả vai trò");
                 }}
               />
             )}

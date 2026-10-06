@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { formatDate } from "../../utils/formatDate";
 
 function Icon({ name }) {
   return (
@@ -12,19 +13,20 @@ function Icon({ name }) {
 }
 
 function getPermissionRole(roleCode) {
-  if (roleCode === "ADMIN") return "Admin";
-  if (roleCode === "STUDENT_AFFAIRS_ASSISTANT") return "Trợ lý";
-  if (roleCode === "HOMEROOM_TEACHER" || roleCode === "CLASS_OFFICER") {
-    return "Chủ nhiệm & Ban cán sự";
-  }
-  return "Sinh viên";
+  const labels = {
+    ADMIN: "Admin",
+    STUDENT_AFFAIRS_ASSISTANT: "Trợ lý công tác sinh viên",
+    HOMEROOM_CLASS_OFFICER: "Giảng viên chủ nhiệm / Ban cán sự",
+    STUDENT: "Sinh viên",
+  };
+  return labels[roleCode] || "Sinh viên";
 }
 
 const permissionRoleOptions = [
   "Tất cả vai trò",
   "Admin",
-  "Trợ lý",
-  "Chủ nhiệm & Ban cán sự",
+  "Trợ lý công tác sinh viên",
+  "Giảng viên chủ nhiệm / Ban cán sự",
   "Sinh viên",
 ];
 
@@ -136,14 +138,17 @@ export default function ManagerAccounts({
                       <strong>{item.name}</strong>
                       <small>{item.email}</small>
                       {item.studentId && <small>MSSV: {item.studentId}</small>}
+                      <small>
+                        {item.gender} · {formatDate(item.birthDay)} · {item.phone}
+                      </small>
                     </div>
                   </div>
                 </td>
                 <td>
                   <span
-                    className={`manager-role ${item.roleCode === "STUDENT" ? "manager-role--student" : item.roleCode === "HOMEROOM_TEACHER" ? "manager-role--orange" : ""}`}
+                    className="manager-role manager-role--orange"
                   >
-                    {item.role}
+                    {getPermissionRole(item.roleCode)}
                   </span>
                   <small className="manager-last-login">
                     Lần đăng nhập: {item.lastLogin}
@@ -165,6 +170,11 @@ export default function ManagerAccounts({
                       ? "Tài khoản đăng nhập của sinh viên"
                       : "Đơn vị phụ trách và quản lý tài khoản"}
                   </small>
+                  {item.position && (
+                    <small className="manager-position">
+                      Chức vụ: {item.position}
+                    </small>
+                  )}
                 </td>
                 <td>
                   <span
@@ -222,7 +232,7 @@ export default function ManagerAccounts({
                     {item.hasLoginAccount && item.roleCode !== "ADMIN" && (
                       <button
                         onClick={() => onDelete("account", item.id)}
-                        aria-label="Xóa tài khoản"
+                          aria-label="Khóa người dùng"
                       >
                         <Icon name="trash" />
                       </button>

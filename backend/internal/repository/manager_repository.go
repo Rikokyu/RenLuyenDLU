@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"strings"
 
 	"renluyen-dlu-backend/internal/dto"
 
@@ -42,41 +44,45 @@ func (r *managerRepository) GetStudents(
 	var students []dto.ManagerStudent
 
 	query := r.db.WithContext(ctx).
-		Table(`students s`).
+		Table(`"User" u`).
 		Select(`
-			s.student_id AS id,
-			s.student_id AS mssv,
-			COALESCE(NULLIF(s.student_name, ''), CONCAT_WS(' ', s.first_name, s.last_name), s.student_id) AS name,
-			COALESCE(s.first_name, '') AS first_name,
-			COALESCE(s.last_name, '') AS last_name,
-			s.class_code AS class_code,
-			c.code AS class_name,
-			COALESCE(c.faculty, '') AS faculty_name,
-			COALESCE(s.study_program_id, '') AS study_program_id,
-			COALESCE(s.gender, '') AS gender,
-			COALESCE(s.birth_day::text, '') AS birth_day,
-			COALESCE(s.birth_place, '') AS birth_place,
-			COALESCE(s.phone, '') AS phone,
+			COALESCE(s.student_code, '') AS id,
+			COALESCE(s.student_code, '') AS mssv,
+			COALESCE(NULLIF(CONCAT_WS(' ', u.firstname, u.lastname), ''), '') AS name,
+			COALESCE(u.firstname, '') AS first_name,
+			COALESCE(u.lastname, '') AS last_name,
+			COALESCE(c.class_code, '') AS class_code,
+			COALESCE(c.class_code, '') AS class_name,
+			COALESCE(f.name, '') AS faculty_name,
+			COALESCE(m.major_code, '') AS study_program_id,
+			COALESCE(u.gender, '') AS gender,
+			COALESCE(u.dob::text, '') AS birth_day,
+			COALESCE(u.birthplace, '') AS birth_place,
+			COALESCE(u.phone, '') AS phone,
 			COALESCE(u.email, '') AS email,
-			COALESCE(s.hometown_country, '') AS hometown_country,
-			COALESCE(s.hometown_province, '') AS hometown_province,
-			COALESCE(s.hometown_city, '') AS hometown_city,
-			COALESCE(s.hometown_address, '') AS hometown_address,
-			COALESCE(s.is_in_class, false) AS is_in_class,
-			COALESCE(s.class_role_id, 0) AS class_role_id,
-			COALESCE(s.permanent_residence, '') AS permanent_residence
+			'' AS hometown_country,
+			'' AS hometown_province,
+			'' AS hometown_city,
+			'' AS hometown_address,
+			(COALESCE(c.status, 0) = 1) AS is_in_class,
+			0 AS class_role_id,
+			'' AS permanent_residence
 		`).
-		Joins(`LEFT JOIN classes c ON c.code = s.class_code`).
-		Joins(`LEFT JOIN users u ON u.student_id = s.student_id`)
+		Joins(`LEFT JOIN student s ON s.iduser = u.id`).
+		Joins(`LEFT JOIN class c ON c.id = s.idclass`).
+		Joins(`LEFT JOIN major m ON m.id = c.idmajor`).
+		Joins(`LEFT JOIN faculty f ON f.id = m.idfaculty`).
+		Where(`s.id IS NOT NULL`).
+		Where(`COALESCE(u.status, 1) <> 0`)
 
 	if search != "" {
 		pattern := "%" + search + "%"
 
 		query = query.Where(`
-			s.student_id ILIKE ?
-			OR COALESCE(s.student_name, CONCAT_WS(' ', s.first_name, s.last_name)) ILIKE ?
-			OR s.class_code ILIKE ?
-			OR COALESCE(s.study_program_id, '') ILIKE ?
+			s.student_code ILIKE ?
+			OR CONCAT_WS(' ', u.firstname, u.lastname) ILIKE ?
+			OR c.class_code ILIKE ?
+			OR COALESCE(m.major_code, '') ILIKE ?
 		`,
 			pattern,
 			pattern,
@@ -86,14 +92,11 @@ func (r *managerRepository) GetStudents(
 	}
 
 	if classCode != "" {
-		query = query.Where(
-			`s.class_code = ?`,
-			classCode,
-		)
+		query = query.Where(`c.class_code = ?`, classCode)
 	}
 
 	err := query.
-		Order(`s.student_id ASC`).
+		Order(`u.id ASC`).
 		Scan(&students).
 		Error
 
@@ -103,11 +106,30 @@ func (r *managerRepository) GetStudents(
 func (r *managerRepository) GetClasses(ctx context.Context) ([]dto.ManagerClass, error) {
 	var classes []dto.ManagerClass
 	err := r.db.WithContext(ctx).
-		Table(`classes c`).
-		Select(`c.code, COALESCE(c.faculty, '') AS faculty, COALESCE(c.academic_year, '') AS academic_year, COUNT(s.student_id) AS student_count`).
-		Joins(`LEFT JOIN students s ON s.class_code = c.code`).
-		Group(`c.code, c.faculty, c.academic_year`).
-		Order(`c.code ASC`).
+		Table(`class c`).
+		Select(`
+			c.class_code AS code,
+			COALESCE(f.name, '') AS faculty,
+			COALESCE(sy.year, '') AS academic_year,
+			COUNT(DISTINCT CASE WHEN COALESCE(u.status, 1) <> 0 THEN s.id END) AS student_count
+		`).
+		Joins(`LEFT JOIN major m ON m.id = c.idmajor`).
+		Joins(`LEFT JOIN faculty f ON f.id = m.idfaculty`).
+		Joins(`LEFT JOIN student s ON s.idclass = c.id`).
+		Joins(`LEFT JOIN "User" u ON u.id = s.iduser`).
+		Joins(`
+			LEFT JOIN LATERAL (
+				SELECT sy.year
+				FROM class_year cy
+				JOIN school_year sy ON sy.id = cy.idyear
+				WHERE cy.idclass = c.id AND cy.status = 1
+				ORDER BY sy.year DESC, sy.semester DESC
+				LIMIT 1
+			) sy ON TRUE
+		`).
+		Where(`c.status = 1`).
+		Group(`c.id, c.class_code, f.name, sy.year`).
+		Order(`c.class_code ASC`).
 		Scan(&classes).Error
 	return classes, err
 }
@@ -115,10 +137,80 @@ func (r *managerRepository) GetClasses(ctx context.Context) ([]dto.ManagerClass,
 func (r *managerRepository) GetAccounts(ctx context.Context) ([]dto.ManagerAccount, error) {
 	var accounts []dto.ManagerAccount
 	err := r.db.WithContext(ctx).
-		Table(`users u`).
-		Select(`u.id, u.full_name AS name, u.username, u.email, r.name AS role, r.code AS role_code, u.unit, COALESCE(u.class_code, '') AS class_code, COALESCE(c.code, '') AS class_name, COALESCE(u.student_id, '') AS student_id, CASE WHEN u.status THEN 'Đang hoạt động' ELSE 'Đã khóa' END AS status, u.status AS active, COALESCE(to_char(u.last_login, 'YYYY-MM-DD HH24:MI'), 'Chưa đăng nhập') AS last_login`).
-		Joins(`JOIN roles r ON r.id = u.role_id`).
-		Joins(`LEFT JOIN classes c ON c.code = u.class_code`).
+		Table(`"User" u`).
+		Select(`
+			u.id,
+			CONCAT_WS(' ', u.firstname, u.lastname) AS name,
+			u.email AS username,
+			u.email,
+			u.gender,
+			COALESCE(u.dob::text, '') AS birth_day,
+			u.phone,
+			CASE
+				WHEN lower(r.name) IN ('admin', 'quản trị viên') THEN 'Admin'
+				WHEN lower(r.name) LIKE 'trợ lý%' THEN 'Trợ lý công tác sinh viên'
+				WHEN lower(r.name) LIKE '%sinh viên%' OR lower(r.name) = 'student'
+					OR (s.id IS NOT NULL AND l.iduser IS NULL) THEN 'Sinh viên'
+				WHEN lower(r.name) LIKE '%chủ nhiệm%' OR lower(r.name) LIKE '%cán sự%'
+					OR lower(r.name) LIKE '%lecturer%' OR l.iduser IS NOT NULL
+					THEN 'Giảng viên chủ nhiệm / Ban cán sự'
+				WHEN r.id = 1 THEN 'Admin'
+				WHEN r.id = 2 THEN 'Trợ lý công tác sinh viên'
+				WHEN r.id = 3 THEN 'Giảng viên chủ nhiệm / Ban cán sự'
+				ELSE 'Sinh viên'
+			END AS role,
+			CASE
+				WHEN lower(r.name) IN ('admin', 'quản trị viên') THEN 'ADMIN'
+				WHEN lower(r.name) LIKE 'trợ lý%' THEN 'STUDENT_AFFAIRS_ASSISTANT'
+				WHEN lower(r.name) LIKE '%sinh viên%' OR lower(r.name) = 'student'
+					OR (s.id IS NOT NULL AND l.iduser IS NULL) THEN 'STUDENT'
+				WHEN lower(r.name) LIKE '%chủ nhiệm%' OR lower(r.name) LIKE '%cán sự%'
+					OR lower(r.name) LIKE '%lecturer%' OR l.iduser IS NOT NULL
+					THEN 'HOMEROOM_CLASS_OFFICER'
+				WHEN r.id = 1 THEN 'ADMIN'
+				WHEN r.id = 2 THEN 'STUDENT_AFFAIRS_ASSISTANT'
+				WHEN r.id = 3 THEN 'HOMEROOM_CLASS_OFFICER'
+				ELSE 'STUDENT'
+			END AS role_code,
+			COALESCE(sf.name, lf.name, '') AS unit,
+			COALESCE(c.class_code, '') AS class_code,
+			COALESCE(c.class_code, '') AS class_name,
+			COALESCE(user_positions.names, '') AS position,
+			COALESCE(s.student_code, '') AS student_id,
+			CASE WHEN u.status <> 0 THEN 'Đang hoạt động' ELSE 'Đã khóa' END AS status,
+			(u.status <> 0) AS active,
+			'Chưa đăng nhập' AS last_login
+		`).
+		Joins(`JOIN role r ON r.id = u.idrole`).
+		Joins(`LEFT JOIN student s ON s.iduser = u.id`).
+		Joins(`LEFT JOIN class c ON c.id = s.idclass`).
+		Joins(`LEFT JOIN major m ON m.id = c.idmajor`).
+		Joins(`LEFT JOIN faculty sf ON sf.id = m.idfaculty`).
+		Joins(`LEFT JOIN lecturer l ON l.iduser = u.id`).
+		Joins(`LEFT JOIN faculty lf ON lf.id = l.idfaculty`).
+		Joins(`
+			LEFT JOIN (
+				SELECT up.iduser, STRING_AGG(DISTINCT p.name, ', ' ORDER BY p.name) AS names
+				FROM user_post up
+				JOIN post p ON p.id = up.idpost
+				WHERE p.status = 1
+				GROUP BY up.iduser
+			) user_positions ON user_positions.iduser = u.id
+		`).
+		Order(`
+			CASE
+				WHEN lower(r.name) IN ('admin', 'quản trị viên') THEN 1
+				WHEN lower(r.name) LIKE 'trợ lý%' THEN 2
+				WHEN lower(r.name) LIKE '%sinh viên%' OR lower(r.name) = 'student'
+					OR (s.id IS NOT NULL AND l.iduser IS NULL) THEN 4
+				WHEN lower(r.name) LIKE '%chủ nhiệm%' OR lower(r.name) LIKE '%cán sự%'
+					OR lower(r.name) LIKE '%lecturer%' OR l.iduser IS NOT NULL THEN 3
+				WHEN r.id = 1 THEN 1
+				WHEN r.id = 2 THEN 2
+				WHEN r.id = 3 THEN 3
+				ELSE 4
+			END
+		`).
 		Order(`u.id ASC`).
 		Scan(&accounts).Error
 	return accounts, err
@@ -127,9 +219,10 @@ func (r *managerRepository) GetAccounts(ctx context.Context) ([]dto.ManagerAccou
 func (r *managerRepository) GetAccountResetSeed(ctx context.Context, id int64) (string, error) {
 	var seed string
 	err := r.db.WithContext(ctx).
-		Table(`users`).
-		Select(`COALESCE(NULLIF(student_id, ''), split_part(email, '@', 1))`).
-		Where(`id = ?`, id).
+		Table(`"User" u`).
+		Select(`COALESCE(NULLIF(s.student_code, ''), split_part(u.email, '@', 1))`).
+		Joins(`LEFT JOIN student s ON s.iduser = u.id`).
+		Where(`u.id = ?`, id).
 		Scan(&seed).Error
 	if err != nil {
 		return "", err
@@ -142,7 +235,7 @@ func (r *managerRepository) GetAccountResetSeed(ctx context.Context, id int64) (
 
 func (r *managerRepository) ResetAccountPassword(ctx context.Context, id int64, passwordHash string) error {
 	result := r.db.WithContext(ctx).
-		Exec(`UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?`, passwordHash, id)
+		Exec(`UPDATE "User" SET password = ? WHERE id = ?`, passwordHash, id)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -155,29 +248,85 @@ func (r *managerRepository) ResetAccountPassword(ctx context.Context, id int64, 
 func (r *managerRepository) GetRoles(ctx context.Context) ([]dto.ManagerRole, error) {
 	var roles []dto.ManagerRole
 	err := r.db.WithContext(ctx).
-		Table(`roles`).
-		Select(`code, name`).
+		Table(`role`).
+		Select(`
+			CASE
+				WHEN lower(name) IN ('admin', 'quản trị viên') THEN 'ADMIN'
+				WHEN lower(name) LIKE 'trợ lý%' THEN 'STUDENT_AFFAIRS_ASSISTANT'
+				WHEN lower(name) LIKE '%chủ nhiệm%' OR lower(name) LIKE '%cán sự%'
+					OR lower(name) LIKE '%lecturer%' THEN 'HOMEROOM_CLASS_OFFICER'
+				WHEN lower(name) LIKE '%sinh viên%' OR lower(name) = 'student' THEN 'STUDENT'
+				WHEN id = 1 THEN 'ADMIN'
+				WHEN id = 2 THEN 'STUDENT_AFFAIRS_ASSISTANT'
+				WHEN id = 3 THEN 'HOMEROOM_CLASS_OFFICER'
+				ELSE 'STUDENT'
+			END AS code,
+			name
+		`).
+		Where(`status <> 0`).
 		Order(`id ASC`).
 		Scan(&roles).Error
+	if err == nil {
+		roles = uniqueManagerRoles(roles)
+	}
 	return roles, err
+}
+
+func uniqueManagerRoles(roles []dto.ManagerRole) []dto.ManagerRole {
+	seen := make(map[string]bool, len(roles))
+	result := make([]dto.ManagerRole, 0, len(roles))
+	for _, role := range roles {
+		if seen[role.Code] {
+			continue
+		}
+		seen[role.Code] = true
+		result = append(result, role)
+	}
+	return result
 }
 
 func (r *managerRepository) UpsertAccount(ctx context.Context, id int64, account dto.ManagerAccountMutation, passwordHash string) error {
 	if id == 0 {
-		return r.db.WithContext(ctx).Exec(`
-			INSERT INTO users (full_name, username, email, password_hash, role_id, unit, class_code, status)
-			VALUES (?, ?, ?, ?, (SELECT id FROM roles WHERE code = ?), ?, NULLIF(?, ''), ?)
-		`, account.Name, account.Username, account.Email, passwordHash, account.RoleCode, account.Unit, account.ClassCode, account.Active).Error
+		return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			if err := tx.Exec(`LOCK TABLE "User" IN EXCLUSIVE MODE`).Error; err != nil {
+				return err
+			}
+			var nextID int64
+			if err := tx.Raw(`SELECT COALESCE(MAX(id), 0) + 1 FROM "User"`).Scan(&nextID).Error; err != nil {
+				return err
+			}
+			roleID, err := managerRoleID(tx, account.RoleCode)
+			if err != nil {
+				return err
+			}
+			firstName, lastName := splitUserName(account.Name)
+			status := 0
+			if account.Active {
+				status = 1
+			}
+			return tx.Exec(`
+				INSERT INTO "User" (id, firstname, lastname, gender, dob, birthplace, phone, email, password, status, idrole)
+				VALUES (?, ?, ?, ?, ?::date, '', ?, ?, ?, ?, ?)
+			`, nextID, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, status, roleID).Error
+		})
 	}
 
+	roleID, err := managerRoleID(r.db.WithContext(ctx), account.RoleCode)
+	if err != nil {
+		return err
+	}
+	firstName, lastName := splitUserName(account.Name)
+	status := 0
+	if account.Active {
+		status = 1
+	}
 	result := r.db.WithContext(ctx).Exec(`
-		UPDATE users
-		SET full_name = ?, username = ?, email = ?,
-		    password_hash = CASE WHEN ? = '' THEN password_hash ELSE ? END,
-		    role_id = (SELECT id FROM roles WHERE code = ?),
-		    unit = ?, class_code = NULLIF(?, ''), status = ?, updated_at = NOW()
+		UPDATE "User"
+		SET firstname = ?, lastname = ?, gender = ?, dob = ?::date,
+		    phone = ?, email = ?, password = CASE WHEN ? = '' THEN password ELSE ? END,
+		    idrole = ?, status = ?
 		WHERE id = ?
-	`, account.Name, account.Username, account.Email, passwordHash, passwordHash, account.RoleCode, account.Unit, account.ClassCode, account.Active, id)
+	`, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, passwordHash, roleID, status, id)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -188,7 +337,7 @@ func (r *managerRepository) UpsertAccount(ctx context.Context, id int64, account
 }
 
 func (r *managerRepository) DeleteAccount(ctx context.Context, id int64) error {
-	result := r.db.WithContext(ctx).Exec(`DELETE FROM users WHERE id = ? AND email <> '2312610@dlu.edu.vn'`, id)
+	result := r.db.WithContext(ctx).Exec(`UPDATE "User" SET status = 0 WHERE id = ? AND id <> 1`, id)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -196,57 +345,161 @@ func (r *managerRepository) DeleteAccount(ctx context.Context, id int64) error {
 		return gorm.ErrRecordNotFound
 	}
 	return nil
+}
+
+func managerRoleID(db *gorm.DB, code string) (int64, error) {
+	var roleNameCondition string
+	switch code {
+	case "ADMIN":
+		roleNameCondition = `lower(name) IN ('admin', 'quản trị viên')`
+	case "STUDENT_AFFAIRS_ASSISTANT":
+		roleNameCondition = `lower(name) LIKE 'trợ lý%'`
+	case "HOMEROOM_CLASS_OFFICER":
+		roleNameCondition = `lower(name) LIKE '%chủ nhiệm%' OR lower(name) LIKE '%cán sự%' OR lower(name) LIKE '%lecturer%'`
+	case "STUDENT":
+		roleNameCondition = `lower(name) LIKE '%sinh viên%' OR lower(name) = 'student'`
+	default:
+		return 0, errors.New("vai trò không hợp lệ")
+	}
+
+	var id int64
+	err := db.Table("role").
+		Select("id").
+		Where(roleNameCondition).
+		Order("id ASC").
+		Limit(1).
+		Scan(&id).Error
+	if err != nil {
+		return 0, err
+	}
+	if id == 0 {
+		return 0, errors.New("không tìm thấy vai trò trong cơ sở dữ liệu")
+	}
+	return id, nil
+}
+
+func splitUserName(name string) (string, string) {
+	parts := strings.Fields(name)
+	if len(parts) < 2 {
+		return name, ""
+	}
+	return parts[0], strings.Join(parts[1:], " ")
 }
 
 func (r *managerRepository) UpsertClass(ctx context.Context, oldCode string, class dto.ManagerClassMutation) error {
-	if oldCode == "" {
-		return r.db.WithContext(ctx).Exec(`
-			INSERT INTO classes (code, faculty, academic_year)
-			VALUES (?, ?, ?)
-		`, class.Code, class.Faculty, class.AcademicYear).Error
-	}
-	result := r.db.WithContext(ctx).Exec(`
-		UPDATE classes SET code = ?, faculty = ?, academic_year = ?, updated_at = NOW()
-		WHERE code = ?
-	`, class.Code, class.Faculty, class.AcademicYear, oldCode)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-	return nil
-}
-
-func (r *managerRepository) DeleteClass(ctx context.Context, code string) error {
-	result := r.db.WithContext(ctx).Exec(`DELETE FROM classes WHERE code = ?`, code)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-	return nil
-}
-
-func (r *managerRepository) UpsertStudent(ctx context.Context, oldID string, student dto.ManagerStudentMutation, passwordHash string) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if oldID == "" {
+		if err := tx.Exec(`LOCK TABLE class, major, school_year, class_year IN EXCLUSIVE MODE`).Error; err != nil {
+			return err
+		}
+
+		var facultyID *int64
+		if class.Faculty != "" {
+			var id int64
+			err := tx.Table(`faculty`).
+				Select(`id`).
+				Where(`name = ? OR faculty_code = ?`, class.Faculty, class.Faculty).
+				Order(`id ASC`).
+				Limit(1).
+				Scan(&id).Error
+			if err != nil {
+				return err
+			}
+			if id == 0 {
+				return gorm.ErrRecordNotFound
+			}
+			facultyID = &id
+		}
+
+		var classID int64
+		var existingMajorID *int64
+		if oldCode != "" {
+			var existingClass struct {
+				ID      int64
+				MajorID *int64 `gorm:"column:idmajor"`
+			}
+			if err := tx.Table(`class`).
+				Select(`id, idmajor`).
+				Where(`class_code = ?`, oldCode).
+				Take(&existingClass).Error; err != nil {
+				return err
+			}
+			classID = existingClass.ID
+			existingMajorID = existingClass.MajorID
+		} else {
+			var existingID int64
+			if err := tx.Table(`class`).Select(`id`).Where(`class_code = ?`, class.Code).Scan(&existingID).Error; err != nil {
+				return err
+			}
+			if existingID != 0 {
+				return gorm.ErrDuplicatedKey
+			}
+		}
+		if oldCode != "" && class.Code != oldCode {
+			var duplicateCount int64
+			if err := tx.Table(`class`).
+				Where(`class_code = ? AND id <> ?`, class.Code, classID).
+				Count(&duplicateCount).Error; err != nil {
+				return err
+			}
+			if duplicateCount > 0 {
+				return gorm.ErrDuplicatedKey
+			}
+		}
+
+		var majorID *int64
+		if facultyID != nil {
+			var id int64
+			if existingMajorID != nil {
+				err := tx.Table(`major`).
+					Select(`id`).
+					Where(`id = ? AND idfaculty = ?`, *existingMajorID, *facultyID).
+					Scan(&id).Error
+				if err != nil {
+					return err
+				}
+			}
+			if id == 0 {
+				err := tx.Table(`major`).
+					Select(`id`).
+					Where(`idfaculty = ?`, *facultyID).
+					Order(`id ASC`).
+					Limit(1).
+					Scan(&id).Error
+				if err != nil {
+					return err
+				}
+			}
+			if id == 0 {
+				if err := tx.Raw(`SELECT COALESCE(MAX(id), 0) + 1 FROM major`).Scan(&id).Error; err != nil {
+					return err
+				}
+				if err := tx.Exec(`
+					INSERT INTO major (id, major_code, name, status, idfaculty)
+					VALUES (?, ?, ?, 1, ?)
+				`, id, class.Code, class.Code, *facultyID).Error; err != nil {
+					return err
+				}
+			}
+			majorID = &id
+		}
+
+		if oldCode == "" {
 			if err := tx.Exec(`
-				INSERT INTO students (student_id, class_code, gender, birth_day, first_name, last_name, is_in_class, birth_place, phone, class_role_id, study_program_id, permanent_residence, student_name, hometown_country, hometown_province, hometown_city, hometown_address)
-					VALUES (?, ?, ?, NULLIF(?, '')::date, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-				`, student.StudentID, student.ClassCode, student.Gender, student.BirthDay, student.FirstName, student.LastName, student.IsInClass, student.BirthPlace, student.Phone, student.ClassRoleID, student.StudyProgramID, student.PermanentResidence, student.StudentName, student.HometownCountry, student.HometownProvince, student.HometownCity, student.HometownAddress).Error; err != nil {
+				INSERT INTO class (id, class_code, name, status, idmajor)
+				SELECT COALESCE(MAX(id), 0) + 1, ?, ?, 1, ?
+				FROM class
+			`, class.Code, class.Code, majorID).Error; err != nil {
+				return err
+			}
+			if err := tx.Table(`class`).Select(`id`).Where(`class_code = ?`, class.Code).Scan(&classID).Error; err != nil {
 				return err
 			}
 		} else {
 			result := tx.Exec(`
-				UPDATE students
-				SET student_id = ?, class_code = ?, gender = ?, birth_day = NULLIF(?, '')::date,
-				    first_name = ?, last_name = ?, is_in_class = ?, birth_place = ?, phone = ?,
-				    class_role_id = ?, study_program_id = ?, permanent_residence = ?, student_name = ?,
-				    hometown_country = ?, hometown_province = ?, hometown_city = ?, hometown_address = ?, synced_at = NOW()
-				WHERE student_id = ?
-			`, student.StudentID, student.ClassCode, student.Gender, student.BirthDay, student.FirstName, student.LastName, student.IsInClass, student.BirthPlace, student.Phone, student.ClassRoleID, student.StudyProgramID, student.PermanentResidence, student.StudentName, student.HometownCountry, student.HometownProvince, student.HometownCity, student.HometownAddress, oldID)
+				UPDATE class
+				SET class_code = ?, name = ?, idmajor = ?
+				WHERE id = ?
+			`, class.Code, class.Code, majorID, classID)
 			if result.Error != nil {
 				return result.Error
 			}
@@ -254,39 +507,183 @@ func (r *managerRepository) UpsertStudent(ctx context.Context, oldID string, stu
 				return gorm.ErrRecordNotFound
 			}
 		}
-		if student.Faculty != "" {
-			if err := tx.Exec(`UPDATE classes SET faculty = ?, updated_at = NOW() WHERE code = ?`, student.Faculty, student.ClassCode).Error; err != nil {
+
+		if class.AcademicYear == "" {
+			return tx.Exec(`UPDATE class_year SET status = 0 WHERE idclass = ?`, classID).Error
+		}
+		var schoolYearID int64
+		if err := tx.Table(`school_year`).
+			Select(`id`).
+			Where(`year = ? AND semester = 1`, class.AcademicYear).
+			Order(`id ASC`).
+			Limit(1).
+			Scan(&schoolYearID).Error; err != nil {
+			return err
+		}
+		if schoolYearID == 0 {
+			if err := tx.Raw(`SELECT COALESCE(MAX(id), 0) + 1 FROM school_year`).Scan(&schoolYearID).Error; err != nil {
+				return err
+			}
+			if err := tx.Exec(`INSERT INTO school_year (id, year, semester) VALUES (?, ?, 1)`, schoolYearID, class.AcademicYear).Error; err != nil {
 				return err
 			}
 		}
-
-		var linkedAccountCount int64
-		if err := tx.Table(`users`).Where(`student_id = ?`, student.StudentID).Count(&linkedAccountCount).Error; err != nil {
+		if err := tx.Exec(`UPDATE class_year SET status = 0 WHERE idclass = ?`, classID).Error; err != nil {
 			return err
 		}
-		if linkedAccountCount > 0 {
-			return tx.Exec(`
-				UPDATE users
-				SET full_name = ?, username = ?, email = ?, class_code = ?,
-				    unit = (SELECT COALESCE(faculty, '') FROM classes WHERE code = ?), updated_at = NOW()
-				WHERE student_id = ?
-			`, student.StudentName, student.Email, student.Email, student.ClassCode, student.ClassCode, student.StudentID).Error
+		return tx.Exec(`
+			INSERT INTO class_year (idclass, idyear, status)
+			VALUES (?, ?, 1)
+			ON CONFLICT (idclass, idyear) DO UPDATE SET status = 1
+		`, classID, schoolYearID).Error
+	})
+}
+
+func (r *managerRepository) DeleteClass(ctx context.Context, code string) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var classID int64
+		if err := tx.Table(`class`).Select(`id`).Where(`class_code = ?`, code).Scan(&classID).Error; err != nil {
+			return err
+		}
+		if classID == 0 {
+			return gorm.ErrRecordNotFound
+		}
+		if err := tx.Exec(`UPDATE class_year SET status = 0 WHERE idclass = ?`, classID).Error; err != nil {
+			return err
+		}
+		result := tx.Exec(`UPDATE class SET status = 0 WHERE id = ?`, classID)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+		return nil
+	})
+}
+
+func (r *managerRepository) UpsertStudent(ctx context.Context, oldID string, student dto.ManagerStudentMutation, passwordHash string) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec(`LOCK TABLE "User", student IN EXCLUSIVE MODE`).Error; err != nil {
+			return err
 		}
 
-		return tx.Exec(`
-			INSERT INTO users (full_name, username, email, password_hash, role_id, unit, class_code, student_id, status)
-			VALUES (?, ?, ?, ?, (SELECT id FROM roles WHERE code = 'STUDENT'),
-			        (SELECT COALESCE(faculty, '') FROM classes WHERE code = ?), ?, ?, TRUE)
-		`, student.StudentName, student.Email, student.Email, passwordHash, student.ClassCode, student.ClassCode, student.StudentID).Error
+		var classID int64
+		if err := tx.Table(`class`).Select(`id`).Where(`class_code = ?`, student.ClassCode).Scan(&classID).Error; err != nil {
+			return err
+		}
+		if classID == 0 {
+			return gorm.ErrRecordNotFound
+		}
+
+		var studentID int64
+		var userID *int64
+		if oldID != "" {
+			var existing struct {
+				ID     int64
+				UserID *int64 `gorm:"column:iduser"`
+			}
+			err := tx.Table(`student`).
+				Select(`id, iduser`).
+				Where(`student_code = ?`, oldID).
+				Take(&existing).Error
+			if err != nil {
+				return err
+			}
+			studentID = existing.ID
+			userID = existing.UserID
+		} else {
+			var existingCount int64
+			if err := tx.Table(`student`).Where(`student_code = ?`, student.StudentID).Count(&existingCount).Error; err != nil {
+				return err
+			}
+			if existingCount > 0 {
+				return gorm.ErrDuplicatedKey
+			}
+		}
+		if oldID != "" && student.StudentID != oldID {
+			var duplicateCount int64
+			if err := tx.Table(`student`).
+				Where(`student_code = ? AND id <> ?`, student.StudentID, studentID).
+				Count(&duplicateCount).Error; err != nil {
+				return err
+			}
+			if duplicateCount > 0 {
+				return gorm.ErrDuplicatedKey
+			}
+		}
+
+		if userID == nil {
+			var existingUserID int64
+			if err := tx.Table(`"User"`).Select(`id`).Where(`email = ?`, student.Email).Scan(&existingUserID).Error; err != nil {
+				return err
+			}
+			if existingUserID != 0 {
+				return gorm.ErrDuplicatedKey
+			}
+			if err := tx.Raw(`SELECT COALESCE(MAX(id), 0) + 1 FROM "User"`).Scan(&existingUserID).Error; err != nil {
+				return err
+			}
+			var roleID int64
+			if err := tx.Table(`role`).Select(`id`).Where(`name = ?`, "Sinh viên").Limit(1).Scan(&roleID).Error; err != nil {
+				return err
+			}
+			if roleID == 0 {
+				return gorm.ErrRecordNotFound
+			}
+			if err := tx.Exec(`
+				INSERT INTO "User" (id, firstname, lastname, gender, dob, birthplace, phone, email, password, status, idrole)
+				VALUES (?, ?, ?, ?, ?::date, ?, ?, ?, ?, 1, ?)
+			`, existingUserID, student.FirstName, student.LastName, student.Gender, student.BirthDay, student.BirthPlace, student.Phone, student.Email, passwordHash, roleID).Error; err != nil {
+				return err
+			}
+			userID = &existingUserID
+		} else {
+			result := tx.Exec(`
+				UPDATE "User"
+				SET firstname = ?, lastname = ?, gender = ?, dob = ?::date,
+				    birthplace = ?, phone = ?, email = ?
+				WHERE id = ?
+			`, student.FirstName, student.LastName, student.Gender, student.BirthDay, student.BirthPlace, student.Phone, student.Email, *userID)
+			if result.Error != nil {
+				return result.Error
+			}
+			if result.RowsAffected == 0 {
+				return gorm.ErrRecordNotFound
+			}
+		}
+
+		if oldID == "" {
+			if err := tx.Raw(`SELECT COALESCE(MAX(id), 0) + 1 FROM student`).Scan(&studentID).Error; err != nil {
+				return err
+			}
+			return tx.Exec(`
+				INSERT INTO student (id, student_code, idclass, iduser)
+				VALUES (?, ?, ?, ?)
+			`, studentID, student.StudentID, classID, *userID).Error
+		}
+		result := tx.Exec(`
+			UPDATE student SET student_code = ?, idclass = ?, iduser = ?
+			WHERE id = ?
+		`, student.StudentID, classID, *userID, studentID)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+		return nil
 	})
 }
 
 func (r *managerRepository) DeleteStudent(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec(`DELETE FROM users WHERE student_id = ? AND role_id = (SELECT id FROM roles WHERE code = 'STUDENT')`, id).Error; err != nil {
-			return err
-		}
-		result := tx.Exec(`DELETE FROM students WHERE student_id = ?`, id)
+		result := tx.Exec(`
+			UPDATE "User" u
+			SET status = 0
+			FROM student s
+			WHERE s.student_code = ? AND s.iduser = u.id
+		`, id)
 		if result.Error != nil {
 			return result.Error
 		}

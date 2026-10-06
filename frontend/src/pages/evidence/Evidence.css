@@ -10,7 +10,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* Container chính co giãn linh hoạt */
@@ -25,15 +25,31 @@
 }
 
 /* Typography & Colors */
-.text-large { font-size: var(--text-large-size); }
-.text-small { font-size: var(--text-small-size); }
-.font-bold { font-weight: bold; }
+.text-large {
+  font-size: var(--text-large-size);
+}
+.text-small {
+  font-size: var(--text-small-size);
+}
+.font-bold {
+  font-weight: bold;
+}
 
-.text-white { color: #ffffff; }
-.text-black { color: #000000; }
-.text-orange { color: #d9534f; }
-.text-green { color: var(--primary-green); }
-.text-red { color: #ff0000; }
+.text-white {
+  color: #ffffff;
+}
+.text-black {
+  color: #000000;
+}
+.text-orange {
+  color: #d9534f;
+}
+.text-green {
+  color: var(--primary-green);
+}
+.text-red {
+  color: #ff0000;
+}
 
 /* Nút bấm & Input radius 20px */
 .btn-custom {
@@ -49,12 +65,23 @@
   transition: opacity 0.2s;
 }
 
-.btn-custom:hover { opacity: 0.9; }
-.btn-custom:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-custom:hover {
+  opacity: 0.9;
+}
+.btn-custom:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
-.btn-green { background-color: var(--primary-green); }
-.btn-orange { background-color: var(--primary-orange); }
-.btn-white-text { color: #ffffff; }
+.btn-green {
+  background-color: var(--primary-green);
+}
+.btn-orange {
+  background-color: var(--primary-orange);
+}
+.btn-white-text {
+  color: #ffffff;
+}
 
 /* Nút Tìm nền màu trắng */
 .btn-white-bg {
@@ -83,7 +110,9 @@ select.input-custom {
   background-size: 18px;
   padding-right: 44px;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 select.input-custom:focus {
@@ -97,11 +126,14 @@ select.input-custom:focus {
   color: #000000;
 }
 
-.select-faculty, .select-class {
+.select-faculty,
+.select-class {
   width: 240px;
 }
 
-.select-major { width: 240px; }
+.select-major {
+  width: 240px;
+}
 
 /* Header & Filter */
 .evidence-header-card {
@@ -137,12 +169,24 @@ select.input-custom:focus {
   color: inherit;
   font: inherit;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, outline-color 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    outline-color 0.15s;
 }
 
-.stat-box:hover { transform: translateY(-2px); box-shadow: 0 5px 14px rgba(0, 0, 0, 0.14); }
-.stat-box:focus-visible { outline: 3px solid #145c3e; outline-offset: 2px; }
-.stat-box-selected { outline: 3px solid #145c3e; outline-offset: 2px; }
+.stat-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.14);
+}
+.stat-box:focus-visible {
+  outline: 3px solid #145c3e;
+  outline-offset: 2px;
+}
+.stat-box-selected {
+  outline: 3px solid #145c3e;
+  outline-offset: 2px;
+}
 
 .filter-wrapper {
   display: flex;
@@ -246,7 +290,9 @@ select.input-custom:focus {
   cursor: pointer;
 }
 
-.sort-apply-button:hover { opacity: 0.9; }
+.sort-apply-button:hover {
+  opacity: 0.9;
+}
 
 .sort-direction-button {
   min-height: 42px;
@@ -278,8 +324,13 @@ select.input-custom:focus {
   cursor: pointer;
 }
 
-.sort-direction-button + .sort-direction-button { border-left: 1px solid var(--primary-green); }
-.sort-direction-button.active { background: var(--primary-green); color: #fff; }
+.sort-direction-button + .sort-direction-button {
+  border-left: 1px solid var(--primary-green);
+}
+.sort-direction-button.active {
+  background: var(--primary-green);
+  color: #fff;
+}
 
 .sort-fields {
   display: flex;
@@ -314,8 +365,13 @@ select.input-custom:focus {
 }
 
 @media (max-width: 700px) {
-  .sort-controls { gap: 10px; margin-left: 0; }
-  .sort-fields { gap: 12px; }
+  .sort-controls {
+    gap: 10px;
+    margin-left: 0;
+  }
+  .sort-fields {
+    gap: 12px;
+  }
 }
 
 /* Bảng dữ liệu chuẩn 100% không lệch hàng/cột */
@@ -379,22 +435,34 @@ select.input-custom:focus {
 }
 
 .evidence-table th:nth-child(1),
-.evidence-table td:nth-child(1) { width: 20%; }
+.evidence-table td:nth-child(1) {
+  width: 20%;
+}
 
 .evidence-table th:nth-child(2),
-.evidence-table td:nth-child(2) { width: 23%; }
+.evidence-table td:nth-child(2) {
+  width: 23%;
+}
 
 .evidence-table th:nth-child(3),
-.evidence-table td:nth-child(3) { width: 21%; }
+.evidence-table td:nth-child(3) {
+  width: 21%;
+}
 
 .evidence-table th:nth-child(4),
-.evidence-table td:nth-child(4) { width: 15%; }
+.evidence-table td:nth-child(4) {
+  width: 15%;
+}
 
 .evidence-table th:nth-child(5),
-.evidence-table td:nth-child(5) { width: 8%; }
+.evidence-table td:nth-child(5) {
+  width: 8%;
+}
 
 .evidence-table th:nth-child(6),
-.evidence-table td:nth-child(6) { width: 13%; }
+.evidence-table td:nth-child(6) {
+  width: 13%;
+}
 
 .evidence-table th {
   background-color: var(--primary-green);
@@ -421,8 +489,12 @@ select.input-custom:focus {
   transition: background-color 0.2s;
 }
 
-.row-item.bg-gray { background-color: #f5f5f5; }
-.row-item.bg-white { background-color: #ffffff; }
+.row-item.bg-gray {
+  background-color: #f5f5f5;
+}
+.row-item.bg-white {
+  background-color: #ffffff;
+}
 
 .row-item:hover {
   background-color: #d1f2d9;
@@ -455,12 +527,18 @@ select.input-custom:focus {
   flex-direction: column;
   gap: 20px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.detail-modal-container .text-large { font-size: 19px; }
-.detail-modal-container .text-small { font-size: 15px; }
-.detail-modal-container .btn-custom { font-size: 15px; }
+.detail-modal-container .text-large {
+  font-size: 19px;
+}
+.detail-modal-container .text-small {
+  font-size: 15px;
+}
+.detail-modal-container .btn-custom {
+  font-size: 15px;
+}
 
 .detail-card-box {
   border: 2px solid #000000;
@@ -485,7 +563,9 @@ select.input-custom:focus {
   font-size: 15px;
 }
 
-.academic-info-heading { margin-top: 8px; }
+.academic-info-heading {
+  margin-top: 8px;
+}
 
 .academic-info-grid {
   display: grid;
@@ -530,7 +610,9 @@ select.input-custom:focus {
   font-size: 15px;
 }
 
-.title-margin { color: #000000; }
+.title-margin {
+  color: #000000;
+}
 
 .uploaded-box {
   width: 100%;
@@ -553,8 +635,16 @@ select.input-custom:focus {
 }
 
 @media (max-width: 640px) {
-  .academic-info-grid { grid-template-columns: 1fr; }
-  .detail-modal-container { padding: 16px; }
-  .detail-card-box { padding: 16px; }
-  .detail-modal-container .detail-row .label-width { width: 100%; }
+  .academic-info-grid {
+    grid-template-columns: 1fr;
+  }
+  .detail-modal-container {
+    padding: 16px;
+  }
+  .detail-card-box {
+    padding: 16px;
+  }
+  .detail-modal-container .detail-row .label-width {
+    width: 100%;
+  }
 }

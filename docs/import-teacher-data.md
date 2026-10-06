@@ -9,7 +9,7 @@ Trên database mới, chạy lần lượt:
 1. [`create_table.sql`](../database/migrations/create_table.sql)
 2. [`insert_data.sql`](../database/migrations/insert_data.sql)
 
-`insert_data.sql` chứa dữ liệu nền và 26 tài khoản Manager bổ sung; tài khoản sinh viên/cán bộ lớp và cố vấn được liên kết bằng các khóa `IdUser` tương ứng. Email tài khoản sinh viên theo `Student_Code@dlu.edu.vn`; mật khẩu seed lưu dạng hash.
+`insert_data.sql` chứa dữ liệu nền và tài khoản mẫu; tài khoản sinh viên/cán bộ lớp và cố vấn được liên kết bằng các khóa `IdUser` tương ứng. Email tài khoản sinh viên theo `Student_Code@dlu.edu.vn`, trợ lý theo `ctsvNN@dlu.edu.vn` và giảng viên theo `gvNN@dlu.edu.vn`; mật khẩu seed lưu dạng hash.
 
 **Không chạy `create_table.sql` trên database đang có dữ liệu:** script có `DROP TABLE`. `insert_data.sql` cũng dành cho khởi tạo mới, không phải migration chạy lặp trên dữ liệu đang dùng.
 

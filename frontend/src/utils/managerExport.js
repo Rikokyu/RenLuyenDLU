@@ -1,3 +1,5 @@
+import { formatDate } from "./formatDate";
+
 function addSheet(workbook, name, columns, rows) {
   const sheet = workbook.addWorksheet(name);
   sheet.columns = columns;
@@ -55,7 +57,7 @@ export async function exportManagerWorkbook({ students, classes, accounts }) {
       faculty: student.facultyName,
       program: student.studyProgramId,
       gender: student.gender,
-      birthDay: student.birthDay,
+      birthDay: formatDate(student.birthDay),
       hometownCountry: student.hometownCountry,
       hometownProvince: student.hometownProvince,
       hometownCity: student.hometownCity,

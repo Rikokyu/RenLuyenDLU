@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"renluyen-dlu-backend/internal/dto"
 	"renluyen-dlu-backend/internal/repository"
@@ -69,13 +70,15 @@ func (s *managerService) SaveAccount(ctx context.Context, id int64, account dto.
 	account.Email = strings.ToLower(strings.TrimSpace(account.Email))
 	account.Username = account.Email
 	account.RoleCode = strings.TrimSpace(account.RoleCode)
-	account.Unit = strings.TrimSpace(account.Unit)
-	account.ClassCode = strings.TrimSpace(account.ClassCode)
-	if account.Name == "" || account.Email == "" || account.RoleCode == "" {
-		return errors.New("họ tên, email và vai trò là bắt buộc")
+	account.Gender = strings.TrimSpace(account.Gender)
+	account.BirthDay = strings.TrimSpace(account.BirthDay)
+	account.Phone = strings.TrimSpace(account.Phone)
+	if account.Name == "" || account.Email == "" || account.RoleCode == "" ||
+		account.Gender == "" || account.BirthDay == "" || account.Phone == "" {
+		return errors.New("họ tên, email, vai trò, giới tính, ngày sinh và số điện thoại là bắt buộc")
 	}
-	if id == 0 && account.RoleCode == "STUDENT" {
-		return errors.New("hãy tạo tài khoản sinh viên từ hồ sơ sinh viên để liên kết MSSV")
+	if _, err := time.Parse("2006-01-02", account.BirthDay); err != nil {
+		return errors.New("ngày sinh không hợp lệ")
 	}
 
 	passwordHash := ""
@@ -139,8 +142,8 @@ func (s *managerService) SaveStudent(ctx context.Context, oldID string, student 
 	student.FirstName = strings.TrimSpace(student.FirstName)
 	student.LastName = strings.TrimSpace(student.LastName)
 	student.StudentName = strings.TrimSpace(student.StudentName)
-	if student.StudentID == "" || student.ClassCode == "" || student.Email == "" {
-		return errors.New("mã sinh viên, email và lớp là bắt buộc")
+	if student.StudentID == "" || student.ClassCode == "" || student.Email == "" || student.BirthDay == "" {
+		return errors.New("mã sinh viên, email, lớp và ngày sinh là bắt buộc")
 	}
 	if student.StudentName == "" {
 		student.StudentName = strings.TrimSpace(student.FirstName + " " + student.LastName)

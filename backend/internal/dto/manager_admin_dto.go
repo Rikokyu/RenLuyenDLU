@@ -5,11 +5,15 @@ type ManagerAccount struct {
 	Name      string `json:"name"`
 	Username  string `json:"username"`
 	Email     string `json:"email"`
+	Gender    string `json:"gender"`
+	BirthDay  string `json:"birthDay"`
+	Phone     string `json:"phone"`
 	Role      string `json:"role"`
 	RoleCode  string `json:"roleCode"`
 	Unit      string `json:"unit"`
 	ClassCode string `json:"classCode"`
 	ClassName string `json:"className"`
+	Position  string `json:"position"`
 	StudentID string `json:"studentId"`
 	Status    string `json:"status"`
 	Active    bool   `json:"active"`
@@ -21,6 +25,9 @@ type ManagerAccountMutation struct {
 	Username  string `json:"username"`
 	Email     string `json:"email"`
 	Password  string `json:"password"`
+	Gender    string `json:"gender"`
+	BirthDay  string `json:"birthDay"`
+	Phone     string `json:"phone"`
 	RoleCode  string `json:"roleCode"`
 	Unit      string `json:"unit"`
 	ClassCode string `json:"classCode"`

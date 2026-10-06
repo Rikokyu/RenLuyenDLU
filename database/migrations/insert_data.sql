@@ -1,32 +1,50 @@
--- insert_data_10_rows.sql
--- User có 20 dòng để tách 10 giảng viên + 10 sinh viên.
--- Các bảng còn lại có ít nhất 10 dòng.
+-- Seed data for the legacy schema shared by User Management and Evidence.
+-- Demo passwords use DLU@<MSSV-or-email-prefix>.
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 INSERT INTO Role VALUES
-(1,'Quản trị viên',1),(2,'Giảng viên',1),(3,'Sinh viên',1),(4,'Cán bộ khoa',1),(5,'Cán bộ lớp',1),
-(6,'Cố vấn học tập',1),(7,'Quản lý hoạt động',1),(8,'Kiểm duyệt minh chứng',1),(9,'Trợ lý đào tạo',1),(10,'Khách',1);
+(1,'Admin',1),
+(2,'Trợ lý công tác sinh viên',1),
+(3,'Giảng viên chủ nhiệm / Ban cán sự',1),
+(4,'Sinh viên',1);
 
 INSERT INTO "User" VALUES
-(1,'Nguyễn','Văn A','Nam','1980-01-15','TP. Hồ Chí Minh','0901000001','gv01@university.edu.vn','2a12$01',1,2),
-(2,'Trần Thị','Bình','Nữ','1982-02-20','Hà Nội','0901000002','gv02@university.edu.vn','2a12$02',1,2),
-(3,'Lê Văn','Cường','Nam','1984-03-10','Bình Dương','0901000003','gv03@university.edu.vn','2a12$03',1,2),
-(4,'Phạm Thị','Dung','Nữ','1985-04-12','Đồng Nai','0901000004','gv04@university.edu.vn','2a12$04',1,2),
-(5,'Hoàng Văn','Em','Nam','1986-05-18','Cần Thơ','0901000005','gv05@university.edu.vn','2a12$05',1,2),
-(6,'Nguyễn Thị','Hạnh','Nữ','1987-06-22','Đà Nẵng','0901000006','gv06@university.edu.vn','2a12$06',1,2),
-(7,'Võ Văn','Khang','Nam','1983-07-08','Quảng Nam','0901000007','gv07@university.edu.vn','2a12$07',1,2),
-(8,'Đỗ Thị','Lan','Nữ','1981-08-25','Gia Lai','0901000008','gv08@university.edu.vn','2a12$08',1,2),
-(9,'Bùi Văn','Minh','Nam','1988-09-30','Nghệ An','0901000009','gv09@university.edu.vn','2a12$09',1,2),
-(10,'Nguyễn Thị','Ngọc','Nữ','1989-10-11','Khánh Hòa','0901000010','gv10@university.edu.vn','2a12$10',1,2),
-(11,'Nguyễn','Văn Nam','Nam','2003-01-10','TP. Hồ Chí Minh','0911000001','sv01@student.edu.vn','2a12$11',1,3),
-(12,'Trần Thị','Oanh','Nữ','2003-02-12','Hà Nội','0911000002','sv02@student.edu.vn','2a12$12',1,3),
-(13,'Lê Văn','Phúc','Nam','2003-03-14','Bình Dương','0911000003','sv03@student.edu.vn','2a12$13',1,3),
-(14,'Phạm Thị','Quyên','Nữ','2003-04-16','Đồng Nai','0911000004','sv04@student.edu.vn','2a12$14',1,3),
-(15,'Hoàng Văn','Sơn','Nam','2003-05-18','Cần Thơ','0911000005','sv05@student.edu.vn','2a12$15',1,3),
-(16,'Nguyễn Thị','Trang','Nữ','2003-06-20','Đà Nẵng','0911000006','sv06@student.edu.vn','2a12$16',1,3),
-(17,'Võ Văn','Tùng','Nam','2003-07-22','Quảng Nam','0911000007','sv07@student.edu.vn','2a12$17',1,3),
-(18,'Đỗ Thị','Uyên','Nữ','2003-08-24','Gia Lai','0911000008','sv08@student.edu.vn','2a12$18',1,3),
-(19,'Bùi Văn','Vinh','Nam','2003-09-26','Nghệ An','0911000009','sv09@student.edu.vn','2a12$19',1,3),
-(20,'Nguyễn Thị','Yến','Nữ','2003-10-28','Khánh Hòa','0911000010','sv10@student.edu.vn','2a12$20',1,3);
+(1,'Nguyễn Trung','Hiệp','Nam','2003-01-10','Đà Lạt','0901000001','2312610@dlu.edu.vn',crypt('DLU@2312610',gen_salt('bf',10)),1,1),
+(2,'Nguyễn Trọng','Hiếu','Nam','1980-01-15','Đà Lạt','0901000002','hieunt@dlu.edu.vn',crypt('DLU@hieunt',gen_salt('bf',10)),1,2),
+(3,'Trần Văn','Phát','Nam','1982-02-20','Hà Nội','0901000003','phattv@dlu.edu.vn',crypt('DLU@phattv',gen_salt('bf',10)),1,2),
+(4,'Lê Thị Minh','Châu','Nữ','1984-03-10','Bình Dương','0901000004','chault@dlu.edu.vn',crypt('DLU@chault',gen_salt('bf',10)),1,2),
+(5,'Phạm Quốc','Bảo','Nam','1985-04-12','Đồng Nai','0901000005','baopq@dlu.edu.vn',crypt('DLU@baopq',gen_salt('bf',10)),1,2),
+(6,'Võ Thị Thanh','Mai','Nữ','1986-05-18','Cần Thơ','0901000006','maivt@dlu.edu.vn',crypt('DLU@maivt',gen_salt('bf',10)),1,2),
+(7,'Nguyễn Văn','An','Nam','1980-01-15','TP. Hồ Chí Minh','0901000007','annv@dlu.edu.vn',crypt('DLU@annv',gen_salt('bf',10)),1,3),
+(8,'Trần Thị Bích','Hạnh','Nữ','1982-02-20','Hà Nội','0901000008','hanhtt@dlu.edu.vn',crypt('DLU@hanhtt',gen_salt('bf',10)),1,3),
+(9,'Lê Minh','Quang','Nam','1984-03-10','Bình Dương','0901000009','quanglm@dlu.edu.vn',crypt('DLU@quanglm',gen_salt('bf',10)),1,3),
+(10,'Đặng Hoàng','Long','Nam','1985-04-12','Đồng Nai','0901000010','longdh@dlu.edu.vn',crypt('DLU@longdh',gen_salt('bf',10)),1,3),
+(11,'Bùi Thanh','Tùng','Nam','1986-05-18','Cần Thơ','0901000011','tungbt@dlu.edu.vn',crypt('DLU@tungbt',gen_salt('bf',10)),1,3),
+(12,'Võ Thị Thu','Hà','Nữ','1987-06-22','Đà Nẵng','0901000012','havt@dlu.edu.vn',crypt('DLU@havt',gen_salt('bf',10)),1,3),
+(13,'Đỗ Ngọc','Sơn','Nam','1983-07-08','Quảng Nam','0901000013','sondn@dlu.edu.vn',crypt('DLU@sondn',gen_salt('bf',10)),1,3),
+(14,'Hoàng Minh','Đức','Nam','1981-08-25','Gia Lai','0901000014','duchm@dlu.edu.vn',crypt('DLU@duchm',gen_salt('bf',10)),1,3),
+(15,'Vũ Anh','Tuấn','Nam','1988-09-30','Nghệ An','0901000015','tuanva@dlu.edu.vn',crypt('DLU@tuanva',gen_salt('bf',10)),1,3),
+(16,'Dương Thị Ngọc','Lan','Nữ','1989-10-11','Khánh Hòa','0901000016','landt@dlu.edu.vn',crypt('DLU@landt',gen_salt('bf',10)),1,3),
+(17,'Nguyễn Minh','Anh','Nữ','2003-01-10','Lâm Đồng','0911000001','2312621@dlu.edu.vn',crypt('DLU@2312621',gen_salt('bf',10)),1,4),
+(18,'Trần Gia','Bảo','Nam','2003-02-12','Hà Nội','0911000002','2312622@dlu.edu.vn',crypt('DLU@2312622',gen_salt('bf',10)),1,4),
+(19,'Lê Hoàng','Chi','Nữ','2003-03-14','Bình Dương','0911000003','2312623@dlu.edu.vn',crypt('DLU@2312623',gen_salt('bf',10)),1,4),
+(20,'Phạm Quốc','Dũng','Nam','2003-04-16','Đồng Nai','0911000004','2312624@dlu.edu.vn',crypt('DLU@2312624',gen_salt('bf',10)),1,4),
+(21,'Hoàng Ngọc','Em','Nữ','2003-05-18','Cần Thơ','0911000005','2312625@dlu.edu.vn',crypt('DLU@2312625',gen_salt('bf',10)),1,4),
+(22,'Võ Thành','Đạt','Nam','2003-06-20','Đà Nẵng','0911000006','2312626@dlu.edu.vn',crypt('DLU@2312626',gen_salt('bf',10)),1,4),
+(23,'Đỗ Thị Thu','Giang','Nữ','2003-07-22','Quảng Nam','0911000007','2312627@dlu.edu.vn',crypt('DLU@2312627',gen_salt('bf',10)),1,4),
+(24,'Bùi Minh','Hải','Nam','2003-08-24','Gia Lai','0911000008','2312628@dlu.edu.vn',crypt('DLU@2312628',gen_salt('bf',10)),1,4),
+(25,'Dương Khánh','Linh','Nữ','2003-09-26','Nghệ An','0911000009','2312629@dlu.edu.vn',crypt('DLU@2312629',gen_salt('bf',10)),1,4),
+(26,'Phan Tuấn','Minh','Nam','2003-10-28','Khánh Hòa','0911000010','2312630@dlu.edu.vn',crypt('DLU@2312630',gen_salt('bf',10)),1,4),
+(27,'Nguyễn Hoàng','Nam','Nam','2003-01-10','TP. Hồ Chí Minh','0921000001','2312631@dlu.edu.vn',crypt('DLU@2312631',gen_salt('bf',10)),1,4),
+(28,'Trần Thị','Oanh','Nữ','2003-02-12','Hà Nội','0921000002','2312632@dlu.edu.vn',crypt('DLU@2312632',gen_salt('bf',10)),1,4),
+(29,'Lê Văn','Phúc','Nam','2003-03-14','Bình Dương','0921000003','2312633@dlu.edu.vn',crypt('DLU@2312633',gen_salt('bf',10)),1,4),
+(30,'Phạm Thị','Quyên','Nữ','2003-04-16','Đồng Nai','0921000004','2312634@dlu.edu.vn',crypt('DLU@2312634',gen_salt('bf',10)),1,4),
+(31,'Hoàng Văn','Sơn','Nam','2003-05-18','Cần Thơ','0921000005','2312635@dlu.edu.vn',crypt('DLU@2312635',gen_salt('bf',10)),1,4),
+(32,'Nguyễn Thị','Trang','Nữ','2003-06-20','Đà Nẵng','0921000006','2312636@dlu.edu.vn',crypt('DLU@2312636',gen_salt('bf',10)),1,4),
+(33,'Võ Văn','Tùng','Nam','2003-07-22','Quảng Nam','0921000007','2312637@dlu.edu.vn',crypt('DLU@2312637',gen_salt('bf',10)),1,4),
+(34,'Đỗ Thị','Uyên','Nữ','2003-08-24','Gia Lai','0921000008','2312638@dlu.edu.vn',crypt('DLU@2312638',gen_salt('bf',10)),1,4),
+(35,'Bùi Văn','Vinh','Nam','2003-09-26','Nghệ An','0921000009','2312639@dlu.edu.vn',crypt('DLU@2312639',gen_salt('bf',10)),1,4),
+(36,'Nguyễn Thị','Yến','Nữ','2003-10-28','Khánh Hòa','0921000010','2312640@dlu.edu.vn',crypt('DLU@2312640',gen_salt('bf',10)),1,4);
 
 INSERT INTO Faculty VALUES
 (1,'CNTT','Công nghệ thông tin',1),(2,'KT','Kinh tế',1),(3,'NN','Ngoại ngữ',1),(4,'QTKD','Quản trị kinh doanh',1),
@@ -40,8 +58,9 @@ INSERT INTO Major VALUES
 (10,'XH01','Công tác xã hội',1,10);
 
 INSERT INTO Lecturer VALUES
-(1,'GV001',1,1),(2,'GV002',2,2),(3,'GV003',3,3),(4,'GV004',4,4),(5,'GV005',5,5),
-(6,'GV006',6,6),(7,'GV007',7,7),(8,'GV008',8,8),(9,'GV009',9,9),(10,'GV010',10,10);
+(1,'GV001',1,7),(2,'GV002',2,8),(3,'GV003',3,9),(4,'GV004',4,10),(5,'GV005',5,11),
+(6,'GV006',6,12),(7,'GV007',7,13),(8,'GV008',8,14),(9,'GV009',9,15),(10,'GV010',10,16),
+(11,'CTSV001',1,2),(12,'CTSV002',2,3),(13,'CTSV003',3,4),(14,'CTSV004',4,5),(15,'CTSV005',5,6);
 
 INSERT INTO Class VALUES
 (1,'KTPM01','Kỹ thuật phần mềm 01',1,1,1),(2,'HTTT01','Hệ thống thông tin 01',1,2,2),
@@ -51,8 +70,11 @@ INSERT INTO Class VALUES
 (9,'TCNH01','Tài chính ngân hàng 01',1,9,9),(10,'XH01','Công tác xã hội 01',1,10,10);
 
 INSERT INTO Student VALUES
-(1,'SV001',1,11),(2,'SV002',2,12),(3,'SV003',3,13),(4,'SV004',4,14),(5,'SV005',5,15),
-(6,'SV006',6,16),(7,'SV007',7,17),(8,'SV008',8,18),(9,'SV009',9,19),(10,'SV010',10,20);
+(1,'2312631',1,27),(2,'2312632',2,28),(3,'2312633',3,29),(4,'2312634',4,30),(5,'2312635',5,31),
+(6,'2312636',6,32),(7,'2312637',7,33),(8,'2312638',8,34),(9,'2312639',9,35),(10,'2312640',10,36),
+(11,'2312621',1,17),(12,'2312622',2,18),(13,'2312623',3,19),(14,'2312624',4,20),(15,'2312625',5,21),
+(16,'2312626',6,22),(17,'2312627',7,23),(18,'2312628',8,24),(19,'2312629',9,25),(20,'2312630',10,26),
+(21,'2312610',NULL,1);
 
 INSERT INTO School_Year VALUES
 (1,'2025-2026',1),(2,'2025-2026',2),(3,'2025-2026',3),(4,'2026-2027',1),(5,'2026-2027',2),
@@ -71,19 +93,20 @@ INSERT INTO Post VALUES
 (6,'Cố vấn học tập',1),(7,'Trưởng bộ môn',1),(8,'Thư ký khoa',1),(9,'Cán bộ đoàn',1),(10,'Cán bộ lớp',1);
 
 INSERT INTO User_Post VALUES
-(1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9),(10,10);
+(7,1),(8,2),(9,6),(10,7),(11,8),(12,9),(13,10),(14,6),(15,7),(16,8),
+(17,3),(18,4),(19,5),(20,3),(21,4),(22,5),(23,3),(24,4),(25,5),(26,3);
 
 INSERT INTO Activity VALUES
-(1,'ACT01','Chiến dịch Mùa hè xanh','2026-07-01 07:00:00','2026-07-15 17:00:00',50,'Hỗ trợ cộng đồng',20,1,1),
-(2,'ACT02','Hội thảo AI trong giáo dục','2026-09-10 08:00:00','2026-09-10 11:30:00',100,'Ứng dụng AI trong học tập',5,1,2),
-(3,'ACT03','Ngày hội việc làm','2026-09-20 08:00:00','2026-09-20 16:30:00',200,'Kết nối doanh nghiệp',10,1,3),
-(4,'ACT04','Hiến máu nhân đạo','2026-10-05 07:30:00','2026-10-05 11:30:00',150,'Hiến máu tình nguyện',15,1,4),
-(5,'ACT05','Cuộc thi lập trình','2026-10-15 08:00:00','2026-10-15 17:00:00',80,'Thi phát triển phần mềm',25,1,5),
-(6,'ACT06','Seminar kỹ năng mềm','2026-10-20 13:30:00','2026-10-20 16:30:00',120,'Kỹ năng giao tiếp',5,1,6),
-(7,'ACT07','Ngày hội văn hóa','2026-11-01 08:00:00','2026-11-01 16:00:00',300,'Giao lưu văn hóa',10,1,7),
-(8,'ACT08','Tập huấn an toàn thông tin','2026-11-10 08:00:00','2026-11-10 11:00:00',100,'An toàn thông tin',5,1,8),
-(9,'ACT09','Giải chạy sinh viên','2026-11-20 05:30:00','2026-11-20 09:30:00',500,'Rèn luyện thể chất',10,1,9),
-(10,'ACT10','Tọa đàm nghề nghiệp','2026-12-01 08:00:00','2026-12-01 11:30:00',180,'Định hướng nghề nghiệp',5,1,10);
+(1,'ACT01','Chiến dịch Mùa hè xanh','2026-07-01 07:00:00','2026-07-15 17:00:00',50,'Hỗ trợ cộng đồng',20,1,7),
+(2,'ACT02','Hội thảo AI trong giáo dục','2026-09-10 08:00:00','2026-09-10 11:30:00',100,'Ứng dụng AI trong học tập',5,1,8),
+(3,'ACT03','Ngày hội việc làm','2026-09-20 08:00:00','2026-09-20 16:30:00',200,'Kết nối doanh nghiệp',10,1,9),
+(4,'ACT04','Hiến máu nhân đạo','2026-10-05 07:30:00','2026-10-05 11:30:00',150,'Hiến máu tình nguyện',15,1,10),
+(5,'ACT05','Cuộc thi lập trình','2026-10-15 08:00:00','2026-10-15 17:00:00',80,'Thi phát triển phần mềm',25,1,11),
+(6,'ACT06','Seminar kỹ năng mềm','2026-10-20 13:30:00','2026-10-20 16:30:00',120,'Kỹ năng giao tiếp',5,1,12),
+(7,'ACT07','Ngày hội văn hóa','2026-11-01 08:00:00','2026-11-01 16:00:00',300,'Giao lưu văn hóa',10,1,13),
+(8,'ACT08','Tập huấn an toàn thông tin','2026-11-10 08:00:00','2026-11-10 11:00:00',100,'An toàn thông tin',5,1,14),
+(9,'ACT09','Giải chạy sinh viên','2026-11-20 05:30:00','2026-11-20 09:30:00',500,'Rèn luyện thể chất',10,1,15),
+(10,'ACT10','Tọa đàm nghề nghiệp','2026-12-01 08:00:00','2026-12-01 11:30:00',180,'Định hướng nghề nghiệp',5,1,16);
 
 INSERT INTO Activity_Registration VALUES
 (1,'2026-06-15 08:30:00',1,1,1),(2,'2026-06-16 09:15:00',1,2,2),
