@@ -38,7 +38,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	v1 := r.Group("/api/v1")
 	{
 		// Đăng ký routes của từng Module tại đây
-		// MapEvidenceRoutes(v1, db)
+		MapEvidenceRoutes(v1, db)
 		MapManagerRoutes(v1, db)
 		// Sau này có thêm module khác bạn chỉ cần gọi ở đây:
 		// MapStudentRoutes(v1, db)

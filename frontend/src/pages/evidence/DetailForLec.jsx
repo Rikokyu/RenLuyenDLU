@@ -4,13 +4,16 @@ import './Evidence.css';
 export default function DetailForLec({ proof, onClose, onApprove, onReject }) {
   if (!proof) return null;
 
+  const displayValue = (value) => value === undefined || value === null || value === '' ? 'Chưa cập nhật' : value;
+
   return (
     <div className="modal-backdrop">
       <div className="detail-modal-container">
-        {/* Khung 1: Thông tin Sinh viên */}
+        {/* Khung 1: Thông tin sinh viên */}
         <div className="detail-card-box">
+          <h2 className="text-large font-bold title-margin">Thông tin sinh viên</h2>
           <div className="detail-row">
-            <span className="text-large font-bold label-width">Tên:</span>
+            <span className="text-large font-bold label-width">Tên đầy đủ:</span>
             <div className="value-placeholder text-small">{proof.name}</div>
           </div>
 
@@ -22,6 +25,13 @@ export default function DetailForLec({ proof, onClose, onApprove, onReject }) {
           <div className="detail-row">
             <span className="text-large font-bold label-width">Khoa - lớp:</span>
             <div className="value-placeholder text-small">{proof.facultyClass}</div>
+          </div>
+
+          <h2 className="text-large font-bold title-margin academic-info-heading">Thông tin học tập</h2>
+          <div className="academic-info-grid">
+            <div className="academic-info-item"><span>Chuyên ngành</span><strong>{displayValue(proof.major)}</strong></div>
+            <div className="academic-info-item"><span>Năm học</span><strong>{displayValue(proof.academicYear)}</strong></div>
+            <div className="academic-info-item"><span>Học kỳ</span><strong>{proof.semester != null ? `Học kỳ ${proof.semester}` : 'Chưa cập nhật'}</strong></div>
           </div>
         </div>
 
