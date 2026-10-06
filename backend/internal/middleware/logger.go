@@ -1,1 +1,1 @@
-// Logger middleware placeholder.
+package middleware

@@ -1,1 +1,1 @@
-// Activity session model placeholder.
+package model

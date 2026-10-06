@@ -5,11 +5,10 @@ import "./Login.css";
 export default function Login() {
   const navigate = useNavigate();
   const [theme, setTheme] = useState(
-    localStorage.getItem("renluyen-theme") === "dark" ? "dark" : "light"
+    localStorage.getItem("renluyen-theme") === "dark" ? "dark" : "light",
   );
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("student");
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
@@ -19,7 +18,6 @@ export default function Login() {
 
   function enterApp() {
     sessionStorage.setItem("renluyen-authenticated", "true");
-    sessionStorage.setItem("renluyen-role", role);
     navigate("/dashboard", { replace: true });
   }
 
@@ -47,7 +45,9 @@ export default function Login() {
         <form className="login-form" onSubmit={submit}>
           <h2 id="loginHeading">ĐĂNG NHẬP</h2>
 
-          <div className={`login-field${submitted && !username.trim() ? " is-invalid" : ""}`}>
+          <div
+            className={`login-field${submitted && !username.trim() ? " is-invalid" : ""}`}
+          >
             <input
               type="text"
               placeholder=" "
@@ -58,7 +58,9 @@ export default function Login() {
             <p className="login-error">Tên đăng nhập là bắt buộc</p>
           </div>
 
-          <div className={`login-field${submitted && !password.trim() ? " is-invalid" : ""}`}>
+          <div
+            className={`login-field${submitted && !password.trim() ? " is-invalid" : ""}`}
+          >
             <input
               type="password"
               placeholder=" "
@@ -67,14 +69,6 @@ export default function Login() {
             />
             <label>Mật khẩu</label>
             <p className="login-error">Mật khẩu là bắt buộc</p>
-          </div>
-
-          <div className="login-role-field">
-            <label htmlFor="login-role">Loại tài khoản</label>
-            <select id="login-role" value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="student">Sinh viên</option>
-              <option value="teacher">Giáo viên</option>
-            </select>
           </div>
 
           <button className="login-submit" type="submit">
@@ -91,7 +85,9 @@ export default function Login() {
           className="theme-toggle"
           type="button"
           onClick={() => setTheme((v) => (v === "dark" ? "light" : "dark"))}
-          aria-label={theme === "dark" ? "Chuyển giao diện sáng" : "Chuyển giao diện tối"}
+          aria-label={
+            theme === "dark" ? "Chuyển giao diện sáng" : "Chuyển giao diện tối"
+          }
         >
           <img
             className="theme-toggle__icon"

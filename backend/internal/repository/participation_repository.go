@@ -1,1 +1,1 @@
-// Participation repository placeholder.
+package repository

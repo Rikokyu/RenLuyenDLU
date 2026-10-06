@@ -1,0 +1,43 @@
+package repository
+
+func (r *managerRepository) GetTrainingScores(
+	ctx context.Context,
+	classCode string,
+) ([]dto.ManagerTrainingScore, error) {
+
+	var scores []dto.ManagerTrainingScore
+
+	query := r.db.WithContext(ctx).
+		Table(`"TrainingPoint" tp`).
+		Select(`
+			s."ID" AS student_id,
+			s."Student_Code" AS mssv,
+			CONCAT(u."FirstName", ' ', u."LastName") AS name,
+			c."Class_Code" AS class_code,
+			tp."LastScore" AS score,
+			sy."Year" AS school_year,
+			sy."Semester" AS semester
+		`).
+		Joins(`JOIN "Student" s
+			ON s."ID" = tp."IdStudent"`).
+		Joins(`JOIN "User" u
+			ON u."ID" = s."IdUser"`).
+		Joins(`JOIN "Class" c
+			ON c."ID" = s."IdClass"`).
+		Joins(`JOIN "School_Year" sy
+			ON sy."ID" = tp."IdYear"`)
+
+	if classCode != "" {
+		query = query.Where(
+			`c."Class_Code" = ?`,
+			classCode,
+		)
+	}
+
+	err := query.
+		Order(`s."ID" ASC`).
+		Scan(&scores).
+		Error
+
+	return scores, err
+}

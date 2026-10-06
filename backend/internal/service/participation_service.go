@@ -1,1 +1,1 @@
-// Participation service placeholder.
+package service

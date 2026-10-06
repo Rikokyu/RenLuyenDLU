@@ -83,8 +83,22 @@ const activities = [
   },
 ];
 
-const statusOptions = ["Tất cả trạng thái", "Đang mở đăng ký", "Đang diễn ra", "Sắp diễn ra", "Đã kết thúc"];
-const categoryOptions = ["Tất cả loại hoạt động (6)", "Phong trào - Tình nguyện", "Học thuật - NCKH", "Văn hóa - Thể thao", "Kỹ năng mềm - Hội thảo", "Công tác xã hội - Hiến máu", "Hội nhập quốc tế"];
+const statusOptions = [
+  "Tất cả trạng thái",
+  "Đang mở đăng ký",
+  "Đang diễn ra",
+  "Sắp diễn ra",
+  "Đã kết thúc",
+];
+const categoryOptions = [
+  "Tất cả loại hoạt động (6)",
+  "Phong trào - Tình nguyện",
+  "Học thuật - NCKH",
+  "Văn hóa - Thể thao",
+  "Kỹ năng mềm - Hội thảo",
+  "Công tác xã hội - Hiến máu",
+  "Hội nhập quốc tế",
+];
 
 export default function ActivityList() {
   const [search, setSearch] = useState("");
@@ -96,12 +110,16 @@ export default function ActivityList() {
     const normalizedSearch = search.trim().toLowerCase();
 
     return activities.filter((activity) => {
-      const matchesSearch = !normalizedSearch || [activity.id, activity.title, activity.category, activity.organizer]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedSearch);
-      const matchesCategory = category === categoryOptions[0] || activity.category === category;
-      const matchesStatus = status === statusOptions[0] || activity.status === status;
+      const matchesSearch =
+        !normalizedSearch ||
+        [activity.id, activity.title, activity.category, activity.organizer]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedSearch);
+      const matchesCategory =
+        category === categoryOptions[0] || activity.category === category;
+      const matchesStatus =
+        status === statusOptions[0] || activity.status === status;
 
       return matchesSearch && matchesCategory && matchesStatus;
     });
@@ -111,10 +129,17 @@ export default function ActivityList() {
     <section className="activities-page" aria-labelledby="activities-heading">
       <header className="activities-header">
         <div className="activities-heading-group">
-          <div className="activities-heading-icon" aria-hidden="true">▦</div>
+          <div className="activities-heading-icon" aria-hidden="true">
+            ▦
+          </div>
           <div>
-            <h1 id="activities-heading">Quản lý Danh sách Hoạt động & Đợt Rèn luyện</h1>
-            <p>Quản lý sự kiện, phát hành mã điểm danh QR và ghi nhận điểm rèn luyện số hóa</p>
+            <h1 id="activities-heading">
+              Quản lý Danh sách Hoạt động & Đợt Rèn luyện
+            </h1>
+            <p>
+              Quản lý sự kiện, phát hành mã điểm danh QR và ghi nhận điểm rèn
+              luyện số hóa
+            </p>
           </div>
         </div>
         <button className="create-activity-button" type="button">
@@ -137,19 +162,32 @@ export default function ActivityList() {
 
         <label className="activity-filter">
           <span className="visually-hidden">Loại hoạt động</span>
-          <select value={category} onChange={(event) => setCategory(event.target.value)}>
-            {categoryOptions.map((option) => <option key={option}>{option}</option>)}
+          <select
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+          >
+            {categoryOptions.map((option) => (
+              <option key={option}>{option}</option>
+            ))}
           </select>
         </label>
         <label className="activity-filter">
           <span className="visually-hidden">Trạng thái</span>
-          <select value={status} onChange={(event) => setStatus(event.target.value)}>
-            {statusOptions.map((option) => <option key={option}>{option}</option>)}
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+          >
+            {statusOptions.map((option) => (
+              <option key={option}>{option}</option>
+            ))}
           </select>
         </label>
         <label className="activity-filter">
           <span className="visually-hidden">Học kỳ</span>
-          <select value={semester} onChange={(event) => setSemester(event.target.value)}>
+          <select
+            value={semester}
+            onChange={(event) => setSemester(event.target.value)}
+          >
             <option>Tất cả học kỳ / niên khóa</option>
             <option>HK2 2025 - 2026</option>
             <option>Học kỳ Hè 2026</option>
@@ -175,12 +213,28 @@ export default function ActivityList() {
           <tbody>
             {filteredActivities.map((activity) => (
               <tr key={activity.id}>
-                <td><Link className="activity-code" to={`/activities/${activity.id}`}>{activity.id}</Link></td>
                 <td>
-                  <Link className="activity-name" to={`/activities/${activity.id}`}>{activity.title}</Link>
+                  <Link
+                    className="activity-code"
+                    to={`/activities/${activity.id}`}
+                  >
+                    {activity.id}
+                  </Link>
+                </td>
+                <td>
+                  <Link
+                    className="activity-name"
+                    to={`/activities/${activity.id}`}
+                  >
+                    {activity.title}
+                  </Link>
                   <span className="activity-subtext">{activity.category}</span>
                 </td>
-                <td><span className="activity-cell-truncate">{activity.organizer}</span></td>
+                <td>
+                  <span className="activity-cell-truncate">
+                    {activity.organizer}
+                  </span>
+                </td>
                 <td>
                   <span className="activity-date">{activity.date}</span>
                   <span className="activity-subtext">{activity.location}</span>
@@ -189,20 +243,47 @@ export default function ActivityList() {
                   <strong className="activity-score">{activity.score}</strong>
                   <span className="activity-subtext">{activity.hours}</span>
                 </td>
-                <td><strong className="activity-registered">{activity.registered}</strong></td>
-                <td><span className={`activity-status ${activity.statusClass}`}>{activity.status}</span></td>
+                <td>
+                  <strong className="activity-registered">
+                    {activity.registered}
+                  </strong>
+                </td>
+                <td>
+                  <span className={`activity-status ${activity.statusClass}`}>
+                    {activity.status}
+                  </span>
+                </td>
                 <td>
                   <div className="activity-row-actions">
-                    <Link to={`/activities/${activity.id}`} className="view-activity">▦ <span>Xem</span></Link>
-                    <button type="button" className="qr-button" aria-label={`Mở mã QR cho ${activity.title}`}>▣</button>
-                    <button type="button" className="check-button" aria-label={`Điểm danh ${activity.title}`}>✓</button>
+                    <Link
+                      to={`/activities/${activity.id}`}
+                      className="view-activity"
+                    >
+                      ▦ <span>Xem</span>
+                    </Link>
+                    <button
+                      type="button"
+                      className="qr-button"
+                      aria-label={`Mở mã QR cho ${activity.title}`}
+                    >
+                      ▣
+                    </button>
+                    <button
+                      type="button"
+                      className="check-button"
+                      aria-label={`Điểm danh ${activity.title}`}
+                    >
+                      ✓
+                    </button>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {filteredActivities.length === 0 && <p className="activities-empty">Không tìm thấy hoạt động phù hợp.</p>}
+        {filteredActivities.length === 0 && (
+          <p className="activities-empty">Không tìm thấy hoạt động phù hợp.</p>
+        )}
       </div>
     </section>
   );

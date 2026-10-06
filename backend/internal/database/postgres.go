@@ -1,1 +1,1 @@
-// PostgreSQL connection placeholder.
+package database

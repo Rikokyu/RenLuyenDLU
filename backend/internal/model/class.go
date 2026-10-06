@@ -1,1 +1,1 @@
-// Class model placeholder.
+package model

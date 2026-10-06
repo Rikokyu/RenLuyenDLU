@@ -1,1 +1,1 @@
-// Verification model placeholder.
+package model

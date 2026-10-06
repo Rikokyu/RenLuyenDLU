@@ -104,8 +104,11 @@
   white-space: nowrap;
 }
 .manager-button--primary {
-  color: var(--white);
+  color: var(--manager-surface);
   background: var(--primary-green);
+}
+.manager-button--primary .manager-icon {
+  filter: var(--icon-on-green);
 }
 .manager-button--primary:hover {
   filter: brightness(0.94);
@@ -256,6 +259,9 @@
   font-size: 15px;
   white-space: nowrap;
 }
+.manager-person small {
+  display: block;
+}
 .manager-person em {
   padding: 2px 5px;
   color: #27855a;
@@ -308,11 +314,19 @@
   white-space: nowrap;
 }
 .manager-class-tag {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
   margin-top: 5px;
   padding: 2px 5px;
   color: #d46e3f;
   border-color: #ffd0ba;
   background: #fff0e9;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.manager-table td > .manager-class-tag {
+  display: inline-block;
 }
 .manager-note {
   font-style: italic;
@@ -406,11 +420,77 @@
 .manager-filter--students {
   grid-template-columns: minmax(220px, 1.3fr) minmax(220px, 1.3fr);
 }
+.manager-filter--student-data {
+  grid-template-columns: minmax(300px, 1.8fr) repeat(3, minmax(180px, 0.8fr));
+}
+.manager-filter--account-list {
+  grid-template-columns: minmax(300px, 1.5fr) minmax(220px, 1fr) minmax(
+      220px,
+      1fr
+    );
+}
+.manager-data-error {
+  margin: 0 6px 14px;
+  padding: 12px 14px;
+  color: #a53e24;
+  background: #fff2ed;
+  border: 1px solid #ffc7b5;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.manager-score-state {
+  padding: 42px 24px;
+  color: var(--manager-muted);
+  text-align: center;
+}
+.manager-score-table-wrap {
+  max-height: 58vh;
+  overflow: auto;
+  margin: 0 20px;
+  border: 1px solid var(--manager-border);
+  border-radius: 10px;
+}
+.manager-score-table {
+  min-width: 940px;
+}
+.manager-score-table td,
+.manager-score-table th {
+  padding: 10px 12px;
+}
 .manager-orange-text {
   color: #d66e42 !important;
 }
 .manager-table--students td {
   height: 88px;
+}
+.manager-table--students th:nth-child(2),
+.manager-table--students td:nth-child(2) {
+  width: 350px;
+  max-width: 350px;
+}
+.manager-table--students td:nth-child(2) .manager-person {
+  min-width: 0;
+  gap: 8px;
+}
+.manager-table--students td:nth-child(2) .manager-person > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.manager-table--students td:nth-child(2) .manager-person strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.manager-table--students td:nth-child(5) {
+  max-width: 260px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.manager-table--students td:nth-child(5) strong,
+.manager-table--students td:nth-child(5) small {
+  display: block;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
 }
 .manager-table--students td:first-child {
   width: 35px;
@@ -436,7 +516,9 @@
   margin: 0 6px;
 }
 .manager-filter--class {
-  grid-template-columns: 270px 190px 1fr;
+  grid-template-columns:
+    minmax(270px, 1.4fr) repeat(2, minmax(190px, 0.8fr))
+    minmax(180px, 1fr);
   align-items: center;
 }
 .manager-filter--class > strong {
@@ -514,6 +596,11 @@
   font-size: 12px;
   font-weight: 700;
   text-align: right;
+}
+.manager-class-stat {
+  display: block;
+  margin-bottom: 3px;
+  font-weight: 700;
 }
 .manager-class-card footer {
   display: flex;

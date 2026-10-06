@@ -10,7 +10,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* Container chính co giãn linh hoạt */
@@ -25,15 +25,31 @@
 }
 
 /* Typography & Colors */
-.text-large { font-size: var(--text-large-size); }
-.text-small { font-size: var(--text-small-size); }
-.font-bold { font-weight: bold; }
+.text-large {
+  font-size: var(--text-large-size);
+}
+.text-small {
+  font-size: var(--text-small-size);
+}
+.font-bold {
+  font-weight: bold;
+}
 
-.text-white { color: #ffffff; }
-.text-black { color: #000000; }
-.text-orange { color: #d9534f; }
-.text-green { color: var(--primary-green); }
-.text-red { color: #ff0000; }
+.text-white {
+  color: #ffffff;
+}
+.text-black {
+  color: #000000;
+}
+.text-orange {
+  color: #d9534f;
+}
+.text-green {
+  color: var(--primary-green);
+}
+.text-red {
+  color: #ff0000;
+}
 
 /* Nút bấm & Input radius 20px */
 .btn-custom {
@@ -49,11 +65,19 @@
   transition: opacity 0.2s;
 }
 
-.btn-custom:hover { opacity: 0.9; }
+.btn-custom:hover {
+  opacity: 0.9;
+}
 
-.btn-green { background-color: var(--primary-green); }
-.btn-orange { background-color: var(--primary-orange); }
-.btn-white-text { color: #ffffff; }
+.btn-green {
+  background-color: var(--primary-green);
+}
+.btn-orange {
+  background-color: var(--primary-orange);
+}
+.btn-white-text {
+  color: #ffffff;
+}
 
 /* Nút Tìm nền màu trắng */
 .btn-white-bg {
@@ -82,7 +106,9 @@ select.input-custom {
   background-size: 18px;
   padding-right: 44px;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 select.input-custom:focus {
@@ -96,7 +122,8 @@ select.input-custom:focus {
   color: #000000;
 }
 
-.select-faculty, .select-class {
+.select-faculty,
+.select-class {
   width: 240px;
 }
 
@@ -182,19 +209,29 @@ select.input-custom:focus {
 }
 
 .evidence-table th:nth-child(1),
-.evidence-table td:nth-child(1) { width: 22%; }
+.evidence-table td:nth-child(1) {
+  width: 22%;
+}
 
 .evidence-table th:nth-child(2),
-.evidence-table td:nth-child(2) { width: 25%; }
+.evidence-table td:nth-child(2) {
+  width: 25%;
+}
 
 .evidence-table th:nth-child(3),
-.evidence-table td:nth-child(3) { width: 25%; }
+.evidence-table td:nth-child(3) {
+  width: 25%;
+}
 
 .evidence-table th:nth-child(4),
-.evidence-table td:nth-child(4) { width: 10%; }
+.evidence-table td:nth-child(4) {
+  width: 10%;
+}
 
 .evidence-table th:nth-child(5),
-.evidence-table td:nth-child(5) { width: 18%; }
+.evidence-table td:nth-child(5) {
+  width: 18%;
+}
 
 .evidence-table th {
   background-color: var(--primary-green);
@@ -224,8 +261,12 @@ select.input-custom:focus {
   transition: background-color 0.2s;
 }
 
-.row-item.bg-gray { background-color: #f5f5f5; }
-.row-item.bg-white { background-color: #ffffff; }
+.row-item.bg-gray {
+  background-color: #f5f5f5;
+}
+.row-item.bg-white {
+  background-color: #ffffff;
+}
 
 .row-item:hover {
   background-color: #d1f2d9;
@@ -294,7 +335,9 @@ select.input-custom:focus {
   color: #333333;
 }
 
-.title-margin { color: #000000; }
+.title-margin {
+  color: #000000;
+}
 
 .uploaded-box {
   width: 100%;

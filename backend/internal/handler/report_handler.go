@@ -1,1 +1,1 @@
-// Report handler placeholder.
+package handler

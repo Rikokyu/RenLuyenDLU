@@ -1,1 +1,1 @@
-// Activity repository placeholder.
+package repository

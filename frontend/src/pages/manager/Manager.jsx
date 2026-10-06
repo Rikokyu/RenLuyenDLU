@@ -1,343 +1,26 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import ManagerAccounts from "./ManagerAccounts";
+import ManagerStudentClass from "./ManagerStudentClass";
+import {
+  deleteManagerAccount,
+  deleteManagerClass,
+  deleteManagerStudent,
+  getManagerAccounts,
+  getManagerClasses,
+  getManagerRoles,
+  getManagerStudents,
+  resetManagerAccountPassword,
+  saveManagerAccount,
+  saveManagerClass,
+  saveManagerStudent,
+} from "../../services/managerService";
+import { exportManagerWorkbook } from "../../utils/managerExport";
 import "./Manager.css";
 
-const initialAccounts = [
-  {
-    id: 1,
-    name: "GS.TS. Trần Đình Dũng",
-    username: "admin.super",
-    email: "admin.system@dlu.edu.vn",
-    role: "Quản Trị Viên (Admin)",
-    unit: "Ban Giám Hiệu & Quản Trị Hệ Thống",
-    lastLogin: "Hôm nay, 08:30",
-    status: "Hoạt động",
-    permissions: "Toàn quyền quản trị (Super Admin)",
-  },
-  {
-    id: 2,
-    name: "ThS. Lê Quỳnh Anh",
-    username: "bgh.phongctsv",
-    email: "ctsv.quynhanh@dlu.edu.vn",
-    role: "Ban Giám Hiệu / CTSV",
-    unit: "Khoa Công nghệ Thông tin",
-    lastLogin: "Hôm nay, 09:12",
-    status: "Hoạt động",
-    permissions: "Quản lý hồ sơ sinh viên",
-  },
-  {
-    id: 3,
-    name: "ThS. Nguyễn Văn Hải",
-    username: "doantruong.hai",
-    email: "doantruong@dlu.edu.vn",
-    role: "Đoàn - Hội Sinh Viên",
-    unit: "Khoa Sinh học",
-    lastLogin: "Hôm qua, 17:45",
-    status: "Hoạt động",
-    permissions: "Tạo hoạt động mới",
-  },
-  {
-    id: 4,
-    name: "TS. Lê Thị Thúy Nga",
-    username: "ngaltt",
-    email: "ngaltt@dlu.edu.vn",
-    role: "Cố Vấn Học Tập",
-    unit: "Khoa Công nghệ Thông tin",
-    className: "CTK44A, CTK45A",
-    lastLogin: "Hôm nay, 07:50",
-    status: "Hoạt động",
-    permissions: "Quản lý lớp sinh hoạt",
-  },
-  {
-    id: 5,
-    name: "ThS. Hoàng Minh Khôi",
-    username: "khoimn",
-    email: "khoimn@dlu.edu.vn",
-    role: "Cố Vấn Học Tập",
-    unit: "Khoa Quản trị kinh doanh",
-    className: "QTK43B",
-    lastLogin: "2 ngày trước",
-    status: "Hoạt động",
-    permissions: "Quản lý lớp sinh hoạt",
-  },
-  {
-    id: 6,
-    name: "TS. Vũ Đình Hùng",
-    username: "hungvd",
-    email: "hungvd@dlu.edu.vn",
-    role: "Cố Vấn Học Tập",
-    unit: "Khoa Luật",
-    className: "LUK44A",
-    lastLogin: "05/08/2025",
-    status: "Đã khóa",
-    permissions: "Quản lý hồ sơ sinh viên",
-  },
-  {
-    id: 7,
-    name: "Nguyễn Văn An",
-    username: "e21120045",
-    email: "21120045@dlu.edu.vn",
-    role: "Sinh Viên",
-    unit: "Khoa Toán - Tin",
-    className: "CTK44A",
-    lastLogin: "Hôm nay, 10:15",
-    status: "Hoạt động",
-    permissions: "Quyền mặc định của vai trò",
-  },
-];
-
-const initialStudents = [
-  {
-    id: 1,
-    name: "Nguyễn Văn An",
-    mssv: "21120045",
-    gender: "Nam",
-    birth: "2003-04-12",
-    className: "CTK44A",
-    faculty: "Khoa Công nghệ Thông tin",
-    cccd: "068203004512",
-    email: "21120045@dlu.edu.vn",
-    phone: "0912345678",
-    status: "Đang học",
-    score: 92,
-    rank: "Xuất sắc",
-  },
-  {
-    id: 2,
-    name: "Trần Thị Mai Phương",
-    mssv: "22140012",
-    gender: "Nữ",
-    birth: "2004-09-20",
-    className: "QTK43B",
-    faculty: "Khoa Kinh tế & Quản trị",
-    cccd: "068204008945",
-    email: "22140012@dlu.edu.vn",
-    phone: "0987654321",
-    status: "Đang học",
-    score: 86,
-    rank: "Tốt",
-  },
-  {
-    id: 3,
-    name: "Lê Hoàng Minh",
-    mssv: "2312565",
-    gender: "Nam",
-    birth: "2005-02-18",
-    className: "CTK45A",
-    faculty: "Khoa Công nghệ Thông tin",
-    cccd: "079205012378",
-    email: "2312565@dlu.edu.vn",
-    phone: "0903123890",
-    status: "Đang học",
-    score: 89,
-    rank: "Tốt",
-  },
-  {
-    id: 4,
-    name: "Phạm Quỳnh Anh",
-    mssv: "22150089",
-    gender: "Nữ",
-    birth: "2004-11-05",
-    className: "NNA45C",
-    faculty: "Khoa Ngoại ngữ",
-    cccd: "068204011245",
-    email: "22150089@dlu.edu.vn",
-    phone: "0978112233",
-    status: "Đang học",
-    score: 95,
-    rank: "Xuất sắc",
-  },
-  {
-    id: 5,
-    name: "Võ Minh Đức",
-    mssv: "21130099",
-    gender: "Nam",
-    birth: "2003-07-29",
-    className: "LUK44A",
-    faculty: "Khoa Luật",
-    cccd: "052203009912",
-    email: "21130099@dlu.edu.vn",
-    phone: "0934567890",
-    status: "Đang học",
-    score: 72,
-    rank: "Khá",
-  },
-  {
-    id: 6,
-    name: "Đỗ Thảo Vy",
-    mssv: "23160034",
-    gender: "Nữ",
-    birth: "2005-08-14",
-    className: "SPK45B",
-    faculty: "Khoa Sư phạm & KHXH",
-    cccd: "068205009342",
-    email: "23160034@dlu.edu.vn",
-    phone: "0945671232",
-    status: "Cảnh báo rèn luyện",
-    score: 48,
-    rank: "Yếu",
-  },
-];
-
-const classes = [
-  {
-    id: 1,
-    name: "CTK44A",
-    faculty: "Khoa Công nghệ Thông tin",
-    year: "2021-2025",
-    advisor: "TS. Lê Thị Thúy Nga",
-    email: "ngaltt@dlu.edu.vn",
-    leader: "Nguyễn Văn An (21120045)",
-    count: 1,
-    description:
-      "Lớp Công nghệ thông tin Khóa 44 - Chuyên ngành Kỹ thuật phần mềm",
-  },
-  {
-    id: 2,
-    name: "CTK45A",
-    faculty: "Khoa Công nghệ Thông tin",
-    year: "2023-2027",
-    advisor: "TS. Lê Thị Thúy Nga",
-    email: "ngaltt@dlu.edu.vn",
-    leader: "Lê Hoàng Minh (2312565)",
-    count: 1,
-    description:
-      "Lớp Công nghệ thông tin Khóa 45 - Định hướng Trí tuệ nhân tạo",
-  },
-  {
-    id: 3,
-    name: "CTK46B",
-    faculty: "Khoa Công nghệ Thông tin",
-    year: "2024-2028",
-    advisor: "TS. Đặng Hải Nam",
-    email: "namdh@dlu.edu.vn",
-    leader: "Bùi Thị Cẩm Tú (24120112)",
-    count: 1,
-    description: "Lớp Tân sinh viên K46 Công nghệ thông tin",
-  },
-  {
-    id: 4,
-    name: "QTK43B",
-    faculty: "Khoa Kinh tế & Quản trị",
-    year: "2022-2026",
-    advisor: "ThS. Hoàng Minh Khôi",
-    email: "khoihm@dlu.edu.vn",
-    leader: "Trần Thị Mai Phương (22140012)",
-    count: 1,
-    description: "Lớp Quản trị kinh doanh Quốc tế K43",
-  },
-  {
-    id: 5,
-    name: "NNA45C",
-    faculty: "Khoa Ngoại ngữ",
-    year: "2022-2026",
-    advisor: "ThS. Đỗ Phương Thảo",
-    email: "thaodp@dlu.edu.vn",
-    leader: "Phạm Quỳnh Anh (22150089)",
-    count: 1,
-    description: "Lớp Ngôn ngữ Anh Biên - Phiên dịch K45",
-  },
-  {
-    id: 6,
-    name: "LUK44A",
-    faculty: "Khoa Luật",
-    year: "2021-2025",
-    advisor: "TS. Vũ Đình Hùng",
-    email: "hungvd@dlu.edu.vn",
-    leader: "Võ Minh Đức (21130099)",
-    count: 1,
-    description: "Lớp Luật Kinh tế & Dân sự K44",
-  },
-  {
-    id: 7,
-    name: "SPK45B",
-    faculty: "Khoa Sư phạm & KHXH",
-    year: "2023-2027",
-    advisor: "TS. Nguyễn Thị Minh Châu",
-    email: "chauntm@dlu.edu.vn",
-    leader: "Đỗ Thảo Vy (23160034)",
-    count: 2,
-    description: "Lớp Sư phạm Khoa học xã hội Khóa 45",
-  },
-  {
-    id: 8,
-    name: "QTK44A",
-    faculty: "Khoa Kinh tế & Quản trị",
-    year: "2023-2027",
-    advisor: "ThS. Phạm Ngọc Lan",
-    email: "lanpn@dlu.edu.vn",
-    leader: "Nguyễn Thị Bích Trâm (23140128)",
-    count: 2,
-    description: "Lớp Quản trị kinh doanh Khóa 44",
-  },
-];
-
-const permissionRows = [
-  [
-    "Quản trị hệ thống",
-    "Cấu hình tham số, phân quyền cao & bảo mật",
-    [1, 0, 0, 0, 0],
-  ],
-  [
-    "Quản lý tài khoản",
-    "Tạo tài khoản, cấp quyền, khóa/mở và đặt lại mật khẩu",
-    [1, 0, 0, 0, 0],
-  ],
-  [
-    "Tạo hoạt động mới",
-    "Đăng ký sự kiện, lập kế hoạch & thiết lập điểm rèn luyện",
-    [1, 1, 1, 0, 0],
-  ],
-  [
-    "Chỉnh sửa hoạt động",
-    "Cập nhật địa điểm, thời lượng hoặc đóng hoạt động",
-    [1, 0, 1, 0, 0],
-  ],
-  [
-    "Duyệt minh chứng rèn luyện",
-    "Thẩm định hồ sơ hình ảnh, xét duyệt cộng điểm",
-    [1, 1, 1, 0, 0],
-  ],
-  [
-    "Cấp chứng nhận số",
-    "Ký số và phát hành giấy chứng nhận hoàn thành",
-    [1, 1, 1, 0, 0],
-  ],
-  [
-    "Quản lý hồ sơ sinh viên",
-    "Thêm mới, sửa thông tin cá nhân, CCCD, lý lịch",
-    [1, 1, 0, 1, 0],
-  ],
-  [
-    "Quản lý lớp sinh hoạt",
-    "Tạo lớp, chuyển lớp sinh viên và phân công cố vấn",
-    [1, 1, 0, 0, 0],
-  ],
-  [
-    "Xuất báo cáo & Quyết định",
-    "Trích xuất báo cáo thống kê và khen thưởng",
-    [1, 1, 1, 1, 0],
-  ],
-];
-
-const permissionRoleOptions = [
-  "Tất cả vai trò",
-  "Admin",
-  "Trợ lý",
-  "Chủ nhiệm & Ban cán sự",
-  "Sinh viên",
-];
-
-function getPermissionRole(role) {
-  if (role.includes("Quản Trị")) return "Admin";
-  if (role === "Sinh Viên") return "Sinh viên";
-  if (role.includes("Cố Vấn")) return "Chủ nhiệm & Ban cán sự";
-  return "Trợ lý";
-}
-
-function Icon({ name, className = "" }) {
+function Icon({ name }) {
   return (
     <img
-      className={`manager-icon ${className}`}
+      className="manager-icon"
       src={`/icons/${name}.svg`}
       alt=""
       aria-hidden="true"
@@ -345,31 +28,28 @@ function Icon({ name, className = "" }) {
   );
 }
 
-function Toast({ message, onClose }) {
-  return (
-    <div className="manager-toast" role="status">
-      <span className="manager-toast__check">
-        <Icon name="check" />
-      </span>
-      <span>{message}</span>
-      <button onClick={onClose} aria-label="Đóng thông báo">
-        <Icon name="close" />
-      </button>
-    </div>
-  );
-}
+const STUDY_PROGRAMS = ["CQ22CT-PM", "CQ23CT-PM", "CQ23CT-MM1", "CQ24CT"];
 
-function Modal({ title, subtitle, icon, children, onClose, wide = false }) {
+function ModalShell({
+  title,
+  subtitle,
+  icon = "profile",
+  children,
+  wide = false,
+  onClose,
+}) {
   return (
     <div
       className="manager-modal-backdrop"
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+      role="presentation"
+      onMouseDown={onClose}
     >
       <section
-        className={`manager-modal${wide ? " manager-modal--wide" : ""}`}
+        className={`manager-modal ${wide ? "manager-modal--wide" : ""}`}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="manager-modal-title"
+        aria-label={title}
+        onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="manager-modal__header">
           <div className="manager-modal__title">
@@ -377,902 +57,1035 @@ function Modal({ title, subtitle, icon, children, onClose, wide = false }) {
               <Icon name={icon} />
             </span>
             <div>
-              <h2 id="manager-modal-title">{title}</h2>
+              <h2>{title}</h2>
               {subtitle && <p>{subtitle}</p>}
             </div>
           </div>
-          <button className="manager-close" onClick={onClose} aria-label="Đóng">
+
+          <button
+            className="manager-close"
+            type="button"
+            onClick={onClose}
+            aria-label="Đóng"
+          >
             <Icon name="close" />
           </button>
         </header>
+
         {children}
       </section>
     </div>
   );
 }
 
-function Field({ label, children, full = false }) {
-  return (
-    <label className={`manager-field${full ? " manager-field--full" : ""}`}>
-      <span>{label}</span>
-      {children}
-    </label>
-  );
-}
+function AccountModal({ initialData, roles, classes, onClose, onSave }) {
+  const [form, setForm] = useState(() => ({
+    name: initialData?.name || "",
+    email: initialData?.email || "",
+    roleCode:
+      initialData?.roleCode ||
+      roles.find((role) => role.code === "STUDENT_AFFAIRS_ASSISTANT")?.code ||
+      roles[0]?.code ||
+      "",
+    unit: initialData?.unit || "Khoa Công nghệ Thông tin",
+    classCode: initialData?.classCode || "",
+    active: initialData?.active ?? true,
+  }));
 
-function Manager() {
-  const [mainTab, setMainTab] = useState("accounts");
-  const [accountTab, setAccountTab] = useState("students");
-  const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("Tất cả vai trò");
-  const [unitFilter, setUnitFilter] = useState("Tất cả Khoa / Đơn vị");
-  const [facultyFilter, setFacultyFilter] = useState("Tất cả Khoa / Viện");
-  const [modal, setModal] = useState(null);
-  const [toast, setToast] = useState("");
-  const [accounts, setAccounts] = useState(initialAccounts);
-  const [students, setStudents] = useState(initialStudents);
-
-  const notify = (message) => {
-    setToast(message);
-    window.setTimeout(() => setToast(""), 2800);
-  };
-  const filteredAccounts = useMemo(
-    () =>
-      accounts.filter((item) => {
-        const text =
-          `${item.name} ${item.username} ${item.email}`.toLowerCase();
-        return (
-          text.includes(search.toLowerCase()) &&
-          (roleFilter === "Tất cả vai trò" ||
-            getPermissionRole(item.role) === roleFilter) &&
-          (unitFilter === "Tất cả Khoa / Đơn vị" || item.unit === unitFilter)
-        );
-      }),
-    [accounts, search, roleFilter, unitFilter],
-  );
-  const filteredStudents = useMemo(
-    () =>
-      students.filter((item) => {
-        const text =
-          `${item.name} ${item.mssv} ${item.cccd} ${item.email}`.toLowerCase();
-        return (
-          text.includes(search.toLowerCase()) &&
-          (facultyFilter === "Tất cả Khoa / Viện" ||
-            item.faculty === facultyFilter) &&
-          true
-        );
-      }),
-    [students, search, facultyFilter],
-  );
-
-  function resetFilters() {
-    setSearch("");
-    setRoleFilter("Tất cả vai trò");
-    setUnitFilter("Tất cả Khoa / Đơn vị");
-    setFacultyFilter("Tất cả Khoa / Viện");
+  function update(key, value) {
+    setForm((prev) => ({ ...prev, [key]: value }));
   }
-  function openCreate(type) {
-    setModal({ type, data: null });
-  }
-  function saveAccount(event) {
+
+  function submit(event) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const data = {
-      id: Date.now(),
-      name: form.get("name"),
-      username: form.get("username"),
-      email: form.get("email"),
-      role: form.get("role"),
-      unit: form.get("unit"),
-      lastLogin: "Chưa đăng nhập",
-      status: "Hoạt động",
-      permissions: "Quyền mặc định của vai trò",
-    };
-    setAccounts((current) =>
-      modal.data
-        ? current.map((item) =>
-            item.id === modal.data.id
-              ? { ...item, ...data, id: item.id }
-              : item,
-          )
-        : [...current, data],
-    );
-    setModal(null);
-    notify(
-      modal.data ? "Đã lưu thay đổi tài khoản" : "Tạo tài khoản thành công",
-    );
-  }
-  function saveStudent(event) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const data = {
-      id: Date.now(),
-      name: form.get("name"),
-      mssv: form.get("mssv"),
-      gender: form.get("gender"),
-      birth: form.get("birth"),
-      className: form.get("className"),
-      faculty: form.get("faculty"),
-      cccd: form.get("cccd"),
-      email: form.get("email"),
-      phone: form.get("phone"),
-      status: form.get("status"),
-      score: 0,
-      rank: "Chưa xếp loại",
-    };
-    setStudents((current) =>
-      modal.data
-        ? current.map((item) =>
-            item.id === modal.data.id
-              ? { ...item, ...data, id: item.id }
-              : item,
-          )
-        : [...current, data],
-    );
-    setModal(null);
-    notify(
-      modal.data ? "Đã cập nhật hồ sơ sinh viên" : "Thêm sinh viên thành công",
-    );
-  }
-  function deleteItem(type, id) {
-    if (!window.confirm("Bạn có chắc muốn xóa dữ liệu này?")) return;
-    type === "student"
-      ? setStudents((current) => current.filter((item) => item.id !== id))
-      : setAccounts((current) => current.filter((item) => item.id !== id));
-    notify("Đã xóa dữ liệu");
+    if (!form.name.trim() || !form.email.trim()) return;
+
+    onSave({
+      ...(initialData || {}),
+      ...form,
+      name: form.name.trim(),
+      email: form.email.trim(),
+    });
   }
 
-  const faculties = [...new Set(students.map((item) => item.faculty))];
-  const units = [...new Set(accounts.map((item) => item.unit))];
-
   return (
-    <section className="manager-page">
-      <div className="manager-main-tabs">
-        <button
-          className={mainTab === "accounts" ? "is-active" : ""}
-          onClick={() => {
-            setMainTab("accounts");
-            resetFilters();
-          }}
-        >
-          <Icon name="key" /> Phân Quyền Người Dùng & Quản Lý Tài Khoản <b>7</b>
-        </button>
-        <button
-          className={mainTab === "students" ? "is-active" : ""}
-          onClick={() => {
-            setMainTab("students");
-            setAccountTab("students");
-            resetFilters();
-          }}
-        >
-          <Icon name="profile" /> Quản Lý Sinh Viên & Lớp Sinh Hoạt{" "}
-          <b className="manager-count--orange">
-            {mainTab === "students" ? "8 SV · 8 Lớp" : "8 SV · 8 Lớp"}
-          </b>
-        </button>
-      </div>
-
-      {mainTab === "accounts" ? (
-        <>
-          <div className="manager-toolbar manager-toolbar--accounts">
-            <div>
-              <strong>Bộ lọc danh sách tài khoản:</strong>
-              <span> (7 tài khoản phù hợp)</span>
-            </div>
-            <div className="manager-actions">
-              <button
-                className="manager-button manager-button--outline"
-                onClick={() => setModal({ type: "permissions" })}
-              >
-                <Icon name="key" /> Ma Trận Phân Quyền
-              </button>
-              <button
-                className="manager-button manager-button--primary"
-                onClick={() => openCreate("account")}
-              >
-                <Icon name="profile" /> Tạo Tài Khoản Mới
-              </button>
-            </div>
-          </div>
-          <div className="manager-filter">
-            <label className="manager-search">
-              <Icon name="list" />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Tìm theo họ tên, username, email..."
-              />
-            </label>
-            <select
-              value={roleFilter}
-              onChange={(event) => setRoleFilter(event.target.value)}
-            >
-              {permissionRoleOptions.map((role) => (
-                <option key={role}>{role}</option>
-              ))}
-            </select>
-            <select
-              value={unitFilter}
-              onChange={(event) => setUnitFilter(event.target.value)}
-            >
-              <option>Tất cả Khoa / Đơn vị</option>
-              {units.map((unit) => (
-                <option key={unit}>{unit}</option>
-              ))}
-            </select>
-          </div>
-          <div className="manager-table-wrap">
-            <table className="manager-table">
-              <thead>
-                <tr>
-                  <th>TÀI KHOẢN & NGƯỜI DÙNG</th>
-                  <th>VAI TRÒ HỆ THỐNG</th>
-                  <th>ĐƠN VỊ / KHOA QUẢN LÝ</th>
-                  <th>THAO TÁC</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAccounts.map((item) => (
-                  <tr key={item.id}>
-                    <td>
-                      <div className="manager-person">
-                        <span className="manager-avatar">
-                          {item.name.charAt(0)}
-                        </span>
-                        <div>
-                          <strong>{item.name}</strong>
-                          <small>
-                            @{item.username} <em>ROOT</em>
-                          </small>
-                          <small>{item.email}</small>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span
-                        className={`manager-role ${item.role === "Sinh Viên" ? "manager-role--student" : item.role.includes("Cố Vấn") ? "manager-role--orange" : ""}`}
-                      >
-                        {item.role}
-                      </span>
-                      <small className="manager-last-login">
-                        Lần đăng nhập: {item.lastLogin}
-                      </small>
-                    </td>
-                    <td>
-                      <strong>{item.unit}</strong>
-                      {item.className && (
-                        <small className="manager-class-tag">
-                          {item.className}
-                        </small>
-                      )}
-                      <small className="manager-note">
-                        Đơn vị phụ trách và quản lý tài khoản
-                      </small>
-                    </td>
-                    <td>
-                      <div className="manager-row-actions">
-                        <button
-                          onClick={() =>
-                            setModal({ type: "account", data: item })
-                          }
-                          aria-label="Sửa tài khoản"
-                        >
-                          <Icon name="custom" />
-                        </button>
-                        <button
-                          onClick={() =>
-                            notify(
-                              item.status === "Đã khóa"
-                                ? "Đã mở khóa tài khoản"
-                                : "Đã khóa tài khoản",
-                            )
-                          }
-                          aria-label="Khóa tài khoản"
-                        >
-                          <Icon name="lock" />
-                        </button>
-                        <button
-                          onClick={() => notify("Đã đặt lại mật khẩu tạm thời")}
-                          aria-label="Đặt lại mật khẩu"
-                        >
-                          <Icon name="change_pass" />
-                        </button>
-                        {item.id > 1 && (
-                          <button
-                            onClick={() => deleteItem("account", item.id)}
-                            aria-label="Xóa tài khoản"
-                          >
-                            <Icon name="trash" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filteredAccounts.length === 0 && (
-              <EmptyState onReset={resetFilters} />
-            )}
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="manager-toolbar manager-toolbar--student">
-            <div className="manager-subtabs">
-              <button
-                className={accountTab === "students" ? "is-active" : ""}
-                onClick={() => setAccountTab("students")}
-              >
-                <Icon name="profile" /> Thông Tin Cá Nhân Sinh Viên <b>8</b>
-              </button>
-              <button
-                className={accountTab === "classes" ? "is-active" : ""}
-                onClick={() => setAccountTab("classes")}
-              >
-                <Icon name="manager" /> Quản Lý Lớp & Cố Vấn Phụ Trách <b>8</b>
-              </button>
-            </div>
-            <div className="manager-actions">
-              <button
-                className="manager-button manager-button--outline"
-                onClick={() => notify("Đang chuẩn bị file Excel/CSV...")}
-              >
-                <Icon name="report" /> Xuất Excel/CSV
-              </button>
-              <button
-                className="manager-button manager-button--primary"
-                onClick={() =>
-                  openCreate(accountTab === "classes" ? "class" : "student")
-                }
-              >
-                <Icon name={accountTab === "classes" ? "manager" : "profile"} />{" "}
-                {accountTab === "classes"
-                  ? "Thêm Lớp Sinh Hoạt Mới"
-                  : "Thêm Sinh Viên Mới"}
-              </button>
-            </div>
-          </div>
-          {accountTab === "students" ? (
-            <>
-              <div className="manager-filter manager-filter--students">
-                <label className="manager-search">
-                  <Icon name="list" />
-                  <input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Tìm MSSV, Họ tên, CCCD, Email..."
-                  />
-                </label>
-                <select
-                  value={facultyFilter}
-                  onChange={(event) => setFacultyFilter(event.target.value)}
-                >
-                  <option>Tất cả Khoa / Viện</option>
-                  {faculties.map((faculty) => (
-                    <option key={faculty}>{faculty}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="manager-table-wrap">
-                <table className="manager-table manager-table--students">
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th>THÔNG TIN SINH VIÊN</th>
-                      <th>LỚP & KHOA</th>
-                      <th>NHÂN THÂN & CCCD</th>
-                      <th>LIÊN HỆ</th>
-                      <th>TRẠNG THÁI & RÈN LUYỆN</th>
-                      <th>THAO TÁC</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredStudents.map((item) => (
-                      <tr key={item.id}>
-                        <td>
-                          <input type="checkbox" />
-                        </td>
-                        <td>
-                          <div className="manager-person">
-                            <span className="manager-avatar manager-avatar--student">
-                              {item.name.charAt(0)}
-                            </span>
-                            <div>
-                              <strong>{item.name}</strong>
-                              <small>
-                                <em>{item.mssv}</em> · {item.gender} ·{" "}
-                                {item.birth}
-                              </small>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <strong className="manager-orange-text">
-                            Lớp {item.className}
-                          </strong>
-                          <small>{item.faculty}</small>
-                          <small>Khóa: 2021-2025</small>
-                        </td>
-                        <td>
-                          <strong>{item.cccd}</strong>
-                          <small>TP. Đà Lạt, Lâm Đồng</small>
-                        </td>
-                        <td>
-                          <strong>{item.email}</strong>
-                          <small>{item.phone}</small>
-                        </td>
-                        <td>
-                          <span
-                            className={`manager-student-status ${item.status.includes("Cảnh") ? "manager-student-status--warning" : ""}`}
-                          >
-                            {item.status}
-                          </span>
-                          <strong>
-                            ĐRL: {item.score}đ ({item.rank})
-                          </strong>
-                        </td>
-                        <td>
-                          <div className="manager-row-actions">
-                            <button
-                              onClick={() =>
-                                setModal({ type: "student", data: item })
-                              }
-                              aria-label="Sửa sinh viên"
-                            >
-                              <Icon name="custom" />
-                            </button>
-                            <button
-                              onClick={() => deleteItem("student", item.id)}
-                              aria-label="Xóa sinh viên"
-                            >
-                              <Icon name="trash" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {filteredStudents.length === 0 && (
-                  <EmptyState onReset={resetFilters} />
-                )}
-              </div>
-            </>
-          ) : (
-            <ClassGrid
-              classes={classes}
-              onEdit={(item) => setModal({ type: "class", data: item })}
-              onDelete={() => notify("Đã xóa lớp sinh hoạt")}
-              onView={() => {
-                setAccountTab("students");
-                notify("Đã lọc sinh viên theo lớp");
-              }}
-            />
-          )}
-        </>
-      )}
-      {modal?.type === "permissions" && (
-        <PermissionModal onClose={() => setModal(null)} />
-      )}
-      {modal?.type === "account" && (
-        <AccountModal
-          data={modal.data}
-          onClose={() => setModal(null)}
-          onSubmit={saveAccount}
-        />
-      )}
-      {modal?.type === "student" && (
-        <StudentModal
-          data={modal.data}
-          onClose={() => setModal(null)}
-          onSubmit={saveStudent}
-        />
-      )}
-      {modal?.type === "class" && (
-        <ClassModal
-          data={modal.data}
-          onClose={() => setModal(null)}
-          onSave={() => {
-            setModal(null);
-            notify("Đã lưu lớp sinh hoạt");
-          }}
-        />
-      )}
-      {toast && <Toast message={toast} onClose={() => setToast("")} />}
-    </section>
-  );
-}
-
-function EmptyState({ onReset }) {
-  return (
-    <div className="manager-empty">
-      <strong>Không tìm thấy dữ liệu phù hợp</strong>
-      <button onClick={onReset}>Xóa bộ lọc</button>
-    </div>
-  );
-}
-
-function ClassGrid({ classes: classList, onEdit, onDelete, onView }) {
-  return (
-    <>
-      <div className="manager-filter manager-filter--class">
-        <label className="manager-search">
-          <Icon name="list" />
-          <input placeholder="Tìm theo tên lớp, cố vấn, lớp trưởng..." />
-        </label>
-        <select>
-          <option>Tất cả Khoa / Viện</option>
-          <option>Khoa Công nghệ Thông tin</option>
-          <option>Khoa Kinh tế & Quản trị</option>
-        </select>
-        <strong>Tổng số: {classList.length} lớp sinh hoạt</strong>
-      </div>
-      <div className="manager-class-grid">
-        {classList.map((item) => (
-          <article className="manager-class-card" key={item.id}>
-            <header>
-              <div>
-                <h2>
-                  Lớp {item.name} <span>Đang học</span>
-                </h2>
-                <strong>{item.faculty}</strong>
-                <small>Niên khóa: {item.year}</small>
-              </div>
-              <b>
-                {item.count}
-                <small>sĩ số SV</small>
-              </b>
-            </header>
-            <p className="manager-class-description">{item.description}</p>
-            <dl>
-              <dt>Cố vấn học tập:</dt>
-              <dd>{item.advisor}</dd>
-              <dt>Liên hệ CVHT:</dt>
-              <dd>{item.email}</dd>
-              <dt>Lớp trưởng:</dt>
-              <dd>{item.leader}</dd>
-              <dt>Bí thư chi đoàn:</dt>
-              <dd>Trần Hoàng Long</dd>
-            </dl>
-            <footer>
-              <button onClick={onView}>
-                <Icon name="profile" /> Xem {item.count} sinh viên
-              </button>
-              <button onClick={() => onEdit(item)} aria-label="Sửa lớp">
-                <Icon name="custom" />
-              </button>
-              <button onClick={onDelete} aria-label="Xóa lớp">
-                <Icon name="trash" />
-              </button>
-            </footer>
-          </article>
-        ))}
-      </div>
-    </>
-  );
-}
-
-function AccountModal({ data, onClose, onSubmit }) {
-  return (
-    <Modal
-      title={data ? "Chỉnh sửa tài khoản" : "Tạo tài khoản hệ thống mới"}
-      subtitle={
-        data
-          ? `@${data.username} (${data.name})`
-          : "Cấp tài khoản đăng nhập & phân quyền cán bộ / sinh viên"
-      }
-      icon={data ? "custom" : "key"}
-    >
-      <form className="manager-form" onSubmit={onSubmit}>
-        <Field label="Tên đăng nhập (Username) *">
-          <input
-            name="username"
-            defaultValue={data?.username}
-            placeholder="ví dụ: hunghl_cntt"
-            required
-          />
-        </Field>
-        <Field label="Mật khẩu khởi tạo *">
-          <input
-            name="password"
-            type="password"
-            placeholder="Tối thiểu 6 ký tự"
-            required={!data}
-          />
-        </Field>
-        <Field label="Họ và tên đầy đủ *" full>
-          <input
-            name="name"
-            defaultValue={data?.name}
-            placeholder="ví dụ: ThS. Lê Hữu Hưng"
-            required
-          />
-        </Field>
-        <Field label="Email công vụ / DLU *">
-          <input
-            name="email"
-            type="email"
-            defaultValue={data?.email}
-            placeholder="hunglh@dlu.edu.vn"
-            required
-          />
-        </Field>
-        <Field label="Số điện thoại">
-          <input name="phone" placeholder="0912 345 678" />
-        </Field>
-        <Field label="Vai trò (Phân quyền chính) *">
-          <select
-            name="role"
-            defaultValue={data?.role || "Cán bộ Khoa / Cố vấn Học tập"}
-          >
-            <option>Cán bộ Khoa / Cố vấn Học tập</option>
-            <option>Quản Trị Viên (Admin)</option>
-            <option>Ban Giám Hiệu / CTSV</option>
-            <option>Đoàn - Hội Sinh Viên</option>
-            <option>Sinh Viên</option>
-          </select>
-        </Field>
-        <Field label="Khoa / Đơn vị phụ trách *">
-          <select
-            name="unit"
-            defaultValue={data?.unit || "Khoa Công nghệ Thông tin"}
-          >
-            <option>Khoa Công nghệ Thông tin</option>
-            <option>Khoa Kinh tế & Quản trị</option>
-            <option>Khoa Luật</option>
-            <option>Phòng Công tác Sinh viên (CTSV)</option>
-          </select>
-        </Field>
-        <div className="manager-alert">
-          ⓘ Tài khoản sau khi tạo sẽ tự động được gán các quyền hạn tương ứng
-          theo Ma Trận Phân quyền.
-        </div>
-        <ModalActions
-          onClose={onClose}
-          label={data ? "Lưu thay đổi" : "Khởi tạo tài khoản"}
-        />
-      </form>
-    </Modal>
-  );
-}
-
-function StudentModal({ data, onClose, onSubmit }) {
-  return (
-    <Modal
-      title={data ? "Chỉnh sửa hồ sơ sinh viên" : "Thêm Hồ Sơ Sinh Viên Mới"}
-      subtitle={
-        data
-          ? `${data.mssv} · ${data.name}`
-          : "Nhập thông tin cá nhân và lớp sinh hoạt"
-      }
+    <ModalShell
+      title={initialData ? "Chỉnh sửa tài khoản" : "Tạo tài khoản mới"}
+      subtitle="Email là tên đăng nhập; mật khẩu tạm được thiết lập tự động."
       icon="profile"
-      wide
+      onClose={onClose}
     >
-      <form className="manager-form" onSubmit={onSubmit}>
-        <Field label="Họ và Tên (*)">
+      <form className="manager-form" onSubmit={submit}>
+        <label className="manager-field manager-field--full">
+          <span>Họ và tên</span>
           <input
-            name="name"
-            defaultValue={data?.name}
-            placeholder="Ví dụ: Nguyễn Văn An"
+            value={form.name}
+            onChange={(event) => update("name", event.target.value)}
+            placeholder="Nhập họ và tên"
             required
           />
-        </Field>
-        <Field label="Mã Số Sinh Viên (MSSV) (*)">
+        </label>
+
+        <label className="manager-field">
+          <span>Email đăng nhập</span>
           <input
-            name="mssv"
-            defaultValue={data?.mssv}
-            placeholder="Ví dụ: 22120099"
+            type="email"
+            value={form.email}
+            onChange={(event) => update("email", event.target.value)}
+            placeholder="example@dlu.edu.vn"
             required
           />
-        </Field>
-        <Field label="Giới tính">
-          <select name="gender" defaultValue={data?.gender || "Nam"}>
+        </label>
+
+        <label className="manager-field">
+          <span>Vai trò hệ thống</span>
+          <select
+            value={form.roleCode}
+            onChange={(event) => update("roleCode", event.target.value)}
+            required
+          >
+            {roles
+              .filter((role) => role.code !== "STUDENT")
+              .map((role) => (
+                <option key={role.code} value={role.code}>
+                  {role.name}
+                </option>
+              ))}
+          </select>
+        </label>
+
+        <label className="manager-field">
+          <span>Đơn vị / Khoa quản lý</span>
+          <input
+            value={form.unit}
+            onChange={(event) => update("unit", event.target.value)}
+            placeholder="Phòng Công tác Sinh viên"
+          />
+        </label>
+
+        <label className="manager-field">
+          <span>Lớp phụ trách</span>
+          <select
+            value={form.classCode}
+            onChange={(event) => update("classCode", event.target.value)}
+          >
+            <option value="">Không gán lớp</option>
+            {classes.map((item) => (
+              <option key={item.code} value={item.code}>
+                {item.code}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="manager-field">
+          <span>Trạng thái</span>
+          <select
+            value={form.active ? "1" : "0"}
+            onChange={(event) => update("active", event.target.value === "1")}
+          >
+            <option value="1">Đang hoạt động</option>
+            <option value="0">Đã khóa</option>
+          </select>
+        </label>
+
+        <div className="manager-modal-actions">
+          <button
+            type="button"
+            className="manager-button manager-button--outline"
+            onClick={onClose}
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            className="manager-button manager-button--primary"
+          >
+            {initialData ? "Lưu thay đổi" : "Tạo tài khoản"}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
+  );
+}
+
+function StudentModal({ initialData, classes, onClose, onSave }) {
+  const firstClass = classes[0]?.code || "";
+  const [form, setForm] = useState(() => ({
+    name: initialData?.name || "",
+    mssv: initialData?.mssv || "",
+    phone: initialData?.phone || "",
+    email: initialData?.email || "",
+    classCode: initialData?.classCode || firstClass,
+    faculty:
+      initialData?.facultyName ||
+      classes.find(
+        (item) => item.code === (initialData?.classCode || firstClass),
+      )?.faculty ||
+      "",
+    studyProgramId: initialData?.studyProgramId || "CQ23CT-PM",
+    gender: initialData?.gender || "Nam",
+    birthDay: initialData?.birthDay
+      ? String(initialData.birthDay).replace(/T00:00:00(?:\\.000)?Z$/, "")
+      : "",
+    birthPlace: initialData?.birthPlace || "",
+    permanentResidence: initialData?.permanentResidence || "",
+    hometownCountry: initialData?.hometownCountry || "Việt Nam",
+    hometownProvince: initialData?.hometownProvince || "",
+    hometownCity: initialData?.hometownCity || "",
+    hometownAddress: initialData?.hometownAddress || "",
+    classRoleId: initialData?.classRoleId ?? 0,
+    isInClass: initialData?.isInClass ?? true,
+  }));
+
+  function update(key, value) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  const selectedClass = classes.find((item) => item.code === form.classCode);
+
+  function submit(event) {
+    event.preventDefault();
+    if (!form.name.trim() || !form.mssv.trim() || !form.email.trim()) return;
+
+    const nameParts = form.name.trim().split(/\s+/);
+    const lastName = nameParts.length > 1 ? nameParts.pop() : nameParts[0];
+    const firstName = nameParts.length > 1 ? nameParts.join(" ") : "";
+
+    onSave({
+      ...(initialData || {}),
+      ...form,
+      name: form.name.trim(),
+      mssv: form.mssv.trim(),
+      email: form.email.trim(),
+      studentId: form.mssv.trim(),
+      firstName,
+      lastName,
+      studentName: form.name.trim(),
+      className: selectedClass?.code || form.classCode,
+      birthDay: form.birthDay ? `${form.birthDay}T00:00:00Z` : "",
+    });
+  }
+
+  return (
+    <ModalShell
+      title={initialData ? "Chỉnh sửa sinh viên" : "Thêm sinh viên mới"}
+      subtitle="Khoa được lưu theo lớp đã chọn. Email là tên đăng nhập; mật khẩu tạm dựa trên MSSV."
+      icon="profile"
+      onClose={onClose}
+    >
+      <form className="manager-form" onSubmit={submit}>
+        <label className="manager-field manager-field--full">
+          <span>Họ và tên</span>
+          <input
+            value={form.name}
+            onChange={(event) => update("name", event.target.value)}
+            placeholder="Nguyễn Văn An"
+            required
+          />
+        </label>
+
+        <label className="manager-field">
+          <span>Mã số sinh viên</span>
+          <input
+            value={form.mssv}
+            onChange={(event) => update("mssv", event.target.value)}
+            placeholder="21120045"
+            required
+          />
+        </label>
+
+        <label className="manager-field">
+          <span>Số điện thoại</span>
+          <input
+            type="tel"
+            value={form.phone}
+            onChange={(event) => update("phone", event.target.value)}
+            placeholder="0901 234 567"
+          />
+        </label>
+
+        <label className="manager-field">
+          <span>Email đăng nhập</span>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(event) => update("email", event.target.value)}
+            placeholder="mssv@dlu.edu.vn"
+            required
+          />
+        </label>
+
+        <label className="manager-field">
+          <span>Lớp sinh hoạt</span>
+          <select
+            value={form.classCode}
+            onChange={(event) => {
+              const classCode = event.target.value;
+              const faculty =
+                classes.find((item) => item.code === classCode)?.faculty || "";
+              setForm((prev) => ({ ...prev, classCode, faculty }));
+            }}
+            required
+          >
+            <option value="" disabled>
+              Chọn lớp sinh hoạt
+            </option>
+            {classes.map((item) => (
+              <option key={item.code} value={item.code}>
+                {item.code}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="manager-field">
+          <span>Khoa của lớp</span>
+          <input
+            value={form.faculty}
+            onChange={(event) => update("faculty", event.target.value)}
+            placeholder="Công nghệ thông tin"
+          />
+        </label>
+
+        <label className="manager-field">
+          <span>Chương trình</span>
+          <select
+            value={form.studyProgramId}
+            onChange={(event) => update("studyProgramId", event.target.value)}
+          >
+            {STUDY_PROGRAMS.map((program) => (
+              <option key={program} value={program}>
+                {program}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="manager-field">
+          <span>Giới tính</span>
+          <select
+            value={form.gender}
+            onChange={(event) => update("gender", event.target.value)}
+          >
             <option>Nam</option>
             <option>Nữ</option>
           </select>
-        </Field>
-        <Field label="Ngày sinh">
-          <input name="birth" type="date" defaultValue={data?.birth} />
-        </Field>
-        <Field label="Số CCCD / CMND (*)">
+        </label>
+
+        <label className="manager-field">
+          <span>Ngày sinh</span>
           <input
-            name="cccd"
-            defaultValue={data?.cccd}
-            placeholder="068204008945"
-            required
+            type="date"
+            value={form.birthDay ? form.birthDay.slice(0, 10) : ""}
+            onChange={(event) => update("birthDay", event.target.value)}
           />
-        </Field>
-        <Field label="Khoa / Viện trực thuộc (*)">
+        </label>
+
+        <label className="manager-field">
+          <span>Quốc gia</span>
+          <input
+            value={form.hometownCountry}
+            onChange={(event) => update("hometownCountry", event.target.value)}
+            placeholder="Việt Nam"
+          />
+        </label>
+
+        <label className="manager-field">
+          <span>Tỉnh</span>
+          <input
+            value={form.hometownProvince}
+            onChange={(event) => update("hometownProvince", event.target.value)}
+            placeholder="Lâm Đồng"
+          />
+        </label>
+
+        <label className="manager-field">
+          <span>Thành phố</span>
+          <input
+            value={form.hometownCity}
+            onChange={(event) => update("hometownCity", event.target.value)}
+            placeholder="Đà Lạt"
+          />
+        </label>
+
+        <label className="manager-field manager-field--full">
+          <span>Địa chỉ chi tiết</span>
+          <input
+            value={form.hometownAddress}
+            onChange={(event) => update("hometownAddress", event.target.value)}
+            placeholder="Số nhà, đường, phường/xã"
+          />
+        </label>
+
+        <label className="manager-field">
+          <span>Vai trò lớp</span>
           <select
-            name="faculty"
-            defaultValue={data?.faculty || "Khoa Công nghệ Thông tin"}
+            value={form.classRoleId}
+            onChange={(event) =>
+              update("classRoleId", Number(event.target.value))
+            }
           >
-            <option>Khoa Công nghệ Thông tin</option>
-            <option>Khoa Kinh tế & Quản trị</option>
-            <option>Khoa Ngoại ngữ</option>
-            <option>Khoa Luật</option>
-            <option>Khoa Sư phạm & KHXH</option>
+            <option value={0}>Học viên</option>
+            <option value={1}>Lớp trưởng</option>
           </select>
-        </Field>
-        <Field label="Lớp sinh hoạt (*)">
-          <select name="className" defaultValue={data?.className || "CTK44A"}>
-            <option>CTK44A</option>
-            <option>CTK45A</option>
-            <option>QTK43B</option>
-            <option>NNA45C</option>
-            <option>LUK44A</option>
+        </label>
+
+        <label className="manager-field">
+          <span>Trạng thái lớp</span>
+          <select
+            value={form.isInClass ? "1" : "0"}
+            onChange={(event) =>
+              update("isInClass", event.target.value === "1")
+            }
+          >
+            <option value="1">Đang học</option>
+            <option value="0">Ngoài lớp</option>
           </select>
-        </Field>
-        <Field label="Email sinh viên (*)">
-          <input
-            name="email"
-            type="email"
-            defaultValue={data?.email}
-            placeholder="22120099@dlu.edu.vn"
-            required
-          />
-        </Field>
-        <Field label="Số điện thoại liên hệ">
-          <input
-            name="phone"
-            defaultValue={data?.phone}
-            placeholder="0912345678"
-          />
-        </Field>
-        <Field label="Trạng thái học vụ">
-          <select name="status" defaultValue={data?.status || "Đang học"}>
-            <option>Đang học</option>
-            <option>Cảnh báo rèn luyện</option>
-            <option>Bảo lưu</option>
-            <option>Đã tốt nghiệp</option>
-          </select>
-        </Field>
-        <ModalActions
-          onClose={onClose}
-          label={data ? "Lưu Sinh Viên" : "Lưu Sinh Viên"}
-        />
+        </label>
+
+        <div className="manager-modal-actions">
+          <button
+            type="button"
+            className="manager-button manager-button--outline"
+            onClick={onClose}
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            className="manager-button manager-button--primary"
+          >
+            {initialData ? "Lưu thay đổi" : "Thêm sinh viên"}
+          </button>
+        </div>
       </form>
-    </Modal>
+    </ModalShell>
   );
 }
 
-function ClassModal({ data, onClose, onSave }) {
+function ClassModal({ initialData, students, onClose, onSave }) {
+  const [form, setForm] = useState(() => ({
+    code: initialData?.code || "",
+    faculty: initialData?.faculty || "",
+    academicYear: initialData?.academicYear || "",
+  }));
+
+  const countClassCode = initialData?.code || form.code;
+  const existingCount = useMemo(
+    () => students.filter((item) => item.classCode === countClassCode).length,
+    [students, countClassCode],
+  );
+
+  function submit(event) {
+    event.preventDefault();
+    const code = form.code.trim().toUpperCase();
+    if (!code) return;
+
+    onSave({
+      ...(initialData || {}),
+      code,
+      faculty: form.faculty.trim(),
+      academicYear: form.academicYear.trim(),
+      originalCode: initialData?.code || "",
+    });
+  }
+
   return (
-    <Modal
-      title={data ? "Chỉnh sửa lớp sinh hoạt" : "Tạo Lớp Học Sinh Hoạt Mới"}
+    <ModalShell
+      title={initialData ? "Chỉnh sửa lớp sinh hoạt" : "Thêm lớp sinh hoạt mới"}
+      subtitle="Nhập thông tin lớp sinh hoạt."
       icon="manager"
+      onClose={onClose}
     >
-      <form
-        className="manager-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          onSave();
-        }}
-      >
-        <Field label="Mã / Tên Lớp (*)">
+      <form className="manager-form" onSubmit={submit}>
+        <label className="manager-field">
+          <span>Mã lớp</span>
           <input
-            defaultValue={data?.name}
-            placeholder="Ví dụ: CTK47A"
+            value={form.code}
+            onChange={(event) =>
+              setForm((prev) => ({ ...prev, code: event.target.value }))
+            }
+            placeholder="ITK50B"
             required
           />
-        </Field>
-        <Field label="Niên khóa (*)">
-          <input defaultValue={data?.year} placeholder="2025-2029" required />
-        </Field>
-        <Field label="Khoa / Viện trực thuộc (*)" full>
-          <select defaultValue={data?.faculty || "Khoa Công nghệ Thông tin"}>
-            <option>Khoa Công nghệ Thông tin</option>
-            <option>Khoa Kinh tế & Quản trị</option>
-            <option>Khoa Ngoại ngữ</option>
-            <option>Khoa Luật</option>
-          </select>
-        </Field>
-        <Field label="Cố vấn học tập phụ trách (*)">
-          <input
-            defaultValue={data?.advisor}
-            placeholder="Ví dụ: TS. Lê Thị Thúy Nga"
-            required
-          />
-        </Field>
-        <Field label="Email cố vấn (*)">
-          <input
-            defaultValue={data?.email}
-            placeholder="covan@dlu.edu.vn"
-            required
-          />
-        </Field>
-        <Field label="Lớp trưởng">
-          <input placeholder="Họ tên sinh viên làm lớp trưởng" />
-        </Field>
-        <Field label="Bí thư chi đoàn">
-          <input placeholder="Họ tên sinh viên làm bí thư" />
-        </Field>
-        <Field label="Mô tả định hướng / Chuyên ngành" full>
-          <input
-            defaultValue={data?.description}
-            placeholder="Ví dụ: Lớp Kỹ thuật phần mềm & AI ứng dụng..."
-          />
-        </Field>
-        <Field label="Trạng thái lớp" full>
-          <select>
-            <option>Đang học</option>
-            <option>Đã kết thúc</option>
-          </select>
-        </Field>
-        <ModalActions
-          onClose={onClose}
-          label={data ? "Lưu thay đổi" : "Tạo Lớp"}
-        />
-      </form>
-    </Modal>
-  );
-}
+        </label>
 
-function ModalActions({ onClose, label }) {
-  return (
-    <div className="manager-modal-actions">
-      <button
-        type="button"
-        className="manager-button manager-button--outline"
-        onClick={onClose}
-      >
-        Hủy bỏ
-      </button>
-      <button type="submit" className="manager-button manager-button--primary">
-        {label}
-      </button>
-    </div>
+        <label className="manager-field">
+          <span>Khoa / Đơn vị</span>
+          <input
+            value={form.faculty}
+            onChange={(event) =>
+              setForm((prev) => ({ ...prev, faculty: event.target.value }))
+            }
+            placeholder="Công nghệ thông tin"
+          />
+        </label>
+
+        <label className="manager-field">
+          <span>Năm học</span>
+          <input
+            value={form.academicYear}
+            onChange={(event) =>
+              setForm((prev) => ({ ...prev, academicYear: event.target.value }))
+            }
+            placeholder="2026-2027"
+          />
+        </label>
+
+        <div className="manager-alert">
+          Sĩ số hiện tại: {existingCount} sinh viên. Sĩ số được tính tự động từ
+          danh sách sinh viên.
+        </div>
+
+        <div className="manager-modal-actions">
+          <button
+            type="button"
+            className="manager-button manager-button--outline"
+            onClick={onClose}
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            className="manager-button manager-button--primary"
+          >
+            {initialData ? "Lưu lớp" : "Thêm lớp"}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
   );
 }
 
 function PermissionModal({ onClose }) {
+  const rows = [
+    ["Quản trị hệ thống", true, true, true, true],
+    ["Quản lý sinh viên", true, true, true, false],
+    ["Quản lý lớp sinh hoạt", true, true, true, false],
+    ["Xem điểm rèn luyện", true, true, false, true],
+    ["Xuất Excel / CSV", true, true, true, false],
+  ];
+
+  const headers = [
+    "Quyền / Chức năng",
+    "Admin",
+    "Trợ lý",
+    "Chủ nhiệm",
+    "Sinh viên",
+  ];
+
   return (
-    <Modal
-      title="Ma Trận Phân Quyền Theo Vai Trò (Role & Permission Matrix)"
-      subtitle="Quy chuẩn phân quyền kiểm soát truy cập theo vai trò trên toàn hệ thống UniActivity"
-      icon="check"
+    <ModalShell
+      title="Ma Trận Phân Quyền"
+      subtitle="Ma trận minh họa cho giao diện quản lý quyền."
+      icon="key"
       wide
+      onClose={onClose}
     >
       <div className="manager-permission-table">
         <div className="manager-permission-row manager-permission-head">
-          <strong>Danh mục Quyền Hạn</strong>
-          <b>Admin</b>
-          <b>Trợ lý</b>
-          <b>Chủ nhiệm & Ban cán sự</b>
-          <b>Sinh viên</b>
+          {headers.map((header) => (
+            <b key={header}>{header}</b>
+          ))}
         </div>
-        {permissionRows.map(([title, description, values]) => (
-          <div className="manager-permission-row" key={title}>
+
+        {rows.map((row) => (
+          <div className="manager-permission-row" key={row[0]}>
             <div>
-              <strong>{title}</strong>
-              <small>{description}</small>
+              <strong>{row[0]}</strong>
+              <small>Quyền áp dụng theo vai trò</small>
             </div>
-            {values.slice(0, 4).map((value, index) => (
+            {row.slice(1).map((allowed, index) => (
               <span
-                className={
-                  value
-                    ? `manager-permission-check manager-permission-check--${index}`
-                    : "manager-permission-dash"
-                }
-                key={`${title}-${index}`}
+                key={`${row[0]}-${index}`}
+                className={`manager-permission-check manager-permission-check--${index}`}
               >
-                {value ? <Icon name="check-circle" /> : "-"}
+                {allowed ? (
+                  <Icon name="check" />
+                ) : (
+                  <span className="manager-permission-dash">—</span>
+                )}
               </span>
             ))}
           </div>
         ))}
       </div>
+
       <div className="manager-permission-footer">
         <button
+          type="button"
           className="manager-button manager-button--outline"
           onClick={onClose}
         >
           Đóng
         </button>
       </div>
-    </Modal>
+    </ModalShell>
   );
 }
 
-export default Manager;
+function ScoreModal({ classCode, students, onClose }) {
+  const rows = useMemo(
+    () =>
+      students
+        .filter((student) => student.classCode === classCode)
+        .slice(0, 50)
+        .map((student, index) => ({
+          ...student,
+          score: 70 + ((index * 7) % 31),
+          classification: index % 8 === 0 ? "Khá" : "Tốt",
+        })),
+    [classCode, students],
+  );
+
+  return (
+    <ModalShell
+      title={`Điểm rèn luyện — lớp ${classCode}`}
+      subtitle={`Hiển thị ${rows.length} sinh viên đầu tiên của dữ liệu demo.`}
+      icon="report"
+      wide
+      onClose={onClose}
+    >
+      {rows.length === 0 ? (
+        <div className="manager-score-state">
+          Chưa có dữ liệu điểm rèn luyện cho lớp này.
+        </div>
+      ) : (
+        <div className="manager-score-table-wrap">
+          <table className="manager-table manager-score-table">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>MSSV</th>
+                <th>HỌ VÀ TÊN</th>
+                <th>LỚP</th>
+                <th>ĐIỂM RL</th>
+                <th>XẾP LOẠI</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((student, index) => (
+                <tr key={student.id}>
+                  <td>{index + 1}</td>
+                  <td>{student.mssv}</td>
+                  <td>
+                    <strong>{student.name}</strong>
+                  </td>
+                  <td>{student.classCode}</td>
+                  <td>
+                    <strong>{student.score}</strong>
+                  </td>
+                  <td>{student.classification}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="manager-permission-footer">
+        <button
+          type="button"
+          className="manager-button manager-button--outline"
+          onClick={onClose}
+        >
+          Đóng
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+export default function Manager() {
+  const [activeMainTab, setActiveMainTab] = useState("students");
+  const [accounts, setAccounts] = useState([]);
+  const [roles, setRoles] = useState([]);
+
+  const [students, setStudents] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [modal, setModal] = useState(null);
+  const [toast, setToast] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [dataError, setDataError] = useState("");
+  const accountRows = useMemo(() => {
+    const linkedStudentIds = new Set(
+      accounts.map((account) => account.studentId).filter(Boolean),
+    );
+    const existingAccounts = accounts.map((account) => ({
+      ...account,
+      hasLoginAccount: true,
+    }));
+    const studentsWithoutAccounts = students
+      .filter((student) => !linkedStudentIds.has(student.id))
+      .map((student) => ({
+        id: null,
+        name: student.name,
+        email: student.email,
+        role: "Sinh viên",
+        roleCode: "STUDENT",
+        unit: student.facultyName,
+        classCode: student.classCode,
+        className: student.className,
+        studentId: student.id,
+        status: "Chưa cấp tài khoản",
+        active: false,
+        lastLogin: "Chưa có tài khoản",
+        hasLoginAccount: false,
+      }));
+    return [...existingAccounts, ...studentsWithoutAccounts];
+  }, [accounts, students]);
+
+  useEffect(() => {
+    reloadManagerData().catch((error) => {
+      console.error("Lỗi tải dữ liệu quản lý:", error);
+      setDataError(
+        error.response?.data?.message || "Không thể tải dữ liệu từ Database.",
+      );
+    });
+  }, []);
+
+  async function reloadManagerData() {
+    setDataError("");
+    const [studentResult, classRows, accountRows, roleRows] = await Promise.all(
+      [
+        getManagerStudents(),
+        getManagerClasses(),
+        getManagerAccounts(),
+        getManagerRoles(),
+      ],
+    );
+    const studentsFromDatabase = Array.isArray(studentResult.data)
+      ? studentResult.data
+      : [];
+    setStudents(studentsFromDatabase);
+    setClasses(Array.isArray(classRows) ? classRows : []);
+    setAccounts(Array.isArray(accountRows) ? accountRows : []);
+    setRoles(Array.isArray(roleRows) ? roleRows : []);
+  }
+
+  function notify(message) {
+    setToast(message);
+    window.clearTimeout(notify.timer);
+    notify.timer = window.setTimeout(() => setToast(""), 2600);
+  }
+
+  function openModal(payload) {
+    setModal(payload);
+  }
+
+  function closeModal() {
+    setModal(null);
+  }
+
+  async function handleDelete(type, idOrCode) {
+    const record =
+      type === "account"
+        ? accounts.find((item) => item.id === idOrCode)
+        : type === "student"
+          ? students.find((item) => item.id === idOrCode)
+          : classes.find((item) => item.code === idOrCode);
+    const recordName =
+      type === "class" ? record?.code : record?.name || idOrCode;
+    const recordType =
+      type === "account"
+        ? "tài khoản"
+        : type === "student"
+          ? "sinh viên"
+          : "lớp sinh hoạt";
+    const confirmed = window.confirm(
+      `Bạn có chắc muốn xóa ${recordType} "${recordName}" không?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      if (type === "account") await deleteManagerAccount(idOrCode);
+      if (type === "student") await deleteManagerStudent(idOrCode);
+      if (type === "class") await deleteManagerClass(idOrCode);
+      await reloadManagerData();
+      notify(
+        type === "account"
+          ? "Đã xóa tài khoản"
+          : type === "student"
+            ? "Đã xóa sinh viên"
+            : "Đã xóa lớp",
+      );
+    } catch (error) {
+      notify(error.response?.data?.message || "Không thể xóa dữ liệu");
+    }
+  }
+
+  async function saveAccount(data) {
+    try {
+      await saveManagerAccount({
+        id: data.id,
+        name: data.name,
+        username: data.email,
+        email: data.email,
+        password: "",
+        roleCode: data.roleCode,
+        unit: data.unit,
+        classCode: data.classCode,
+        active: data.active,
+      });
+      await reloadManagerData();
+      closeModal();
+      notify(data.id ? "Đã cập nhật tài khoản" : "Đã tạo tài khoản mới");
+    } catch (error) {
+      notify(error.response?.data?.message || "Không thể lưu tài khoản");
+    }
+  }
+
+  async function toggleAccountStatus(account) {
+    try {
+      await saveManagerAccount({
+        id: account.id,
+        name: account.name,
+        username: account.email,
+        email: account.email,
+        roleCode: account.roleCode,
+        unit: account.unit,
+        classCode: account.classCode,
+        active: !account.active,
+      });
+      await reloadManagerData();
+      notify(account.active ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản");
+    } catch (error) {
+      notify(error.response?.data?.message || "Không thể cập nhật trạng thái");
+    }
+  }
+
+  async function resetAccountPassword(account) {
+    const confirmed = window.confirm(
+      `Đặt lại mật khẩu mặc định cho tài khoản ${account.email}?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      await resetManagerAccountPassword(account.id);
+      notify("Đã đặt lại mật khẩu mặc định");
+    } catch (error) {
+      notify(error.response?.data?.message || "Không thể đặt lại mật khẩu");
+    }
+  }
+
+  async function saveStudent(data) {
+    try {
+      await saveManagerStudent({
+        originalStudentId: data.id,
+        studentId: data.studentId || data.mssv,
+        email: data.email,
+        phone: data.phone,
+        classCode: data.classCode,
+        faculty: data.faculty,
+        gender: data.gender,
+        birthDay: data.birthDay ? data.birthDay.slice(0, 10) : "",
+        firstName: data.firstName,
+        lastName: data.lastName,
+        studentName: data.studentName,
+        isInClass: data.isInClass,
+        birthPlace: data.birthPlace,
+        classRoleId: data.classRoleId,
+        studyProgramId: data.studyProgramId,
+        permanentResidence: data.permanentResidence,
+        hometownCountry: data.hometownCountry,
+        hometownProvince: data.hometownProvince,
+        hometownCity: data.hometownCity,
+        hometownAddress: data.hometownAddress,
+      });
+      await reloadManagerData();
+      closeModal();
+      notify(
+        data.id
+          ? "Đã cập nhật hồ sơ và tài khoản sinh viên"
+          : "Đã thêm sinh viên và tạo tài khoản đăng nhập",
+      );
+    } catch (error) {
+      notify(error.response?.data?.message || "Không thể lưu sinh viên");
+    }
+  }
+
+  async function saveClass(data) {
+    try {
+      await saveManagerClass({
+        originalCode: data.originalCode,
+        code: data.code,
+        faculty: data.faculty,
+        academicYear: data.academicYear,
+      });
+      await reloadManagerData();
+      closeModal();
+      notify(
+        data.originalCode
+          ? "Đã cập nhật lớp sinh hoạt"
+          : "Đã thêm lớp sinh hoạt mới",
+      );
+    } catch (error) {
+      notify(error.response?.data?.message || "Không thể lưu lớp");
+    }
+  }
+
+  function resetFilters() {
+    // Child components own their own filters, so this is intentionally a no-op.
+    // The callback exists to keep ManagerAccounts API simple and decoupled.
+  }
+
+  async function handleSync() {
+    try {
+      setIsSyncing(true);
+      await reloadManagerData();
+      notify("Đã tải lại dữ liệu từ Database");
+    } catch (error) {
+      notify(error.response?.data?.message || "Tải lại dữ liệu thất bại");
+    } finally {
+      setIsSyncing(false);
+    }
+  }
+
+  async function handleExport() {
+    try {
+      await exportManagerWorkbook({
+        students,
+        classes,
+        accounts: accountRows,
+      });
+      notify("Đã xuất Excel gồm 3 sheet");
+    } catch (error) {
+      console.error("Lỗi xuất Excel:", error);
+      notify("Không thể xuất file Excel");
+    }
+  }
+
+  const managerTitleCount = useMemo(
+    () => ({
+      accountCount: accounts.length,
+      pendingStudentCount: accountRows.length - accounts.length,
+      studentCount: students.length,
+      classCount: classes.length,
+    }),
+    [accounts.length, accountRows.length, students.length, classes.length],
+  );
+
+  return (
+    <main className="manager-page">
+      <nav className="manager-main-tabs" aria-label="Khu vực quản lý">
+        <button
+          type="button"
+          className={activeMainTab === "accounts" ? "is-active" : ""}
+          onClick={() => setActiveMainTab("accounts")}
+        >
+          <Icon name="key" />
+          Phân Quyền Người Dùng &amp; Quản Lý Tài Khoản
+          <b>
+            {managerTitleCount.accountCount} tài khoản ·{" "}
+            {managerTitleCount.pendingStudentCount} SV chưa cấp
+          </b>
+        </button>
+
+        <button
+          type="button"
+          className={activeMainTab === "students" ? "is-active" : ""}
+          onClick={() => setActiveMainTab("students")}
+        >
+          <Icon name="profile" />
+          Quản Lý Sinh Viên &amp; Lớp Sinh Hoạt
+          <b className="manager-count--orange">
+            {managerTitleCount.studentCount} SV · {managerTitleCount.classCount}{" "}
+            Lớp
+          </b>
+        </button>
+      </nav>
+
+      {activeMainTab === "accounts" ? (
+        <ManagerAccounts
+          accounts={accountRows}
+          onToggleStatus={toggleAccountStatus}
+          onResetPassword={resetAccountPassword}
+          onOpenModal={(payload) => {
+            if (payload.data?.roleCode === "STUDENT") {
+              const student = students.find(
+                (item) => item.id === payload.data.studentId,
+              );
+              if (student) {
+                openModal({ type: "student", data: student });
+              }
+              return;
+            }
+            openModal(payload);
+          }}
+          onDelete={handleDelete}
+          resetFilters={resetFilters}
+        />
+      ) : (
+        <ManagerStudentClass
+          students={students}
+          classes={classes}
+          onOpenModal={openModal}
+          onDelete={handleDelete}
+          onExport={handleExport}
+          onSync={handleSync}
+          isSyncing={isSyncing}
+          dataError={dataError}
+          onOpenClassModal={(classData) =>
+            setModal({ type: "class", data: classData })
+          }
+          onOpenScores={(classCode) => setModal({ type: "scores", classCode })}
+        />
+      )}
+
+      {modal?.type === "permissions" && (
+        <PermissionModal onClose={closeModal} />
+      )}
+
+      {modal?.type === "account" && (
+        <AccountModal
+          initialData={modal.data}
+          roles={roles}
+          classes={classes}
+          onClose={closeModal}
+          onSave={saveAccount}
+        />
+      )}
+
+      {modal?.type === "student" && (
+        <StudentModal
+          initialData={modal.data}
+          classes={classes}
+          onClose={closeModal}
+          onSave={saveStudent}
+        />
+      )}
+
+      {modal?.type === "class" && (
+        <ClassModal
+          initialData={modal.data}
+          students={students}
+          onClose={closeModal}
+          onSave={saveClass}
+        />
+      )}
+
+      {modal?.type === "scores" && (
+        <ScoreModal
+          classCode={modal.classCode}
+          students={students}
+          onClose={closeModal}
+        />
+      )}
+
+      {toast && (
+        <div className="manager-toast" role="status">
+          <span className="manager-toast__check">✓</span>
+          <span>{toast}</span>
+          <button
+            type="button"
+            onClick={() => setToast("")}
+            aria-label="Đóng thông báo"
+          >
+            <Icon name="close" />
+          </button>
+        </div>
+      )}
+    </main>
+  );
+}

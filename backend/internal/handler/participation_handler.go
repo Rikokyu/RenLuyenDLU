@@ -1,1 +1,1 @@
-// Participation handler placeholder.
+package handler

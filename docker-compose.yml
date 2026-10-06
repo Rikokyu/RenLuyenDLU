@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: renluyen_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: renluyen_dlu
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: renluyen_backend
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - APP_ENV=production
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_NAME=${DB_NAME:-renluyen_dlu}
+      - DB_SSLMODE=${DB_SSLMODE:-disable}
+      - JWT_SECRET=super_secret_key_renluyen_dlu_2026
+      - JWT_EXPIRE_HOURS=24
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:

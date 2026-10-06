@@ -1,1 +1,1 @@
-// Activity service placeholder.
+package service

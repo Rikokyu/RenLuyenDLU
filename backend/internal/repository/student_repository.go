@@ -1,1 +1,1 @@
-// Student repository placeholder.
+package repository

@@ -1,1 +1,1 @@
-// Authentication service placeholder.
+package service

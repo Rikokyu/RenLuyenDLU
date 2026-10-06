@@ -1,1 +1,1 @@
-// Authentication middleware placeholder.
+package middleware

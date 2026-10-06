@@ -1,1 +1,1 @@
-// Participation model placeholder.
+package model

@@ -1,1 +1,1 @@
-// User repository placeholder.
+package repository

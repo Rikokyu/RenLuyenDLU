@@ -1,1 +1,1 @@
-// Evidence model placeholder.
+package model

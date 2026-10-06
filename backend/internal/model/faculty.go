@@ -1,1 +1,1 @@
-// Faculty model placeholder.
+package model

@@ -1,1 +1,1 @@
-// Authentication handler placeholder.
+package handler

@@ -1,1 +1,1 @@
-// User model placeholder.
+package model

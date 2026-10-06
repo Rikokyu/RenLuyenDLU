@@ -1,1 +1,1 @@
-// Activity handler placeholder.
+package handler

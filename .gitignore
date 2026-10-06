@@ -1,0 +1,72 @@
+# ==============================================================================
+# 1. NODE / FRONTEND (Chặn các file sinh ra từ JavaScript/React/Vite)
+# ==============================================================================
+# Chặn thư mục node_modules ở cả thư mục gốc và thư mục frontend
+node_modules/
+frontend/node_modules/
+
+# Chặn các file log lỗi khi chạy npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Chặn các thư mục build sản phẩm và file tạm của Vite/Rollup
+frontend/dist/
+frontend/build/
+.vite/
+.vite-temp/
+frontend/.vite/
+frontend/.vite-temp/
+
+# ==============================================================================
+# 2. GO / BACKEND (Chặn các file sinh ra khi build Go backend)
+# ==============================================================================
+# Chặn file thực thi (binary) sau khi build compile
+backend/cmd/server/server
+backend/cmd/server/server.exe
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Chặn các file test hay sinh ra
+*.test
+backend/*.test
+
+# ==============================================================================
+# 3. BẢO MẬT & ĐỊNH CẤU HÌNH (Rất quan trọng - Tránh lộ mật khẩu/API Key)
+# ==============================================================================
+# Chặn tất cả các file môi trường chứa thông tin nhạy cảm (Database, API Secret, JWT Key...)
+.env
+.env.local
+.env.*.local
+*.env
+backend/.env
+frontend/.env
+
+# Chặn chứng chỉ bảo mật cá nhân nếu có
+*.pem
+*.key
+
+# ==============================================================================
+# 4. HỆ ĐIỀU HÀNH & EDITOR (Cấu hình riêng của máy cá nhân)
+# ==============================================================================
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Các IDE / Trình soạn thảo code (VS Code, JetBrains, v.v...)
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp

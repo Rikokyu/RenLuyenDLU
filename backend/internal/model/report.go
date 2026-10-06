@@ -1,1 +1,1 @@
-// Report model placeholder.
+package model
