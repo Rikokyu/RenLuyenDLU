@@ -31,6 +31,7 @@ type ManagerAccountMutation struct {
 	RoleCode  string `json:"roleCode"`
 	Unit      string `json:"unit"`
 	ClassCode string `json:"classCode"`
+	Position  string `json:"position"`
 	Active    bool   `json:"active"`
 }
 

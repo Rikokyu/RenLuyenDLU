@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 
 	"renluyen-dlu-backend/internal/dto"
@@ -15,7 +16,6 @@ type ManagerRepository interface {
 	GetClasses(ctx context.Context) ([]dto.ManagerClass, error)
 	GetAccounts(ctx context.Context) ([]dto.ManagerAccount, error)
 	GetRoles(ctx context.Context) ([]dto.ManagerRole, error)
-	GetAccountResetSeed(ctx context.Context, id int64) (string, error)
 	ResetAccountPassword(ctx context.Context, id int64, passwordHash string) error
 	UpsertAccount(ctx context.Context, id int64, account dto.ManagerAccountMutation, passwordHash string) error
 	DeleteAccount(ctx context.Context, id int64) error
@@ -65,7 +65,19 @@ func (r *managerRepository) GetStudents(
 			'' AS hometown_city,
 			'' AS hometown_address,
 			(COALESCE(c.status, 0) = 1) AS is_in_class,
-			0 AS class_role_id,
+			COALESCE((
+				SELECT CASE
+					WHEN lower(p.name) LIKE '%lớp trưởng%' THEN 1
+					WHEN lower(p.name) LIKE '%bí thư%' THEN 2
+					ELSE 0
+				END
+				FROM user_post up
+				JOIN post p ON p.id = up.idpost
+				WHERE up.iduser = u.id
+					AND (lower(p.name) LIKE '%lớp trưởng%' OR lower(p.name) LIKE '%bí thư%')
+				ORDER BY CASE WHEN lower(p.name) LIKE '%lớp trưởng%' THEN 1 ELSE 2 END
+				LIMIT 1
+			), 0) AS class_role_id,
 			'' AS permanent_residence
 		`).
 		Joins(`LEFT JOIN student s ON s.iduser = u.id`).
@@ -216,23 +228,6 @@ func (r *managerRepository) GetAccounts(ctx context.Context) ([]dto.ManagerAccou
 	return accounts, err
 }
 
-func (r *managerRepository) GetAccountResetSeed(ctx context.Context, id int64) (string, error) {
-	var seed string
-	err := r.db.WithContext(ctx).
-		Table(`"User" u`).
-		Select(`COALESCE(NULLIF(s.student_code, ''), split_part(u.email, '@', 1))`).
-		Joins(`LEFT JOIN student s ON s.iduser = u.id`).
-		Where(`u.id = ?`, id).
-		Scan(&seed).Error
-	if err != nil {
-		return "", err
-	}
-	if seed == "" {
-		return "", gorm.ErrRecordNotFound
-	}
-	return seed, nil
-}
-
 func (r *managerRepository) ResetAccountPassword(ctx context.Context, id int64, passwordHash string) error {
 	result := r.db.WithContext(ctx).
 		Exec(`UPDATE "User" SET password = ? WHERE id = ?`, passwordHash, id)
@@ -304,10 +299,49 @@ func (r *managerRepository) UpsertAccount(ctx context.Context, id int64, account
 			if account.Active {
 				status = 1
 			}
-			return tx.Exec(`
+			if account.RoleCode == "HOMEROOM_CLASS_OFFICER" {
+				studentCode := strings.SplitN(account.Email, "@", 2)[0]
+				var existingUserID int64
+				if err := tx.Table(`student s`).
+					Select(`s.iduser`).
+					Joins(`JOIN "User" u ON u.id = s.iduser`).
+					Where(`s.student_code = ? AND s.iduser IS NOT NULL`, studentCode).
+					Limit(1).
+					Scan(&existingUserID).Error; err != nil {
+					return err
+				}
+				if existingUserID != 0 {
+					result := tx.Exec(`
+						UPDATE "User"
+						SET firstname = ?, lastname = ?, gender = ?, dob = ?::date,
+						    phone = ?, email = ?, password = ?, idrole = ?, status = ?
+						WHERE id = ?
+					`, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, roleID, status, existingUserID)
+					if result.Error != nil {
+						return result.Error
+					}
+					if result.RowsAffected == 0 {
+						return gorm.ErrRecordNotFound
+					}
+					if err := syncManagerAccountUnit(tx, existingUserID, account.Unit); err != nil {
+						return err
+					}
+					return syncManagerAccountPosition(tx, existingUserID, account.Position)
+				}
+			}
+			if err := tx.Exec(`
 				INSERT INTO "User" (id, firstname, lastname, gender, dob, birthplace, phone, email, password, status, idrole)
 				VALUES (?, ?, ?, ?, ?::date, '', ?, ?, ?, ?, ?)
-			`, nextID, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, status, roleID).Error
+			`, nextID, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, status, roleID).Error; err != nil {
+				return err
+			}
+			if err := syncManagerAccountUnit(tx, nextID, account.Unit); err != nil {
+				return err
+			}
+			if err := syncManagerAccountPosition(tx, nextID, account.Position); err != nil {
+				return err
+			}
+			return nil
 		})
 	}
 
@@ -320,20 +354,119 @@ func (r *managerRepository) UpsertAccount(ctx context.Context, id int64, account
 	if account.Active {
 		status = 1
 	}
-	result := r.db.WithContext(ctx).Exec(`
-		UPDATE "User"
-		SET firstname = ?, lastname = ?, gender = ?, dob = ?::date,
-		    phone = ?, email = ?, password = CASE WHEN ? = '' THEN password ELSE ? END,
-		    idrole = ?, status = ?
-		WHERE id = ?
-	`, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, passwordHash, roleID, status, id)
-	if result.Error != nil {
-		return result.Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Exec(`
+			UPDATE "User"
+			SET firstname = ?, lastname = ?, gender = ?, dob = ?::date,
+			    phone = ?, email = ?, password = CASE WHEN ? = '' THEN password ELSE ? END,
+			    idrole = ?, status = ?
+			WHERE id = ?
+		`, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, passwordHash, roleID, status, id)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+		if err := syncManagerAccountUnit(tx, id, account.Unit); err != nil {
+			return err
+		}
+		return syncManagerAccountPosition(tx, id, account.Position)
+	})
+}
+
+func syncManagerAccountUnit(db *gorm.DB, userID int64, unit string) error {
+	if unit == "" {
+		return nil
 	}
-	if result.RowsAffected == 0 {
+	var studentCount int64
+	if err := db.Table(`student`).Where(`iduser = ?`, userID).Count(&studentCount).Error; err != nil {
+		return err
+	}
+	if studentCount > 0 {
+		return nil
+	}
+	var facultyID int64
+	if err := db.Table(`faculty`).
+		Select(`id`).
+		Where(`name = ? OR faculty_code = ?`, unit, unit).
+		Limit(1).
+		Scan(&facultyID).Error; err != nil {
+		return err
+	}
+	if facultyID == 0 {
+		if err := db.Table(`class c`).
+			Select(`m.idfaculty`).
+			Joins(`JOIN major m ON m.id = c.idmajor`).
+			Where(`c.class_code = ?`, unit).
+			Limit(1).
+			Scan(&facultyID).Error; err != nil {
+			return err
+		}
+	}
+	if facultyID == 0 {
 		return gorm.ErrRecordNotFound
 	}
-	return nil
+	if err := db.Exec(`LOCK TABLE lecturer IN EXCLUSIVE MODE`).Error; err != nil {
+		return err
+	}
+
+	var lecturerID int64
+	if err := db.Table(`lecturer`).
+		Select(`id`).
+		Where(`iduser = ?`, userID).
+		Limit(1).
+		Scan(&lecturerID).Error; err != nil {
+		return err
+	}
+	if lecturerID != 0 {
+		return db.Exec(`UPDATE lecturer SET idfaculty = ? WHERE id = ?`, facultyID, lecturerID).Error
+	}
+	if err := db.Raw(`SELECT COALESCE(MAX(id), 0) + 1 FROM lecturer`).Scan(&lecturerID).Error; err != nil {
+		return err
+	}
+	return db.Exec(`
+		INSERT INTO lecturer (id, lecturer_code, idfaculty, iduser)
+		VALUES (?, ?, ?, ?)
+	`, lecturerID, "MGR"+strconv.FormatInt(userID, 10), facultyID, userID).Error
+}
+
+func syncManagerAccountPosition(db *gorm.DB, userID int64, position string) error {
+	normalizedPosition := strings.ToLower(strings.TrimSpace(position))
+	isLeader := normalizedPosition == "lớp trưởng"
+	isSecretary := normalizedPosition == "bí thư" || normalizedPosition == "bí thư chi đoàn"
+	if position != "" && !isLeader && !isSecretary {
+		return nil
+	}
+	if err := db.Exec(`
+		DELETE FROM user_post
+		WHERE iduser = ? AND idpost IN (
+			SELECT id FROM post
+			WHERE lower(name) LIKE '%lớp trưởng%' OR lower(name) LIKE '%bí thư%'
+		)
+	`, userID).Error; err != nil {
+		return err
+	}
+	if position == "" {
+		return nil
+	}
+	var postID int64
+	if err := db.Table(`post`).
+		Select(`id`).
+		Where(`lower(name) = lower(?) OR (lower(?) = 'bí thư' AND lower(name) LIKE '%bí thư%')`, position, position).
+		Where(`status <> 0`).
+		Limit(1).
+		Scan(&postID).Error; err != nil {
+		return err
+	}
+	if postID == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return db.Exec(`
+		INSERT INTO user_post (iduser, idpost)
+		VALUES (?, ?)
+		ON CONFLICT (iduser, idpost) DO NOTHING
+	`, userID, postID).Error
 }
 
 func (r *managerRepository) DeleteAccount(ctx context.Context, id int64) error {

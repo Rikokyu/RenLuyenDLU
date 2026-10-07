@@ -75,10 +75,9 @@ export default function ManagerAccounts({
         <div className="manager-actions">
           <button
             className="manager-button manager-button--outline"
-            disabled
-            title="Chức năng phân quyền chưa triển khai"
+            onClick={() => onOpenModal({ type: "permissions" })}
           >
-            <Icon name="key" /> Ma Trận Phân Quyền (chưa triển khai)
+            <Icon name="key" /> Ma Trận Phân Quyền
           </button>
           <button
             className="manager-button manager-button--primary"
@@ -137,17 +136,15 @@ export default function ManagerAccounts({
                     <div>
                       <strong>{item.name}</strong>
                       <small>{item.email}</small>
-                      {item.studentId && <small>MSSV: {item.studentId}</small>}
                       <small>
-                        {item.gender} · {formatDate(item.birthDay)} · {item.phone}
+                        {item.gender} · {formatDate(item.birthDay)} ·{" "}
+                        {item.phone}
                       </small>
                     </div>
                   </div>
                 </td>
                 <td>
-                  <span
-                    className="manager-role manager-role--orange"
-                  >
+                  <span className="manager-role manager-role--orange">
                     {getPermissionRole(item.roleCode)}
                   </span>
                   <small className="manager-last-login">
@@ -232,7 +229,7 @@ export default function ManagerAccounts({
                     {item.hasLoginAccount && item.roleCode !== "ADMIN" && (
                       <button
                         onClick={() => onDelete("account", item.id)}
-                          aria-label="Khóa người dùng"
+                        aria-label="Khóa người dùng"
                       >
                         <Icon name="trash" />
                       </button>
