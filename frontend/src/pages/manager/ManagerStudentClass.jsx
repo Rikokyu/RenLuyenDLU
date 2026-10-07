@@ -17,22 +17,17 @@ function formatBirthDay(value) {
 }
 
 function classYear(code) {
-  const match = String(code || "").match(/ITK(\d{2})/i);
+  const match = String(code || "").match(/K(\d{2})/i);
   return match ? `Khóa ${match[1]}` : "Chưa cập nhật";
 }
 
 function classStats(students, code) {
   const rows = students.filter((student) => student.classCode === code);
-  const programs = rows.reduce((result, student) => {
-    const program = student.studyProgramId || "Chưa cập nhật";
-    result[program] = (result[program] || 0) + 1;
-    return result;
-  }, {});
   return {
     male: rows.filter((student) => student.gender === "Nam").length,
     female: rows.filter((student) => student.gender === "Nữ").length,
     leader: rows.find((student) => student.classRoleId === 1),
-    programs,
+    secretary: rows.find((student) => student.classRoleId === 2),
   };
 }
 
@@ -189,6 +184,12 @@ export default function ManagerStudentClass({
                           <small>
                             <em>{item.mssv}</em>
                           </small>
+                          {item.classRoleId === 1 && (
+                            <small className="manager-position">Lớp trưởng</small>
+                          )}
+                          {item.classRoleId === 2 && (
+                            <small className="manager-position">Bí thư</small>
+                          )}
                           <small>{item.email || "Chưa cập nhật email"}</small>
                         </div>
                       </div>
@@ -278,17 +279,18 @@ function ClassGrid({
   const years = [
     ...new Set(
       classes
-        .map((item) => item.code.match(/ITK(\d{2})/i)?.[1])
+        .map((item) => item.code.match(/K(\d{2})/i)?.[1])
         .filter(Boolean),
     ),
   ];
-  const filteredClasses = classes.filter(
-    (item) =>
+  const filteredClasses = classes.filter((item) => {
+    const year = item.code.match(/K(\d{2})/i)?.[1];
+    return (
       item.code.toLowerCase().includes(search.toLowerCase()) &&
       (facultyFilter === "Tất cả khoa" || item.faculty === facultyFilter) &&
-      (yearFilter === "Tất cả khóa" ||
-        item.code.toUpperCase().includes(`ITK${yearFilter}`)),
-  );
+      (yearFilter === "Tất cả khóa" || year === yearFilter)
+    );
+  });
   return (
     <>
       <div className="manager-filter manager-filter--class">
@@ -331,7 +333,7 @@ function ClassGrid({
                 <div>
                   <h2>Lớp {item.code}</h2>
                   <strong>{item.faculty || "Chưa cập nhật khoa"}</strong>
-                  <small>{item.academicYear || classYear(item.code)}</small>
+                  <small>{classYear(item.code)}</small>
                 </div>
                 <b>
                   {item.studentCount}
@@ -339,6 +341,12 @@ function ClassGrid({
                 </b>
               </header>
               <dl>
+                <dt>Bí thư:</dt>
+                <dd>
+                  {stats.secretary
+                    ? `${stats.secretary.name} (${stats.secretary.mssv})`
+                    : "Chưa cập nhật"}
+                </dd>
                 <dt>Lớp trưởng:</dt>
                 <dd>
                   {stats.leader
@@ -348,14 +356,6 @@ function ClassGrid({
                 <dt>Nam / Nữ:</dt>
                 <dd>
                   {stats.male} / {stats.female}
-                </dd>
-                <dt>Chương trình:</dt>
-                <dd>
-                  {Object.entries(stats.programs).map(([program, count]) => (
-                    <span className="manager-class-stat" key={program}>
-                      {program}: {count}
-                    </span>
-                  ))}
                 </dd>
               </dl>
               <footer>
