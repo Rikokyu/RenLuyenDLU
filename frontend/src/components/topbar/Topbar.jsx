@@ -20,8 +20,24 @@ const initialNotifications = [
   },
 ];
 
+function getStoredProfileIdentity() {
+  const storedIdentity = sessionStorage.getItem("renluyen-profile-identity");
+  if (!storedIdentity) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(storedIdentity);
+  } catch {
+    return null;
+  }
+}
+
 export default function Topbar({ title }) {
   const navigate = useNavigate();
+  const [profileIdentity, setProfileIdentity] = useState(
+    getStoredProfileIdentity,
+  );
 
   const [theme, setTheme] = useState(
     localStorage.getItem("renluyen-theme") === "dark" ? "dark" : "light"
@@ -39,6 +55,19 @@ export default function Topbar({ title }) {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("renluyen-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    function updateProfileIdentity() {
+      setProfileIdentity(getStoredProfileIdentity());
+    }
+
+    window.addEventListener("renluyen-profile-updated", updateProfileIdentity);
+    return () =>
+      window.removeEventListener(
+        "renluyen-profile-updated",
+        updateProfileIdentity,
+      );
+  }, []);
 
   useEffect(() => {
     function close(e) {
@@ -84,6 +113,9 @@ export default function Topbar({ title }) {
   function logout() {
     sessionStorage.removeItem("renluyen-authenticated");
     sessionStorage.removeItem("renluyen-role");
+    sessionStorage.removeItem("renluyen-user-identifier");
+    sessionStorage.removeItem("renluyen-profile-identity");
+    setProfileIdentity(null);
     navigate("/login", { replace: true });
   }
 
@@ -204,10 +236,12 @@ export default function Topbar({ title }) {
 
               <span className="profile-badge__meta">
                 <span className="profile-badge__name">
-                  Nguyễn Trung Hiệp
+                  {profileIdentity?.fullName || "Tài khoản"}
                 </span>
                 <span className="profile-badge__sub">
-                  2312610 - CTK47A
+                  {[profileIdentity?.code, profileIdentity?.classCode]
+                    .filter(Boolean)
+                    .join(" - ") || "Hồ sơ cá nhân"}
                 </span>
               </span>
             </button>

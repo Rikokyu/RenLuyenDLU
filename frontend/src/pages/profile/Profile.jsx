@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { getProfileByIdentifier } from "../../services/profileService";
 import "./Profile.css";
 
 const activities = [
@@ -28,29 +30,121 @@ const activities = [
 ];
 
 export default function Profile() {
+  const identifier = sessionStorage.getItem("renluyen-user-identifier") || "";
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(Boolean(identifier));
+  const [error, setError] = useState(
+    identifier ? "" : "Hãy đăng xuất rồi đăng nhập bằng MSSV, mã giảng viên hoặc email để tải hồ sơ.",
+  );
+
+  useEffect(() => {
+    if (!identifier) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    setError("");
+
+    getProfileByIdentifier(identifier)
+      .then((data) => {
+        if (cancelled) {
+          return;
+        }
+        setProfile(data);
+        sessionStorage.setItem(
+          "renluyen-profile-identity",
+          JSON.stringify({
+            fullName: data.fullName,
+            code: data.studentCode || data.lecturerCode,
+            classCode: data.classCode,
+            profileType: data.profileType,
+          }),
+        );
+        window.dispatchEvent(new Event("renluyen-profile-updated"));
+      })
+      .catch((requestError) => {
+        if (!cancelled) {
+          setError(requestError.message);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [identifier]);
+
+  const profileCode = profile?.studentCode || profile?.lecturerCode || "";
+  const isStudent = profile?.profileType === "student";
+  const profileDetails = profile
+    ? [
+        ["Mã sinh viên", profile.studentCode],
+        ["Mã giảng viên", profile.lecturerCode],
+        ["Giới tính", profile.gender],
+        ["Ngày sinh", profile.birthDate],
+        ["Nơi sinh", profile.birthPlace],
+        ["Số điện thoại", profile.phone],
+        ["Email", profile.email],
+        ["Lớp", profile.className || profile.classCode],
+        ["Ngành", profile.majorName || profile.majorCode],
+        ["Khoa", profile.facultyName || profile.facultyCode],
+      ].filter(([, value]) => value)
+    : [];
+
   return (
-    <section className="profile-page" aria-labelledby="profile-heading">
+    <section className="profile-page" aria-label="Hồ sơ cá nhân">
+      {loading && (
+        <p className="profile-data-message" role="status">
+          Đang tải thông tin hồ sơ...
+        </p>
+      )}
+      {error && (
+        <p className="profile-data-message profile-data-message--error" role="alert">
+          {error}
+        </p>
+      )}
+
+      {profile && (
       <div className="profile-hero">
         <div className="profile-hero__identity">
           <div className="profile-avatar">
-            <img src="/images/RenLuyenDLULogo.png" alt="Ảnh đại diện Nguyễn Văn An" />
+            <img src="/images/RenLuyenDLULogo.png" alt="" />
           </div>
 
           <div className="profile-hero__copy">
-            <span className="profile-kicker">Cổng sinh viên cá nhân</span>
-            <h1 id="profile-heading">Nguyễn Văn An - 21120045</h1>
+            <span className="profile-kicker">
+              {isStudent ? "Cổng sinh viên cá nhân" : "Hồ sơ giảng viên"}
+            </span>
+            <h1 id="profile-heading">
+              {profile.fullName} - {profileCode}
+            </h1>
             <p>
-              Lớp: <strong>CTK44A</strong>
-              <span className="profile-separator">•</span>
-              Khoa: <strong>Khoa Công nghệ Thông tin</strong>
+              {isStudent && profile.classCode && (
+                <>
+                  Lớp: <strong>{profile.classCode}</strong>
+                  <span className="profile-separator">•</span>
+                </>
+              )}
+              {isStudent && profile.majorName && (
+                <>
+                  Ngành: <strong>{profile.majorName}</strong>
+                  <span className="profile-separator">•</span>
+                </>
+              )}
+              Khoa: <strong>{profile.facultyName || "Chưa cập nhật"}</strong>
             </p>
           </div>
         </div>
 
-        <div className="profile-score" aria-label="Điểm rèn luyện">
-          <span className="profile-score__label">Điểm rèn luyện hiện tại</span>
-          <strong>92<small>/100</small></strong>
-          <span className="profile-score__rank">Xuất sắc</span>
+        <div className="profile-score" aria-label="Thông tin liên hệ">
+          <span className="profile-score__label">Thông tin liên hệ</span>
+          <strong className="profile-contact">{profile.phone || "Chưa cập nhật"}</strong>
+          <span className="profile-score__rank">{profile.email || "Chưa cập nhật"}</span>
         </div>
 
         <div className="profile-actions">
@@ -64,12 +158,36 @@ export default function Profile() {
           </button>
         </div>
       </div>
+      )}
 
+      {profile && (
+        <div className="profile-content profile-personal-content">
+          <div className="profile-section-heading">
+            <div>
+              <p className="section-eyebrow">Thông tin tài khoản</p>
+              <h2>Thông tin cá nhân</h2>
+            </div>
+          </div>
+          <dl className="profile-details">
+            {profileDetails.map(([label, value]) => (
+              <div className="profile-details__item" key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+
+      {profile && (
       <div className="profile-content">
         <div className="profile-section-heading">
           <div>
             <p className="section-eyebrow">Theo dõi tiến trình</p>
             <h2>Lịch sử hoạt động & minh chứng của bạn</h2>
+            <p className="profile-history-note">
+              Lịch sử bên dưới hiện là dữ liệu minh họa; API lịch sử hoạt động chưa được kết nối.
+            </p>
           </div>
           <span className="activity-total">Tổng số: <strong>{activities.length} hoạt động</strong></span>
         </div>
@@ -110,6 +228,7 @@ export default function Profile() {
           ))}
         </div>
       </div>
+      )}
     </section>
   );
 }

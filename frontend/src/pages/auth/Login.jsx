@@ -16,8 +16,14 @@ export default function Login() {
     localStorage.setItem("renluyen-theme", theme);
   }, [theme]);
 
-  function enterApp() {
+  function enterApp(identifier = username) {
     sessionStorage.setItem("renluyen-authenticated", "true");
+    if (identifier.trim()) {
+      sessionStorage.setItem("renluyen-user-identifier", identifier.trim());
+    } else {
+      sessionStorage.removeItem("renluyen-user-identifier");
+    }
+    sessionStorage.removeItem("renluyen-profile-identity");
     navigate("/dashboard", { replace: true });
   }
 

@@ -40,6 +40,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		// Đăng ký routes của từng Module tại đây
 		MapEvidenceRoutes(v1, db)
 		MapManagerRoutes(v1, db)
+		MapProfileRoutes(v1, db)
 		// Sau này có thêm module khác bạn chỉ cần gọi ở đây:
 		// MapStudentRoutes(v1, db)
 		// MapAuthRoutes(v1, db)
