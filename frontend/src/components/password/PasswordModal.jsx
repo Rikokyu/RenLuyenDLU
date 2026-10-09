@@ -1,21 +1,42 @@
 import { useState } from "react";
+import { changePassword } from "../../services/authService";
 
 export default function PasswordModal({ open, onClose }) {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
   if (!open) return null;
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
-    // Chỉ kiểm tra frontend ở giai đoạn này.
-    if (!oldPassword || !newPassword || !confirmPassword) return;
-    if (newPassword !== confirmPassword) return;
-    onClose();
-    setOldPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
+    setError("");
+    setSuccess("");
+    if (newPassword.length < 8) {
+      setError("Mật khẩu mới phải có ít nhất 8 ký tự.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Mật khẩu xác nhận không khớp.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await changePassword(oldPassword, newPassword);
+      setSuccess(result.message);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.message || "Không thể đổi mật khẩu.",
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -35,6 +56,16 @@ export default function PasswordModal({ open, onClose }) {
         </div>
 
         <form className="password-form" onSubmit={submit}>
+          {error && (
+            <p className="password-form__message is-error" role="alert">
+              {error}
+            </p>
+          )}
+          {success && (
+            <p className="password-form__message is-success" role="status">
+              {success}
+            </p>
+          )}
           <div className="password-field">
             <input
               type="password"
@@ -53,6 +84,7 @@ export default function PasswordModal({ open, onClose }) {
               placeholder=" "
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
+              minLength={8}
               required
             />
             <label>Mật khẩu mới</label>
@@ -71,8 +103,12 @@ export default function PasswordModal({ open, onClose }) {
             <p className="password-field__error">Vui lòng nhập lại mật khẩu mới</p>
           </div>
 
-          <button className="password-submit" type="submit">
-            Đổi mật khẩu
+          <button className="password-submit" type="submit" disabled={loading}>
+            {loading
+              ? "Đang cập nhật..."
+              : success
+                ? "Đã đổi mật khẩu"
+                : "Đổi mật khẩu"}
           </button>
         </form>
       </section>

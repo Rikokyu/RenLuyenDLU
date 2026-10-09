@@ -1,12 +1,17 @@
 import TeacherDashboard from "./TeacherDashboard";
 import StudentDashboard from "./StudentDashboard";
+import { getCurrentUser } from "../../store/authStore";
 
 export default function Dashboard() {
-  const role = sessionStorage.getItem("renluyen-role") || "student";
+  const role = getCurrentUser()?.role;
 
   return (
     <section className="dashboard-page" aria-label="Bảng điều khiển">
-      {role === "teacher" ? <TeacherDashboard /> : <StudentDashboard />}
+      {role === "ADMIN" || role === "STUDENT_AFFAIRS_ASSISTANT" ? (
+        <TeacherDashboard />
+      ) : (
+        <StudentDashboard />
+      )}
     </section>
   );
 }

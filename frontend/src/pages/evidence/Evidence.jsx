@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { apiClient } from '../../services/apiClient';
+import { API_BASE_URL } from '../../services/apiConfig';
 import DetailForLec from './DetailForLec';
 import './Evidence.css';
 
-const API_BASE_URL = 'http://localhost:8080/api/v1/evidences';
+const EVIDENCE_API_URL = `${API_BASE_URL}/evidences`;
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -111,7 +112,7 @@ const mapBackendToFrontend = (item) => {
   // 2. Gọi API lấy Thống kê 4 ô
   const fetchStats = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/stats`);
+      const res = await apiClient.get(`${EVIDENCE_API_URL}/stats`);
       if (res.data?.status === 'success') {
         setStats(res.data.data);
       }
@@ -122,7 +123,7 @@ const mapBackendToFrontend = (item) => {
 
   const fetchFilterOptions = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/filters`);
+      const res = await apiClient.get(`${EVIDENCE_API_URL}/filters`);
       if (res.data?.status === 'success') {
         setFaculties(res.data.data.faculties || []);
         setMajors(res.data.data.majors || []);
@@ -145,7 +146,7 @@ const mapBackendToFrontend = (item) => {
     if (filters.majorId) params.major_id = filters.majorId;
     if (filters.classId) params.class_id = filters.classId;
 
-    const res = await axios.get(API_BASE_URL, { params });
+    const res = await apiClient.get(EVIDENCE_API_URL, { params });
     console.log("Dữ liệu gốc từ Backend:", res.data.data);
 
     if (res.data && res.data.data) {
@@ -269,7 +270,7 @@ const mapBackendToFrontend = (item) => {
     setUpdatingEvidenceId(evidenceId);
     setActionMessage('');
     try {
-      const response = await axios.put(`${API_BASE_URL}/status`, {
+      const response = await apiClient.put(`${EVIDENCE_API_URL}/status`, {
         evidence_id: evidenceId,
         status: newStatus,
       });
@@ -292,7 +293,7 @@ const mapBackendToFrontend = (item) => {
     setIsApproving(true);
     setActionMessage('');
     try {
-      const response = await axios.put(`${API_BASE_URL}/approve`, {
+      const response = await apiClient.put(`${EVIDENCE_API_URL}/approve`, {
         evidence_ids: data.map((item) => item.id),
       });
       await Promise.all([fetchStats(), fetchEvidences(appliedFilters)]);

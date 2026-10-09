@@ -20,7 +20,7 @@ func main() {
 
 	// 3. Khởi tạo Gin Framework
 	r := gin.Default()
-	routes.SetupRoutes(r, db)
+	routes.SetupRoutes(r, db, cfg)
 	r.Use(middleware.CORSMiddleware())
 
 	// 4. API Endpoint kiểm tra Trạng thái Server & DB

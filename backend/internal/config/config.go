@@ -21,6 +21,7 @@ type Config struct {
 	DBSSLMode      string
 	JWTSecret      string
 	JWTExpireHours int
+	GoogleClientID string
 }
 
 // LoadConfig đọc cấu hình từ .env hoặc môi trường Docker/OS
@@ -31,6 +32,10 @@ func LoadConfig() *Config {
 	}
 
 	jwtExpire, _ := strconv.Atoi(getEnv("JWT_EXPIRE_HOURS", "24"))
+	jwtSecret := getEnv("JWT_SECRET", "")
+	if len(jwtSecret) < 32 {
+		log.Fatal("JWT_SECRET phải được cấu hình với ít nhất 32 ký tự.")
+	}
 
 	cfg := &Config{
 		AppPort:        getEnv("PORT", "8080"),
@@ -41,8 +46,9 @@ func LoadConfig() *Config {
 		DBPass:         getEnv("DB_PASSWORD", "postgres"),
 		DBName:         getEnv("DB_NAME", "renluyen_dlu"),
 		DBSSLMode:      getEnv("DB_SSLMODE", "disable"),
-		JWTSecret:      getEnv("JWT_SECRET", "default_secret_key_change_me"),
+		JWTSecret:      jwtSecret,
 		JWTExpireHours: jwtExpire,
+		GoogleClientID: getEnv("GOOGLE_CLIENT_ID", ""),
 	}
 
 	return cfg

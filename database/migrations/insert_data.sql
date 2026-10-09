@@ -64,7 +64,16 @@ INSERT INTO "User" VALUES
 (53,'Đỗ Ngọc','Nhi','Nữ','2004-07-26','Gia Lai','0931000017','2312657@dlu.edu.vn',crypt('DLU@2312657',gen_salt('bf',10)),1,4),
 (54,'Bùi Hoàng','Phúc','Nam','2004-08-28','Bình Thuận','0931000018','2312658@dlu.edu.vn',crypt('DLU@2312658',gen_salt('bf',10)),1,4),
 (55,'Dương Khánh','Tiên','Nữ','2004-09-30','Lâm Đồng','0931000019','2312659@dlu.edu.vn',crypt('DLU@2312659',gen_salt('bf',10)),1,4),
-(56,'Phan Minh','Quân','Nam','2004-10-12','Đắk Lắk','0931000020','2312660@dlu.edu.vn',crypt('DLU@2312660',gen_salt('bf',10)),1,4);
+(56,'Phan Minh','Quân','Nam','2004-10-12','Đắk Lắk','0931000020','2312660@dlu.edu.vn',crypt('DLU@2312660',gen_salt('bf',10)),1,4),
+(57,'Sinh viên','Sư phạm','Nữ','2004-11-01','Lâm Đồng','0931000021','2312661@dlu.edu.vn',crypt('DLU@2312661',gen_salt('bf',10)),1,4);
+
+UPDATE "User" SET Password = crypt('DLU@2026', gen_salt('bf', 10)), Password_Changed = FALSE;
+
+UPDATE "User" SET IdRole = 2 WHERE ID BETWEEN 7 AND 11;
+UPDATE "User" SET IdRole = 4 WHERE ID BETWEEN 17 AND 57;
+UPDATE "User"
+SET IdRole = 3
+WHERE ID IN (12,13,14,15,16,17,18,22,23,24,27,28,29,32,33,39,40,41,43,45,47,49,51,55,57);
 
 INSERT INTO Faculty VALUES
 (1,'CT','Công nghệ thông tin',1),(2,'KT','Kinh tế',1),(3,'AV','Ngôn ngữ Anh',1),(4,'QT','Quản trị kinh doanh',1),
@@ -83,12 +92,11 @@ INSERT INTO Major VALUES
 (20,'DL-NH','Quản trị nhà hàng',1,5),(21,'TC-TD','Tài chính doanh nghiệp',1,9),
 (22,'LU-TM','Luật thương mại',1,7),(23,'XH-PT','Phát triển cộng đồng',1,10),
 (24,'QT-NL','Quản trị nguồn nhân lực',1,4),(25,'QT-KDQT','Kinh doanh quốc tế',1,4),
-(26,'KT-KTKT','Kế toán - kiểm toán',1,2),(27,'KT-DT','Kinh tế đầu tư',1,2);
+(26,'KT-KTKT','Kế toán - kiểm toán',1,2),(27,'KT-DT','Kinh tế đầu tư',1,2),
+(28,'SP-GD','Sư phạm',1,8);
 
 INSERT INTO Lecturer VALUES
-(1,'GV001',1,7),(2,'GV002',2,8),(3,'GV003',3,9),(4,'GV004',4,10),(5,'GV005',5,11),
-(6,'GV006',6,12),(7,'GV007',7,13),(8,'GV008',8,14),(9,'GV009',9,15),(10,'GV010',10,16),
-(11,'CTSV001',1,2),(12,'CTSV002',2,3),(13,'CTSV003',3,4),(14,'CTSV004',4,5),(15,'CTSV005',5,6);
+(1,'GV001',1,12),(2,'GV002',2,13),(3,'GV003',3,14),(4,'GV004',4,15),(5,'GV005',5,16);
 
 INSERT INTO Class VALUES
 (1,'CTK47A','Công nghệ thông tin khóa 47A',1,1,1),(2,'CTK47B','Công nghệ thông tin khóa 47B',1,2,1),
@@ -97,10 +105,11 @@ INSERT INTO Class VALUES
 (7,'KTK50B','Kinh tế đầu tư khóa 50B',1,27,2),(8,'KTK50C','Kinh tế phát triển khóa 50C',1,16,2),
 (9,'KTK50D','Kinh tế đầu tư khóa 50D',1,27,2),(10,'KTK50E','Kinh tế phát triển khóa 50E',1,16,2),
 (11,'TMK50A','Thương mại điện tử khóa 50A',1,3,2),(12,'QTK50A','Quản trị kinh doanh khóa 50A',1,4,4),
-(13,'AVK50A','Ngôn ngữ Anh khóa 50A',1,5,3),(14,'DLK50A','Du lịch khóa 50A',1,6,5),
-(15,'KCK50A','Kỹ thuật công trình khóa 50A',1,7,6),(16,'LUK50A','Luật kinh tế khóa 50A',1,8,7),
-(17,'TCK50A','Tài chính ngân hàng khóa 50A',1,9,9),(18,'XHK50A','Công tác xã hội khóa 50A',1,10,10),
-(19,'KTK50F','Kế toán khóa 50F',1,11,2),(20,'MKK50A','Marketing khóa 50A',1,12,4);
+(13,'AVK50A','Ngôn ngữ Anh khóa 50A',1,5,3),(14,'DLK50A','Du lịch khóa 50A',1,6,3),
+(15,'KCK50A','Kỹ thuật công trình khóa 50A',1,7,1),(16,'LUK50A','Luật kinh tế khóa 50A',1,8,2),
+(17,'TCK50A','Tài chính ngân hàng khóa 50A',1,9,4),(18,'XHK50A','Công tác xã hội khóa 50A',1,10,5),
+(19,'KTK50F','Kế toán khóa 50F',1,11,2),(20,'MKK50A','Marketing khóa 50A',1,12,4),
+(21,'SPK50A','Sư phạm khóa 50A',1,28,1);
 
 INSERT INTO Student VALUES
 (1,'2312631',1,27),(2,'2312632',2,28),(3,'2312633',3,29),(4,'2312634',4,30),(5,'2312635',5,31),
@@ -112,7 +121,8 @@ INSERT INTO Student VALUES
 (26,'2312645',13,41),(27,'2312646',13,42),(28,'2312647',14,43),(29,'2312648',14,44),
 (30,'2312649',15,45),(31,'2312650',15,46),(32,'2312651',16,47),(33,'2312652',16,48),
 (34,'2312653',17,49),(35,'2312654',17,50),(36,'2312655',18,51),(37,'2312656',18,52),
-(38,'2312657',19,53),(39,'2312658',19,54),(40,'2312659',20,55),(41,'2312660',20,56);
+(38,'2312657',19,53),(39,'2312658',19,54),(40,'2312659',20,55),(41,'2312660',20,56),
+(42,'2312661',21,57);
 
 INSERT INTO School_Year VALUES
 (1,'2025-2026',1),(2,'2025-2026',2),(3,'2025-2026',3),(4,'2026-2027',1),(5,'2026-2027',2),
@@ -120,7 +130,8 @@ INSERT INTO School_Year VALUES
 
 INSERT INTO Class_Year VALUES
 (1,1,1),(2,1,1),(3,2,1),(4,2,1),(5,3,1),(6,3,1),(7,4,1),(8,4,1),(9,5,1),(10,5,1),
-(11,4,1),(12,4,1),(13,5,1),(14,5,1),(15,6,1),(16,6,1),(17,7,1),(18,7,1),(19,8,1),(20,8,1);
+(11,4,1),(12,4,1),(13,5,1),(14,5,1),(15,6,1),(16,6,1),(17,7,1),(18,7,1),(19,8,1),(20,8,1),
+(21,4,1);
 
 INSERT INTO TrainingPoint VALUES
 (1,80,85,85,85,1,1,1),(2,90,90,92,91,1,2,1),(3,75,78,78,78,1,3,2),
@@ -128,13 +139,13 @@ INSERT INTO TrainingPoint VALUES
 (7,84,82,83,83,1,7,4),(8,95,94,93,94,1,8,4),(9,79,80,81,80,1,9,5),(10,87,89,88,88,1,10,5);
 
 INSERT INTO Post VALUES
-(1,'Trưởng khoa',1),(2,'Phó khoa',1),(3,'Lớp trưởng',1),(4,'Bí thư Chi đoàn',1),(5,'Phó lớp trưởng',1),
-(6,'Cố vấn học tập',1),(7,'Trưởng bộ môn',1),(8,'Thư ký khoa',1),(9,'Cán bộ đoàn',1),(10,'Cán bộ lớp',1);
+(1,'Giảng viên chủ nhiệm',1),(2,'Lớp trưởng',1),(3,'Bí thư lớp',1),(4,'Bí thư khoa',1);
 
 INSERT INTO User_Post VALUES
-(7,1),(8,2),(9,6),(10,7),(11,8),(12,9),(13,10),(14,6),(15,7),(16,8),
-(17,3),(18,3),(19,3),(20,3),(21,3),(22,3),(23,3),(24,3),(25,3),(26,3),
-(27,4),(28,4),(29,4),(30,4),(31,4),(32,4),(33,4),(34,4),(35,4),(36,4);
+(12,1),(13,1),(14,1),(15,1),(16,1),
+(27,2),(28,2),(32,2),(33,2),(39,2),
+(17,3),(18,3),(22,3),(23,3),(40,3),
+(29,4),(24,4),(41,4),(55,4),(43,4),(45,4),(47,4),(49,4),(51,4),(57,4);
 
 INSERT INTO Activity VALUES
 (1,'ACT01','Chiến dịch Mùa hè xanh','2026-07-01 07:00:00','2026-07-15 17:00:00',50,'Hỗ trợ cộng đồng',20,1,7),

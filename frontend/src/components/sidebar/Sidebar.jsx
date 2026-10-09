@@ -1,15 +1,28 @@
 import { NavLink } from "react-router-dom";
-
-const items = [
-  { to: "/dashboard", icon: "/icons/dashboard.svg", label: "Trang chủ" },
-  { to: "/activities", icon: "/icons/list.svg", label: "Danh sách hoạt động" },
-  { to: "/evidence", icon: "/icons/check.svg", label: "Minh chứng sinh viên" },
-  { to: "/reports", icon: "/icons/report.svg", label: "Báo cáo và thống kê" },
-  { to: "/profile", icon: "/icons/profile.svg", label: "Hồ sơ và lịch sử" },
-  { to: "/manager", icon: "/icons/manager.svg", label: "Quản lý người dùng" },
-];
+import { getCurrentUser } from "../../store/authStore";
 
 export default function Sidebar() {
+  const user = getCurrentUser();
+  const isAdmin = user?.role === "ADMIN";
+  const isAssistant = user?.role === "STUDENT_AFFAIRS_ASSISTANT";
+  const isStudent = user?.role === "STUDENT";
+  const items = [
+    { to: "/dashboard", icon: "/icons/dashboard.svg", label: "Trang chủ" },
+    { to: "/activities", icon: "/icons/list.svg", label: "Danh sách hoạt động" },
+    {
+      to: "/evidence",
+      icon: "/icons/check.svg",
+      label: isStudent ? "Minh chứng cá nhân" : "Minh chứng sinh viên",
+    },
+    ...(!isStudent
+      ? [{ to: "/reports", icon: "/icons/report.svg", label: "Báo cáo và thống kê" }]
+      : []),
+    { to: "/profile", icon: "/icons/profile.svg", label: "Hồ sơ và lịch sử" },
+    ...(isAdmin || isAssistant
+      ? [{ to: "/manager", icon: "/icons/manager.svg", label: "Quản lý người dùng" }]
+      : []),
+  ];
+
   return (
     <aside className="sidebar" aria-label="Thanh điều hướng">
       <div className="sidebar__brand">

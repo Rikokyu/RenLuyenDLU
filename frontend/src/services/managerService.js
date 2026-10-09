@@ -1,7 +1,5 @@
-import axios from "axios";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1";
+import { apiClient } from "./apiClient";
+import { API_BASE_URL } from "./apiConfig";
 
 export async function getManagerStudents(filters = {}) {
   const params = {};
@@ -14,7 +12,7 @@ export async function getManagerStudents(filters = {}) {
     params.class_code = filters.classCode;
   }
 
-  const response = await axios.get(`${API_BASE_URL}/manager/students`, {
+  const response = await apiClient.get(`${API_BASE_URL}/manager/students`, {
     params,
   });
 
@@ -22,34 +20,34 @@ export async function getManagerStudents(filters = {}) {
 }
 
 export async function getManagerClasses() {
-  const response = await axios.get(`${API_BASE_URL}/manager/classes`);
+  const response = await apiClient.get(`${API_BASE_URL}/manager/classes`);
   return response.data.data;
 }
 
 export async function getManagerAccounts() {
-  const response = await axios.get(`${API_BASE_URL}/manager/accounts`);
+  const response = await apiClient.get(`${API_BASE_URL}/manager/accounts`);
   return response.data.data;
 }
 
 export async function getManagerRoles() {
-  const response = await axios.get(`${API_BASE_URL}/manager/roles`);
+  const response = await apiClient.get(`${API_BASE_URL}/manager/roles`);
   return response.data.data;
 }
 
 export async function saveManagerAccount(account) {
   const { id, ...payload } = account;
   const response = id
-    ? await axios.put(`${API_BASE_URL}/manager/accounts/${id}`, payload)
-    : await axios.post(`${API_BASE_URL}/manager/accounts`, payload);
+    ? await apiClient.put(`${API_BASE_URL}/manager/accounts/${id}`, payload)
+    : await apiClient.post(`${API_BASE_URL}/manager/accounts`, payload);
   return response.data;
 }
 
 export async function deleteManagerAccount(id) {
-  await axios.delete(`${API_BASE_URL}/manager/accounts/${id}`);
+  await apiClient.delete(`${API_BASE_URL}/manager/accounts/${id}`);
 }
 
 export async function resetManagerAccountPassword(id) {
-  const response = await axios.post(
+  const response = await apiClient.post(
     `${API_BASE_URL}/manager/accounts/${id}/reset-password`,
   );
   return response.data;
@@ -58,16 +56,16 @@ export async function resetManagerAccountPassword(id) {
 export async function saveManagerClass(classData) {
   const { originalCode, ...payload } = classData;
   const response = originalCode
-    ? await axios.put(
+    ? await apiClient.put(
         `${API_BASE_URL}/manager/classes/${encodeURIComponent(originalCode)}`,
         payload,
       )
-    : await axios.post(`${API_BASE_URL}/manager/classes`, payload);
+    : await apiClient.post(`${API_BASE_URL}/manager/classes`, payload);
   return response.data;
 }
 
 export async function deleteManagerClass(code) {
-  await axios.delete(
+  await apiClient.delete(
     `${API_BASE_URL}/manager/classes/${encodeURIComponent(code)}`,
   );
 }
@@ -75,16 +73,16 @@ export async function deleteManagerClass(code) {
 export async function saveManagerStudent(student) {
   const { originalStudentId, ...payload } = student;
   const response = originalStudentId
-    ? await axios.put(
+    ? await apiClient.put(
         `${API_BASE_URL}/manager/students/${encodeURIComponent(originalStudentId)}`,
         payload,
       )
-    : await axios.post(`${API_BASE_URL}/manager/students`, payload);
+    : await apiClient.post(`${API_BASE_URL}/manager/students`, payload);
   return response.data;
 }
 
 export async function deleteManagerStudent(studentId) {
-  await axios.delete(
+  await apiClient.delete(
     `${API_BASE_URL}/manager/students/${encodeURIComponent(studentId)}`,
   );
 }

@@ -22,6 +22,7 @@
 }
 .manager-main-tabs {
   display: flex;
+  min-width: 0;
   min-height: 58px;
   border-bottom: 1px solid var(--manager-border);
   gap: 4px;
@@ -30,12 +31,19 @@
 .manager-subtabs button {
   display: inline-flex;
   align-items: center;
+  min-width: 0;
   gap: 9px;
   padding: 0 18px;
   color: var(--manager-muted);
   font-size: var(--subtitle-size);
   font-weight: 700;
   border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.manager-tab-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .manager-main-tabs button.is-active {
@@ -141,8 +149,18 @@
       1fr
     );
 }
+.manager-search {
+  width: 80%;
+  height: 40px;
+  padding: 0 12px;
+  color: var(--text);
+  background: var(--manager-surface-soft);
+  border: 1px solid var(--manager-border);
+  border-radius: 10px;
+  outline: none;
+}
+
 .manager-filter select,
-.manager-search,
 .manager-field input,
 .manager-field select {
   width: 100%;
@@ -153,6 +171,17 @@
   border: 1px solid var(--manager-border);
   border-radius: 10px;
   outline: none;
+}
+.manager-class-option-faculty {
+  color: var(--manager-muted);
+  font-size: 12px;
+}
+.manager-class-option-faculty {
+  margin-top: 2px;
+}
+.manager-form-error {
+  color: #a53e24;
+  font-size: 12px;
 }
 .manager-filter select:focus,
 .manager-search:focus-within,
@@ -731,6 +760,35 @@
   font-size: 11px;
   line-height: 1.4;
 }
+.manager-import-feedback {
+  margin: 0 6px 14px;
+  padding: 12px 14px;
+  color: var(--manager-navy);
+  background: var(--manager-surface);
+  border: 1px solid var(--manager-border);
+  border-radius: 10px;
+}
+.manager-import-feedback__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.manager-import-feedback__header button {
+  flex-shrink: 0;
+  font-size: 20px;
+  line-height: 1;
+}
+.manager-import-feedback ul {
+  max-height: 180px;
+  overflow-y: auto;
+  margin: 8px 0 0;
+  padding-left: 20px;
+  color: #a53e24;
+  font-size: 12px;
+}
+.manager-import-feedback li + li {
+  margin-top: 4px;
+}
 .manager-modal-actions {
   justify-content: flex-end;
   padding-top: 12px;
@@ -889,6 +947,39 @@
 }
 
 @media (max-width: 1100px) {
+  .manager-main-tabs button {
+    flex: 1 1 0;
+    gap: 6px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+  .manager-main-tabs .manager-tab-label {
+    flex: 1 1 auto;
+  }
+  .manager-main-tabs b {
+    flex: 0 0 auto;
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+  .manager-subtabs {
+    width: 100%;
+    min-width: 0;
+  }
+  .manager-subtabs button {
+    flex: 1 1 0;
+    gap: 6px;
+    min-width: 0;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+  .manager-subtabs .manager-tab-label {
+    flex: 1 1 auto;
+  }
+  .manager-subtabs b {
+    flex: 0 0 auto;
+    padding: 2px 6px;
+    font-size: 10px;
+  }
   .manager-class-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -900,7 +991,48 @@
     align-items: stretch;
   }
   .manager-toolbar--student .manager-actions {
-    justify-content: flex-end;
+    justify-content: flex-start;
+  }
+  .manager-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .manager-button {
+    min-height: 32px;
+    gap: 5px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+  .manager-button .manager-icon {
+    width: 18px;
+    height: 18px;
+  }
+  .manager-filter--account-list,
+  .manager-filter--student-data {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .manager-filter--class {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .manager-filter--account-list .manager-search,
+  .manager-filter--student-data .manager-search,
+  .manager-filter--class .manager-search {
+    grid-column: 1 / -1;
+  }
+  .manager-filter--class > strong {
+    grid-column: 1 / -1;
+    justify-self: start;
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .manager-table-wrap {
+    transform: rotateX(180deg);
+  }
+  .manager-table-wrap > * {
+    transform: rotateX(180deg);
   }
 }
 @media (max-width: 700px) {
@@ -911,13 +1043,42 @@
     overflow-x: auto;
   }
   .manager-main-tabs button {
-    padding: 0 12px;
+    gap: 5px;
+    padding: 0 8px;
     font-size: 11px;
+  }
+  .manager-main-tabs button .manager-icon {
+    width: 17px;
+    height: 17px;
+  }
+  .manager-main-tabs b,
+  .manager-subtabs b {
+    padding: 2px 6px;
+    font-size: 10px;
   }
   .manager-toolbar,
   .manager-filter {
     margin-left: 0;
     margin-right: 0;
+  }
+  .manager-toolbar {
+    gap: 10px;
+    padding: 10px;
+  }
+  .manager-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .manager-button {
+    min-height: 30px;
+    gap: 5px;
+    padding: 0 9px;
+    border-radius: 8px;
+    font-size: 11px;
+  }
+  .manager-button .manager-icon {
+    width: 17px;
+    height: 17px;
   }
   .manager-filter,
   .manager-filter--students,
@@ -929,9 +1090,17 @@
   }
   .manager-subtabs {
     overflow-x: auto;
+    max-width: 100%;
   }
   .manager-subtabs button {
+    min-height: 34px;
+    gap: 5px;
+    padding: 0 8px;
     font-size: 11px;
+  }
+  .manager-subtabs button .manager-icon {
+    width: 17px;
+    height: 17px;
   }
   .manager-toolbar--student .manager-actions {
     flex-wrap: wrap;

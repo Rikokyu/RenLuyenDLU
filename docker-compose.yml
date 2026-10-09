@@ -24,14 +24,15 @@ services:
     environment:
       - PORT=8080
       - APP_ENV=production
-      - DB_HOST=${DB_HOST:-postgres}
-      - DB_PORT=${DB_PORT:-5432}
+      - DB_HOST=postgres
+      - DB_PORT=5432
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DB_NAME=${DB_NAME:-renluyen_dlu}
       - DB_SSLMODE=${DB_SSLMODE:-disable}
-      - JWT_SECRET=super_secret_key_renluyen_dlu_2026
+      - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env or the environment}
       - JWT_EXPIRE_HOURS=24
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
     depends_on:
       - postgres
 

@@ -3,10 +3,13 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"renluyen-dlu-backend/internal/config"
+	"renluyen-dlu-backend/internal/middleware"
+	"renluyen-dlu-backend/internal/service"
 )
 
 // SetupRoutes khởi tạo toàn bộ router, middleware và đăng ký các module routes
-func SetupRoutes(r *gin.Engine, db *gorm.DB) {
+func SetupRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config) {
 	// 1. Cấu hình Middleware toàn cục (Logger, Recovery, CORS, ...)
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
@@ -37,11 +40,20 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	// 3. Gom nhóm Router Phiên bản 1 (/api/v1)
 	v1 := r.Group("/api/v1")
 	{
-		// Đăng ký routes của từng Module tại đây
-		MapEvidenceRoutes(v1, db)
-		MapManagerRoutes(v1, db)
-		// Sau này có thêm module khác bạn chỉ cần gọi ở đây:
-		// MapStudentRoutes(v1, db)
-		// MapAuthRoutes(v1, db)
+		authService := service.NewAuthService(db, cfg.JWTSecret, cfg.JWTExpireHours, cfg.GoogleClientID)
+		authMiddleware := middleware.RequireAuth(authService, db)
+		MapAuthRoutes(v1, authService, authMiddleware)
+
+		managerRoutes := v1.Group("")
+		managerRoutes.Use(authMiddleware, middleware.AllowRoles("ADMIN", "STUDENT_AFFAIRS_ASSISTANT"))
+		MapManagerRoutes(managerRoutes, db)
+
+		evidenceRoutes := v1.Group("")
+		evidenceRoutes.Use(
+			authMiddleware,
+			middleware.AllowRoles("ADMIN", "STUDENT_AFFAIRS_ASSISTANT", "HOMEROOM_TEACHER", "CLASS_OFFICER"),
+		)
+		MapEvidenceRoutes(evidenceRoutes, db)
 	}
+	MapSwaggerRoutes(r)
 }
