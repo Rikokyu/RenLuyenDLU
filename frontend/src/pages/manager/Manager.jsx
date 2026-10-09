@@ -1171,7 +1171,9 @@ export default function Manager() {
           onClick={() => setActiveMainTab("accounts")}
         >
           <Icon name="key" />
-          Phân Quyền Người Dùng &amp; Quản Lý Tài Khoản
+          <span className="manager-tab-label">
+            Phân Quyền Người Dùng &amp; Quản Lý Tài Khoản
+          </span>
           <b>{managerTitleCount.accountCount} người dùng</b>
         </button>
 
@@ -1181,7 +1183,9 @@ export default function Manager() {
           onClick={() => setActiveMainTab("students")}
         >
           <Icon name="profile" />
-          Quản Lý Sinh Viên &amp; Lớp Sinh Hoạt
+          <span className="manager-tab-label">
+            Quản Lý Sinh Viên &amp; Lớp Sinh Hoạt
+          </span>
           <b className="manager-count--orange">
             {managerTitleCount.studentCount} SV · {managerTitleCount.classCount}{" "}
             Lớp

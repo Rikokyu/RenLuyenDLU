@@ -89,14 +89,18 @@ export default function ManagerStudentClass({
             className={tab === "students" ? "is-active" : ""}
             onClick={() => setTab("students")}
           >
-            <Icon name="profile" /> Thông Tin cá nhân Sinh Viên{" "}
+            <Icon name="profile" />
+            <span className="manager-tab-label">
+              Thông Tin cá nhân Sinh Viên
+            </span>
             <b>{students.length}</b>
           </button>
           <button
             className={tab === "classes" ? "is-active" : ""}
             onClick={() => setTab("classes")}
           >
-            <Icon name="manager" /> Quản Lý Lớp Sinh Hoạt{" "}
+            <Icon name="manager" />
+            <span className="manager-tab-label">Quản Lý Lớp Sinh Hoạt</span>
             <b>{classes.length}</b>
           </button>
         </div>
