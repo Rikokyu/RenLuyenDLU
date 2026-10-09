@@ -15,6 +15,10 @@ import {
   saveManagerStudent,
 } from "../../services/managerService";
 import { exportManagerWorkbook } from "../../utils/managerExport";
+import {
+  downloadManagerImportTemplate,
+  readManagerImportWorkbook,
+} from "../../utils/managerImport";
 import "./Manager.css";
 
 function Icon({ name }) {
@@ -25,6 +29,14 @@ function Icon({ name }) {
       alt=""
       aria-hidden="true"
     />
+  );
+}
+
+function getManagerErrorMessage(error) {
+  return (
+    error.response?.data?.message ||
+    error.message ||
+    "Không thể lưu dữ liệu."
   );
 }
 
@@ -77,6 +89,7 @@ function ModalShell({
 }
 
 function AccountModal({ initialData, roles, classes, onClose, onSave }) {
+  const [assignmentError, setAssignmentError] = useState("");
   const [form, setForm] = useState(() => ({
     name: initialData?.name || "",
     email: initialData?.email || "",
@@ -89,33 +102,46 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
       roles[0]?.code ||
       "",
     unit: initialData?.unit || "",
+    classCode:
+      initialData?.classCode ||
+      classes.find((item) => item.faculty === initialData?.unit)?.code ||
+      "",
     position: initialData?.position || "",
     active: initialData?.active ?? true,
   }));
-  const units = [
-    ...new Set(
-      [
-        ...classes.map((item) => item.faculty),
-        ...classes.map((item) => item.code),
-      ].filter(Boolean),
-    ),
-  ];
-
   function update(key, value) {
+    if (key === "classCode" || key === "position") {
+      setAssignmentError("");
+    }
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   function submit(event) {
     event.preventDefault();
     if (!form.name.trim() || !form.email.trim()) return;
+    const selectedClass = classes.find(
+      (item) => item.code === form.classCode,
+    );
+    const isClassOfficer = form.roleCode === "HOMEROOM_CLASS_OFFICER";
+    if (isClassOfficer && (!form.classCode || !form.position)) {
+      setAssignmentError("Chọn một lớp và chức vụ cho tài khoản ban cán sự.");
+      return;
+    }
 
     onSave({
       ...(initialData || {}),
       ...form,
       name: form.name.trim(),
       email: form.email.trim(),
-      unit: form.unit.trim(),
-      position: form.roleCode === "HOMEROOM_CLASS_OFFICER" ? form.position : "",
+      unit: isClassOfficer
+        ? selectedClass?.faculty || ""
+        : form.unit.trim(),
+      classCode: isClassOfficer
+        ? form.classCode
+        : initialData?.roleCode === "HOMEROOM_CLASS_OFFICER"
+          ? ""
+          : form.classCode,
+      position: isClassOfficer ? form.position : "",
     });
   }
 
@@ -203,17 +229,36 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
 
         <label className="manager-field">
           <span>Khoa / lớp / đơn vị</span>
-          <input
-            list="manager-account-units"
-            value={form.unit}
-            onChange={(event) => update("unit", event.target.value)}
-            placeholder="Chọn hoặc nhập đơn vị"
-          />
-          <datalist id="manager-account-units">
-            {units.map((unit) => (
-              <option key={unit} value={unit} />
+          <select
+            value={form.classCode}
+            onChange={(event) => {
+              const classCode = event.target.value;
+              update("classCode", classCode);
+              update(
+                "unit",
+                classes.find((item) => item.code === classCode)?.faculty || "",
+              );
+            }}
+            required={form.roleCode === "HOMEROOM_CLASS_OFFICER"}
+          >
+            <option value="">Chọn lớp</option>
+            {classes.map((item) => (
+              <option key={item.code} value={item.code}>
+                {item.code} — {item.faculty || "Chưa cập nhật khoa"}
+              </option>
             ))}
-          </datalist>
+          </select>
+          <small className="manager-class-option-faculty">
+            Khoa tự cập nhật:{" "}
+            {classes.find((item) => item.code === form.classCode)?.faculty ||
+              form.unit ||
+              "Chưa chọn lớp"}
+          </small>
+          {assignmentError && (
+            <small className="manager-form-error" role="alert">
+              {assignmentError}
+            </small>
+          )}
         </label>
 
         {form.roleCode === "HOMEROOM_CLASS_OFFICER" && (
@@ -226,11 +271,18 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
             >
               <option value="">Chọn chức vụ</option>
               {form.position &&
-                !["Lớp trưởng", "Bí thư", "Bí thư Chi đoàn"].includes(
+                ![
+                  "Giảng viên chủ nhiệm",
+                  "Lớp trưởng",
+                  "Bí thư lớp",
+                  "Bí thư khoa",
+                ].includes(
                   form.position,
                 ) && <option value={form.position}>{form.position}</option>}
+              <option value="Giảng viên chủ nhiệm">Giảng viên chủ nhiệm</option>
               <option value="Lớp trưởng">Lớp trưởng</option>
-              <option value="Bí thư">Bí thư</option>
+              <option value="Bí thư lớp">Bí thư lớp</option>
+              <option value="Bí thư khoa">Bí thư khoa</option>
             </select>
           </label>
         )}
@@ -424,10 +476,9 @@ function ClassModal({ initialData, students, onClose, onSave }) {
   }));
 
   const countClassCode = initialData?.code || form.code;
-  const existingCount = useMemo(
-    () => students.filter((item) => item.classCode === countClassCode).length,
-    [students, countClassCode],
-  );
+  const existingCount = initialData
+    ? students.filter((item) => item.classCode === countClassCode).length
+    : 0;
 
   function submit(event) {
     event.preventDefault();
@@ -768,6 +819,8 @@ export default function Manager() {
   const [toast, setToast] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
   const [dataError, setDataError] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+  const [importFeedback, setImportFeedback] = useState(null);
   const accountRows = useMemo(
     () => accounts.map((account) => ({ ...account, hasLoginAccount: true })),
     [accounts],
@@ -865,6 +918,7 @@ export default function Manager() {
         phone: data.phone,
         roleCode: data.roleCode,
         unit: data.unit,
+        classCode: data.classCode,
         position: data.position,
         active: data.active,
       });
@@ -888,6 +942,7 @@ export default function Manager() {
         phone: account.phone,
         roleCode: account.roleCode,
         unit: account.unit,
+        classCode: account.classCode,
         position: account.position,
         active: !account.active,
       });
@@ -957,6 +1012,113 @@ export default function Manager() {
       );
     } catch (error) {
       notify(error.response?.data?.message || "Không thể lưu lớp");
+    }
+  }
+
+  async function importManagerFile(file) {
+    if (!file) return;
+    setIsImporting(true);
+    setImportFeedback(null);
+    const issues = [];
+    let importedClasses = 0;
+    let importedStudents = 0;
+
+    try {
+      const workbookData = await readManagerImportWorkbook(file);
+      issues.push(...workbookData.issues);
+      const hasWorkbookStructureError = workbookData.issues.some(
+        (issue) => issue.row === 1,
+      );
+      if (hasWorkbookStructureError) {
+        setImportFeedback({
+          message: "Không thể nhập file do thiếu sheet hoặc cột bắt buộc.",
+          issues,
+        });
+        return;
+      }
+
+      const knownClassCodes = new Set(classes.map((item) => item.code));
+      for (const classData of workbookData.classes) {
+        const existing = classes.find((item) => item.code === classData.code);
+        try {
+          await saveManagerClass({
+            originalCode: existing?.code || "",
+            code: classData.code,
+            faculty: classData.faculty || existing?.faculty || "",
+            academicYear:
+              classData.academicYear || existing?.academicYear || "",
+          });
+          knownClassCodes.add(classData.code);
+          importedClasses += 1;
+        } catch (error) {
+          issues.push({
+            row: classData.row,
+            sheet: "Lớp sinh hoạt",
+            message: `Lớp ${classData.code}: ${getManagerErrorMessage(error)}`,
+          });
+        }
+      }
+
+      for (const student of workbookData.students) {
+        if (!knownClassCodes.has(student.classCode)) {
+          issues.push({
+            row: student.row,
+            sheet: "Sinh viên",
+            message: `Sinh viên ${student.studentId}: lớp ${student.classCode} chưa tồn tại hoặc chưa tạo được.`,
+          });
+          continue;
+        }
+
+        const nameParts = student.name.trim().split(/\s+/);
+        const lastName = nameParts.length > 1 ? nameParts.pop() : "";
+        try {
+          await saveManagerStudent({
+            studentId: student.studentId,
+            email: student.email,
+            phone: student.phone,
+            classCode: student.classCode,
+            gender: student.gender,
+            birthDay: student.birthDay,
+            firstName: nameParts.join(" "),
+            lastName,
+            studentName: student.name,
+            birthPlace: student.birthPlace,
+          });
+          importedStudents += 1;
+        } catch (error) {
+          issues.push({
+            row: student.row,
+            sheet: "Sinh viên",
+            message: `Sinh viên ${student.studentId}: ${getManagerErrorMessage(error)}`,
+          });
+        }
+      }
+
+      await reloadManagerData();
+      setImportFeedback({
+        message: `Đã nhập ${importedClasses} lớp và ${importedStudents} sinh viên.${issues.length ? ` Có ${issues.length} dòng cần kiểm tra.` : ""}`,
+        issues,
+      });
+    } catch (error) {
+      console.error("Lỗi nhập Excel:", error);
+      setImportFeedback({
+        message: getManagerErrorMessage(error),
+        issues,
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  }
+
+  async function handleDownloadTemplate() {
+    try {
+      await downloadManagerImportTemplate();
+    } catch (error) {
+      console.error("Lỗi tạo mẫu Excel:", error);
+      setImportFeedback({
+        message: getManagerErrorMessage(error),
+        issues: [],
+      });
     }
   }
 
@@ -1045,6 +1207,11 @@ export default function Manager() {
           onOpenModal={openModal}
           onDelete={handleDelete}
           onExport={handleExport}
+          onImport={importManagerFile}
+          onDownloadTemplate={handleDownloadTemplate}
+          isImporting={isImporting}
+          importFeedback={importFeedback}
+          onDismissImportFeedback={() => setImportFeedback(null)}
           onSync={handleSync}
           isSyncing={isSyncing}
           dataError={dataError}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { formatDate } from "../../utils/formatDate";
 
 function Icon({ name }) {
@@ -51,11 +51,17 @@ export default function ManagerStudentClass({
   dataError,
   onOpenClassModal,
   onOpenScores,
+  onImport,
+  onDownloadTemplate,
+  isImporting,
+  importFeedback,
+  onDismissImportFeedback,
 }) {
   const [tab, setTab] = useState("students");
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("Tất cả lớp");
   const [facultyFilter, setFacultyFilter] = useState("Tất cả khoa");
+  const importInputRef = useRef(null);
   const classCodes = classes.map((item) => item.code);
   const faculties = [
     ...new Set(students.map((item) => item.facultyName).filter(Boolean)),
@@ -68,7 +74,8 @@ export default function ManagerStudentClass({
         return (
           text.includes(search.toLowerCase()) &&
           (classFilter === "Tất cả lớp" || item.classCode === classFilter) &&
-          (facultyFilter === "Tất cả khoa" || item.facultyName === facultyFilter)
+          (facultyFilter === "Tất cả khoa" ||
+            item.facultyName === facultyFilter)
         );
       }),
     [students, search, classFilter, facultyFilter],
@@ -96,7 +103,35 @@ export default function ManagerStudentClass({
         <div className="manager-actions">
           <button
             className="manager-button manager-button--outline"
+            onClick={onDownloadTemplate}
+            type="button"
+          >
+            <Icon name="report" /> Tải mẫu Excel
+          </button>
+          <button
+            className="manager-button manager-button--outline"
+            onClick={() => importInputRef.current?.click()}
+            disabled={isImporting}
+            type="button"
+          >
+            <Icon name="profile" />{" "}
+            {isImporting ? "Đang nhập..." : "Nhập Excel"}
+          </button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".xlsx"
+            hidden
+            onChange={(event) => {
+              const [file] = event.target.files || [];
+              if (file) onImport(file);
+              event.target.value = "";
+            }}
+          />
+          <button
+            className="manager-button manager-button--outline"
             onClick={onExport}
+            type="button"
           >
             <Icon name="report" /> Xuất Excel
           </button>
@@ -104,12 +139,14 @@ export default function ManagerStudentClass({
             className="manager-button manager-button--outline"
             onClick={onSync}
             disabled={isSyncing}
+            type="button"
           >
             <Icon name="change_pass" />{" "}
             {isSyncing ? "Đang tải..." : "Tải lại dữ liệu"}
           </button>
           <button
             className="manager-button manager-button--primary"
+            type="button"
             onClick={() =>
               onOpenModal({
                 type: tab === "classes" ? "class" : "student",
@@ -124,6 +161,33 @@ export default function ManagerStudentClass({
           </button>
         </div>
       </div>
+      {importFeedback && (
+        <section
+          className="manager-import-feedback"
+          role={importFeedback.issues.length ? "alert" : "status"}
+        >
+          <div className="manager-import-feedback__header">
+            <strong>{importFeedback.message}</strong>
+            <button
+              type="button"
+              onClick={onDismissImportFeedback}
+              aria-label="Đóng kết quả nhập Excel"
+            >
+              ×
+            </button>
+          </div>
+          {importFeedback.issues.length > 0 && (
+            <ul>
+              {importFeedback.issues.map((issue, index) => (
+                <li key={`${issue.row}-${index}`}>
+                  {issue.sheet ? `${issue.sheet} · ` : ""}Dòng {issue.row}:{" "}
+                  {issue.message}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
       {dataError && <div className="manager-data-error">{dataError}</div>}
       {tab === "students" ? (
         <>
@@ -185,10 +249,12 @@ export default function ManagerStudentClass({
                             <em>{item.mssv}</em>
                           </small>
                           {item.classRoleId === 1 && (
-                            <small className="manager-position">Lớp trưởng</small>
+                            <small className="manager-position">
+                              Lớp trưởng
+                            </small>
                           )}
                           {item.classRoleId === 2 && (
-                            <small className="manager-position">Bí thư</small>
+                            <small className="manager-position">Bí thư lớp</small>
                           )}
                           <small>{item.email || "Chưa cập nhật email"}</small>
                         </div>
@@ -278,9 +344,7 @@ function ClassGrid({
   const [yearFilter, setYearFilter] = useState("Tất cả khóa");
   const years = [
     ...new Set(
-      classes
-        .map((item) => item.code.match(/K(\d{2})/i)?.[1])
-        .filter(Boolean),
+      classes.map((item) => item.code.match(/K(\d{2})/i)?.[1]).filter(Boolean),
     ),
   ];
   const filteredClasses = classes.filter((item) => {

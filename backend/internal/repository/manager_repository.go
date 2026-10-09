@@ -16,6 +16,7 @@ type ManagerRepository interface {
 	GetClasses(ctx context.Context) ([]dto.ManagerClass, error)
 	GetAccounts(ctx context.Context) ([]dto.ManagerAccount, error)
 	GetRoles(ctx context.Context) ([]dto.ManagerRole, error)
+	GetAccountResetSeed(ctx context.Context, id int64) (string, error)
 	ResetAccountPassword(ctx context.Context, id int64, passwordHash string) error
 	UpsertAccount(ctx context.Context, id int64, account dto.ManagerAccountMutation, passwordHash string) error
 	DeleteAccount(ctx context.Context, id int64) error
@@ -67,15 +68,18 @@ func (r *managerRepository) GetStudents(
 			(COALESCE(c.status, 0) = 1) AS is_in_class,
 			COALESCE((
 				SELECT CASE
-					WHEN lower(p.name) LIKE '%lớp trưởng%' THEN 1
-					WHEN lower(p.name) LIKE '%bí thư%' THEN 2
+					WHEN lower(p.name) = 'lớp trưởng' THEN 1
+					WHEN lower(p.name) = 'bí thư lớp' THEN 2
 					ELSE 0
 				END
 				FROM user_post up
 				JOIN post p ON p.id = up.idpost
 				WHERE up.iduser = u.id
-					AND (lower(p.name) LIKE '%lớp trưởng%' OR lower(p.name) LIKE '%bí thư%')
-				ORDER BY CASE WHEN lower(p.name) LIKE '%lớp trưởng%' THEN 1 ELSE 2 END
+				AND lower(p.name) IN ('lớp trưởng', 'bí thư lớp')
+				ORDER BY CASE
+					WHEN lower(p.name) = 'lớp trưởng' THEN 1
+					ELSE 2
+				END
 				LIMIT 1
 			), 0) AS class_role_id,
 			'' AS permanent_residence
@@ -161,6 +165,14 @@ func (r *managerRepository) GetAccounts(ctx context.Context) ([]dto.ManagerAccou
 			CASE
 				WHEN lower(r.name) IN ('admin', 'quản trị viên') THEN 'Admin'
 				WHEN lower(r.name) LIKE 'trợ lý%' THEN 'Trợ lý công tác sinh viên'
+				WHEN EXISTS (
+					SELECT 1
+					FROM user_post officer_up
+					JOIN post officer_post ON officer_post.id = officer_up.idpost
+					WHERE officer_up.iduser = u.id
+						AND officer_post.status = 1
+						AND lower(officer_post.name) IN ('giảng viên chủ nhiệm', 'lớp trưởng', 'bí thư lớp', 'bí thư khoa')
+				) THEN 'Giảng viên chủ nhiệm / Ban cán sự'
 				WHEN lower(r.name) LIKE '%sinh viên%' OR lower(r.name) = 'student'
 					OR (s.id IS NOT NULL AND l.iduser IS NULL) THEN 'Sinh viên'
 				WHEN lower(r.name) LIKE '%chủ nhiệm%' OR lower(r.name) LIKE '%cán sự%'
@@ -174,6 +186,14 @@ func (r *managerRepository) GetAccounts(ctx context.Context) ([]dto.ManagerAccou
 			CASE
 				WHEN lower(r.name) IN ('admin', 'quản trị viên') THEN 'ADMIN'
 				WHEN lower(r.name) LIKE 'trợ lý%' THEN 'STUDENT_AFFAIRS_ASSISTANT'
+				WHEN EXISTS (
+					SELECT 1
+					FROM user_post officer_up
+					JOIN post officer_post ON officer_post.id = officer_up.idpost
+					WHERE officer_up.iduser = u.id
+						AND officer_post.status = 1
+						AND lower(officer_post.name) IN ('giảng viên chủ nhiệm', 'lớp trưởng', 'bí thư lớp', 'bí thư khoa')
+				) THEN 'HOMEROOM_CLASS_OFFICER'
 				WHEN lower(r.name) LIKE '%sinh viên%' OR lower(r.name) = 'student'
 					OR (s.id IS NOT NULL AND l.iduser IS NULL) THEN 'STUDENT'
 				WHEN lower(r.name) LIKE '%chủ nhiệm%' OR lower(r.name) LIKE '%cán sự%'
@@ -185,8 +205,8 @@ func (r *managerRepository) GetAccounts(ctx context.Context) ([]dto.ManagerAccou
 				ELSE 'STUDENT'
 			END AS role_code,
 			COALESCE(sf.name, lf.name, '') AS unit,
-			COALESCE(c.class_code, '') AS class_code,
-			COALESCE(c.class_code, '') AS class_name,
+			COALESCE(c.class_code, assigned_class.class_code, '') AS class_code,
+			COALESCE(c.class_code, assigned_class.class_code, '') AS class_name,
 			COALESCE(user_positions.names, '') AS position,
 			COALESCE(s.student_code, '') AS student_id,
 			CASE WHEN u.status <> 0 THEN 'Đang hoạt động' ELSE 'Đã khóa' END AS status,
@@ -201,6 +221,15 @@ func (r *managerRepository) GetAccounts(ctx context.Context) ([]dto.ManagerAccou
 		Joins(`LEFT JOIN lecturer l ON l.iduser = u.id`).
 		Joins(`LEFT JOIN faculty lf ON lf.id = l.idfaculty`).
 		Joins(`
+			LEFT JOIN LATERAL (
+				SELECT c_assigned.class_code
+				FROM class c_assigned
+				WHERE c_assigned.idlecturer = l.id
+				ORDER BY c_assigned.class_code ASC
+				LIMIT 1
+			) assigned_class ON TRUE
+		`).
+		Joins(`
 			LEFT JOIN (
 				SELECT up.iduser, STRING_AGG(DISTINCT p.name, ', ' ORDER BY p.name) AS names
 				FROM user_post up
@@ -213,6 +242,14 @@ func (r *managerRepository) GetAccounts(ctx context.Context) ([]dto.ManagerAccou
 			CASE
 				WHEN lower(r.name) IN ('admin', 'quản trị viên') THEN 1
 				WHEN lower(r.name) LIKE 'trợ lý%' THEN 2
+				WHEN EXISTS (
+					SELECT 1
+					FROM user_post officer_up
+					JOIN post officer_post ON officer_post.id = officer_up.idpost
+					WHERE officer_up.iduser = u.id
+						AND officer_post.status = 1
+						AND lower(officer_post.name) IN ('lớp trưởng', 'bí thư lớp', 'bí thư khoa')
+				) THEN 3
 				WHEN lower(r.name) LIKE '%sinh viên%' OR lower(r.name) = 'student'
 					OR (s.id IS NOT NULL AND l.iduser IS NULL) THEN 4
 				WHEN lower(r.name) LIKE '%chủ nhiệm%' OR lower(r.name) LIKE '%cán sự%'
@@ -226,6 +263,23 @@ func (r *managerRepository) GetAccounts(ctx context.Context) ([]dto.ManagerAccou
 		Order(`u.id ASC`).
 		Scan(&accounts).Error
 	return accounts, err
+}
+
+func (r *managerRepository) GetAccountResetSeed(ctx context.Context, id int64) (string, error) {
+	var seed string
+	err := r.db.WithContext(ctx).
+		Table(`"User" u`).
+		Select(`COALESCE(NULLIF(s.student_code, ''), split_part(u.email, '@', 1))`).
+		Joins(`LEFT JOIN student s ON s.iduser = u.id`).
+		Where(`u.id = ?`, id).
+		Scan(&seed).Error
+	if err != nil {
+		return "", err
+	}
+	if seed == "" {
+		return "", gorm.ErrRecordNotFound
+	}
+	return seed, nil
 }
 
 func (r *managerRepository) ResetAccountPassword(ctx context.Context, id int64, passwordHash string) error {
@@ -281,104 +335,79 @@ func uniqueManagerRoles(roles []dto.ManagerRole) []dto.ManagerRole {
 }
 
 func (r *managerRepository) UpsertAccount(ctx context.Context, id int64, account dto.ManagerAccountMutation, passwordHash string) error {
-	if id == 0 {
-		return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		userID := id
+		roleID, err := managerRoleID(tx, account.RoleCode)
+		if err != nil {
+			return err
+		}
+
+		firstName, lastName := splitUserName(account.Name)
+		status := 0
+		if account.Active {
+			status = 1
+		}
+
+		if userID == 0 {
 			if err := tx.Exec(`LOCK TABLE "User" IN EXCLUSIVE MODE`).Error; err != nil {
 				return err
 			}
-			var nextID int64
-			if err := tx.Raw(`SELECT COALESCE(MAX(id), 0) + 1 FROM "User"`).Scan(&nextID).Error; err != nil {
+			if err := tx.Raw(`SELECT COALESCE(MAX(id), 0) + 1 FROM "User"`).Scan(&userID).Error; err != nil {
 				return err
-			}
-			roleID, err := managerRoleID(tx, account.RoleCode)
-			if err != nil {
-				return err
-			}
-			firstName, lastName := splitUserName(account.Name)
-			status := 0
-			if account.Active {
-				status = 1
-			}
-			if account.RoleCode == "HOMEROOM_CLASS_OFFICER" {
-				studentCode := strings.SplitN(account.Email, "@", 2)[0]
-				var existingUserID int64
-				if err := tx.Table(`student s`).
-					Select(`s.iduser`).
-					Joins(`JOIN "User" u ON u.id = s.iduser`).
-					Where(`s.student_code = ? AND s.iduser IS NOT NULL`, studentCode).
-					Limit(1).
-					Scan(&existingUserID).Error; err != nil {
-					return err
-				}
-				if existingUserID != 0 {
-					result := tx.Exec(`
-						UPDATE "User"
-						SET firstname = ?, lastname = ?, gender = ?, dob = ?::date,
-						    phone = ?, email = ?, password = ?, idrole = ?, status = ?
-						WHERE id = ?
-					`, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, roleID, status, existingUserID)
-					if result.Error != nil {
-						return result.Error
-					}
-					if result.RowsAffected == 0 {
-						return gorm.ErrRecordNotFound
-					}
-					if err := syncManagerAccountUnit(tx, existingUserID, account.Unit); err != nil {
-						return err
-					}
-					return syncManagerAccountPosition(tx, existingUserID, account.Position)
-				}
 			}
 			if err := tx.Exec(`
 				INSERT INTO "User" (id, firstname, lastname, gender, dob, birthplace, phone, email, password, status, idrole)
 				VALUES (?, ?, ?, ?, ?::date, '', ?, ?, ?, ?, ?)
-			`, nextID, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, status, roleID).Error; err != nil {
+			`, userID, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, status, roleID).Error; err != nil {
 				return err
 			}
-			if err := syncManagerAccountUnit(tx, nextID, account.Unit); err != nil {
-				return err
+		} else {
+			result := tx.Exec(`
+				UPDATE "User"
+				SET firstname = ?, lastname = ?, gender = ?, dob = ?::date,
+				    phone = ?, email = ?, password = CASE WHEN ? = '' THEN password ELSE ? END,
+				    idrole = ?, status = ?
+				WHERE id = ?
+			`, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, passwordHash, roleID, status, userID)
+			if result.Error != nil {
+				return result.Error
 			}
-			if err := syncManagerAccountPosition(tx, nextID, account.Position); err != nil {
-				return err
+			if result.RowsAffected == 0 {
+				return gorm.ErrRecordNotFound
 			}
-			return nil
-		})
-	}
+		}
 
-	roleID, err := managerRoleID(r.db.WithContext(ctx), account.RoleCode)
-	if err != nil {
-		return err
-	}
-	firstName, lastName := splitUserName(account.Name)
-	status := 0
-	if account.Active {
-		status = 1
-	}
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		result := tx.Exec(`
-			UPDATE "User"
-			SET firstname = ?, lastname = ?, gender = ?, dob = ?::date,
-			    phone = ?, email = ?, password = CASE WHEN ? = '' THEN password ELSE ? END,
-			    idrole = ?, status = ?
-			WHERE id = ?
-		`, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, passwordHash, roleID, status, id)
-		if result.Error != nil {
-			return result.Error
+		if account.Unit != "" {
+			if err := syncManagerAccountUnit(tx, userID, account.Unit); err != nil {
+				return err
+			}
 		}
-		if result.RowsAffected == 0 {
-			return gorm.ErrRecordNotFound
+		if account.RoleCode == "HOMEROOM_CLASS_OFFICER" {
+			if err := syncManagerAccountClass(tx, userID, account.ClassCode); err != nil {
+				return err
+			}
+			return syncManagerAccountPosition(tx, userID, account.Position)
 		}
-		if err := syncManagerAccountUnit(tx, id, account.Unit); err != nil {
-			return err
+		if account.RoleCode == "STUDENT" {
+			if err := clearManagerAccountClass(tx, userID); err != nil {
+				return err
+			}
+			if err := syncManagerAccountPosition(tx, userID, ""); err != nil {
+				return err
+			}
+			return tx.Exec(`DELETE FROM lecturer WHERE iduser = ?`, userID).Error
 		}
-		return syncManagerAccountPosition(tx, id, account.Position)
+		if account.ClassCode == "" {
+			if err := clearManagerAccountClass(tx, userID); err != nil {
+				return err
+			}
+			return syncManagerAccountPosition(tx, userID, "")
+		}
+		return nil
 	})
 }
 
 func syncManagerAccountUnit(db *gorm.DB, userID int64, unit string) error {
-	if unit == "" {
-		return nil
-	}
 	var studentCount int64
 	if err := db.Table(`student`).Where(`iduser = ?`, userID).Count(&studentCount).Error; err != nil {
 		return err
@@ -386,6 +415,7 @@ func syncManagerAccountUnit(db *gorm.DB, userID int64, unit string) error {
 	if studentCount > 0 {
 		return nil
 	}
+
 	var facultyID int64
 	if err := db.Table(`faculty`).
 		Select(`id`).
@@ -431,30 +461,136 @@ func syncManagerAccountUnit(db *gorm.DB, userID int64, unit string) error {
 	`, lecturerID, "MGR"+strconv.FormatInt(userID, 10), facultyID, userID).Error
 }
 
-func syncManagerAccountPosition(db *gorm.DB, userID int64, position string) error {
-	normalizedPosition := strings.ToLower(strings.TrimSpace(position))
-	isLeader := normalizedPosition == "lớp trưởng"
-	isSecretary := normalizedPosition == "bí thư" || normalizedPosition == "bí thư chi đoàn"
-	if position != "" && !isLeader && !isSecretary {
+func syncManagerAccountClass(db *gorm.DB, userID int64, classCode string) error {
+	var studentClassCode string
+	if err := db.Table(`student s`).
+		Select(`c.class_code`).
+		Joins(`JOIN class c ON c.id = s.idclass`).
+		Where(`s.iduser = ?`, userID).
+		Limit(1).
+		Scan(&studentClassCode).Error; err != nil {
+		return err
+	}
+	if studentClassCode != "" {
+		if studentClassCode != classCode {
+			return errors.New("lớp được chọn phải trùng với lớp sinh viên đang theo học")
+		}
 		return nil
 	}
+
+	var lecturerID int64
+	if err := db.Table(`lecturer`).
+		Select(`id`).
+		Where(`iduser = ?`, userID).
+		Limit(1).
+		Scan(&lecturerID).Error; err != nil {
+		return err
+	}
+	if lecturerID == 0 {
+		if err := db.Exec(`LOCK TABLE lecturer IN EXCLUSIVE MODE`).Error; err != nil {
+			return err
+		}
+		if err := db.Raw(`SELECT COALESCE(MAX(id), 0) + 1 FROM lecturer`).Scan(&lecturerID).Error; err != nil {
+			return err
+		}
+		if err := db.Exec(`
+			INSERT INTO lecturer (id, lecturer_code, idfaculty, iduser)
+			VALUES (?, ?, NULL, ?)
+		`, lecturerID, "MGR"+strconv.FormatInt(userID, 10), userID).Error; err != nil {
+			return err
+		}
+	}
+
+	var classID int64
+	if err := db.Table(`class`).
+		Select(`id`).
+		Where(`class_code = ? AND status <> 0`, classCode).
+		Limit(1).
+		Scan(&classID).Error; err != nil {
+		return err
+	}
+	if classID == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	var assignedLecturerID int64
+	if err := db.Table(`class`).
+		Select(`idlecturer`).
+		Where(`id = ?`, classID).
+		Scan(&assignedLecturerID).Error; err != nil {
+		return err
+	}
+	if assignedLecturerID == lecturerID {
+		return nil
+	}
+	if assignedLecturerID != 0 && assignedLecturerID != lecturerID {
+		return errors.New("lớp đã được phân công giảng viên phụ trách")
+	}
+	if err := db.Exec(`UPDATE class SET idlecturer = NULL WHERE idlecturer = ?`, lecturerID).Error; err != nil {
+		return err
+	}
+	return db.Exec(`UPDATE class SET idlecturer = ? WHERE id = ?`, lecturerID, classID).Error
+}
+
+func clearManagerAccountClass(db *gorm.DB, userID int64) error {
+	var lecturerID int64
+	if err := db.Table(`lecturer`).
+		Select(`id`).
+		Where(`iduser = ?`, userID).
+		Limit(1).
+		Scan(&lecturerID).Error; err != nil {
+		return err
+	}
+	if lecturerID == 0 {
+		return nil
+	}
+	return db.Exec(`UPDATE class SET idlecturer = NULL WHERE idlecturer = ?`, lecturerID).Error
+}
+
+func syncManagerAccountPosition(db *gorm.DB, userID int64, position string) error {
+	var positionCondition string
+	switch strings.ToLower(strings.TrimSpace(position)) {
+	case "":
+		positionCondition = ""
+	case "giảng viên chủ nhiệm":
+		positionCondition = `lower(name) = 'giảng viên chủ nhiệm'`
+	case "lớp trưởng":
+		positionCondition = `lower(name) = 'lớp trưởng'`
+	case "bí thư lớp":
+		positionCondition = `lower(name) = 'bí thư lớp'`
+	case "bí thư khoa":
+		positionCondition = `lower(name) = 'bí thư khoa'`
+	default:
+		var existingPositionCount int64
+		if err := db.Table(`user_post up`).
+			Joins(`JOIN post p ON p.id = up.idpost`).
+			Where(`up.iduser = ? AND lower(p.name) = lower(?) AND p.status <> 0`, userID, position).
+			Count(&existingPositionCount).Error; err != nil {
+			return err
+		}
+		if existingPositionCount > 0 {
+			return nil
+		}
+		return errors.New("chức vụ ban cán sự không hợp lệ")
+	}
+
 	if err := db.Exec(`
 		DELETE FROM user_post
 		WHERE iduser = ? AND idpost IN (
 			SELECT id FROM post
-			WHERE lower(name) LIKE '%lớp trưởng%' OR lower(name) LIKE '%bí thư%'
+			WHERE lower(name) IN ('giảng viên chủ nhiệm', 'lớp trưởng', 'bí thư lớp', 'bí thư khoa')
 		)
 	`, userID).Error; err != nil {
 		return err
 	}
-	if position == "" {
+	if positionCondition == "" {
 		return nil
 	}
+
 	var postID int64
 	if err := db.Table(`post`).
 		Select(`id`).
-		Where(`lower(name) = lower(?) OR (lower(?) = 'bí thư' AND lower(name) LIKE '%bí thư%')`, position, position).
-		Where(`status <> 0`).
+		Where(`(` + positionCondition + `) AND status <> 0`).
+		Order(`id ASC`).
 		Limit(1).
 		Scan(&postID).Error; err != nil {
 		return err

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import PasswordModal from "../password/PasswordModal";
 
 const initialNotifications = [
@@ -22,6 +22,7 @@ const initialNotifications = [
 
 export default function Topbar({ title }) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [theme, setTheme] = useState(
     localStorage.getItem("renluyen-theme") === "dark" ? "dark" : "light"
@@ -215,7 +216,7 @@ export default function Topbar({ title }) {
             {accountOpen && (
               <div className="popover popover--account">
                 <button
-                  className="account-item is-active"
+                  className={`account-item${location.pathname === "/profile" ? " is-active" : ""}`}
                   type="button"
                   onClick={() => {
                     setAccountOpen(false);
