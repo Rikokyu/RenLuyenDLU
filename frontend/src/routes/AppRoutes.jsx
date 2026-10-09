@@ -8,15 +8,34 @@ import Evidence from "../pages/evidence/Evidence";
 import Reports from "../pages/reports/Reports";
 import Profile from "../pages/profile/Profile";
 import Manager from "../pages/manager/Manager";
+import EvidenceForStu from "../pages/evidence/EvidenceForStu";
+import { getCurrentUser } from "../store/authStore";
+
+const allRoles = [
+  "ADMIN",
+  "STUDENT_AFFAIRS_ASSISTANT",
+  "HOMEROOM_TEACHER",
+  "CLASS_OFFICER",
+  "STUDENT",
+];
+const reportRoles = allRoles.filter((role) => role !== "STUDENT");
 
 function RequireAuth({ children }) {
-  const authenticated =
-    sessionStorage.getItem("renluyen-authenticated") === "true";
+  return getCurrentUser() ? children : <Navigate to="/login" replace />;
+}
 
-  return authenticated ? children : <Navigate to="/login" replace />;
+function RequireRole({ roles, children }) {
+  const user = getCurrentUser();
+  return roles.includes(user?.role) ? (
+    children
+  ) : (
+    <Navigate to="/dashboard" replace />
+  );
 }
 
 export default function AppRoutes() {
+  const role = getCurrentUser()?.role;
+
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
@@ -30,12 +49,47 @@ export default function AppRoutes() {
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/activities" element={<ActivityList />} />
-        <Route path="/activities/:id" element={<ActivityDetail />} />
-        <Route path="/evidence" element={<Evidence />} />
-        <Route path="/reports" element={<Reports />} />
+        <Route
+          path="/activities"
+          element={
+            <RequireRole roles={allRoles}>
+              <ActivityList />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/activities/:id"
+          element={
+            <RequireRole roles={allRoles}>
+              <ActivityDetail />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/evidence"
+          element={
+            <RequireRole roles={allRoles}>
+              {role === "STUDENT" ? <EvidenceForStu /> : <Evidence />}
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <RequireRole roles={reportRoles}>
+              <Reports />
+            </RequireRole>
+          }
+        />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/manager" element={<Manager />} />
+        <Route
+          path="/manager"
+          element={
+            <RequireRole roles={["ADMIN", "STUDENT_AFFAIRS_ASSISTANT"]}>
+              <Manager />
+            </RequireRole>
+          }
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

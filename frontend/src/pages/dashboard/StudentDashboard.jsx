@@ -1,4 +1,5 @@
 import "./StudentDashboard.css";
+import { Link } from "react-router-dom";
 
 const news = [
   { title: "Xét học bổng kỳ 2", time: "1 ngày trước" },
@@ -28,9 +29,9 @@ export default function StudentDashboard() {
               Tham gia trải nghiệm, sáng tạo và kết nối với các dự án công nghệ
               mới nhất của sinh viên DLU.
             </p>
-            <button type="button" className="student-primary-button">
+            <Link to="/activities" className="student-primary-button">
               Đăng ký ngay
-            </button>
+            </Link>
           </div>
 
           <aside className="student-news-panel">
@@ -52,7 +53,7 @@ export default function StudentDashboard() {
         <section className="student-events">
           <div className="student-events__header">
             <h3>SỰ KIỆN SẮP DIỄN RA</h3>
-            <button type="button">Xem tất cả</button>
+            <Link to="/activities">Xem tất cả</Link>
           </div>
 
           <div className="student-event-grid">

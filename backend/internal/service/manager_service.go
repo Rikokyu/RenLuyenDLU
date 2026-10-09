@@ -70,6 +70,7 @@ func (s *managerService) SaveAccount(ctx context.Context, id int64, account dto.
 	account.Email = strings.ToLower(strings.TrimSpace(account.Email))
 	account.Username = account.Email
 	account.RoleCode = strings.TrimSpace(account.RoleCode)
+	account.Unit = strings.TrimSpace(account.Unit)
 	account.ClassCode = strings.ToUpper(strings.TrimSpace(account.ClassCode))
 	account.Position = strings.TrimSpace(account.Position)
 	account.Gender = strings.TrimSpace(account.Gender)
@@ -83,6 +84,9 @@ func (s *managerService) SaveAccount(ctx context.Context, id int64, account dto.
 		(account.ClassCode == "" || account.Position == "") {
 		return errors.New("lớp và chức vụ là bắt buộc với vai trò giảng viên / ban cán sự")
 	}
+	if account.RoleCode == "STUDENT_AFFAIRS_ASSISTANT" && account.Unit == "" {
+		return errors.New("khoa phụ trách là bắt buộc với trợ lý công tác sinh viên")
+	}
 	if _, err := time.Parse("2006-01-02", account.BirthDay); err != nil {
 		return errors.New("ngày sinh không hợp lệ")
 	}
@@ -95,8 +99,7 @@ func (s *managerService) SaveAccount(ctx context.Context, id int64, account dto.
 		}
 		passwordHash = string(hashed)
 	} else if id == 0 {
-		seed := strings.SplitN(account.Email, "@", 2)[0]
-		hashed, err := bcrypt.GenerateFromPassword([]byte(temporaryPassword(seed)), bcrypt.DefaultCost)
+		hashed, err := bcrypt.GenerateFromPassword([]byte(defaultPassword), bcrypt.DefaultCost)
 		if err != nil {
 			return err
 		}
@@ -106,11 +109,7 @@ func (s *managerService) SaveAccount(ctx context.Context, id int64, account dto.
 }
 
 func (s *managerService) ResetAccountPassword(ctx context.Context, id int64) error {
-	seed, err := s.repo.GetAccountResetSeed(ctx, id)
-	if err != nil {
-		return err
-	}
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(temporaryPassword(seed)), bcrypt.DefaultCost)
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(defaultPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
@@ -154,15 +153,11 @@ func (s *managerService) SaveStudent(ctx context.Context, oldID string, student 
 	if student.StudentName == "" {
 		student.StudentName = strings.TrimSpace(student.FirstName + " " + student.LastName)
 	}
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(temporaryPassword(student.StudentID)), bcrypt.DefaultCost)
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(defaultPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 	return s.repo.UpsertStudent(ctx, oldID, student, string(passwordHash))
-}
-
-func temporaryPassword(seed string) string {
-	return "DLU@" + seed + "!2026"
 }
 
 func (s *managerService) DeleteStudent(ctx context.Context, id string) error {

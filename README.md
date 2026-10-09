@@ -40,9 +40,19 @@ Giao diện gọi API backend; backend truy vấn PostgreSQL. Danh sách ngườ
 
 Thông tin tài khoản, vai trò và mật khẩu trong mục người dùng cũng được đọc/ghi vào `"User"` và `role`. Xóa/khóa người dùng sẽ đặt trạng thái không hoạt động thay vì xóa vật lý, để giữ nguyên lịch sử và các quan hệ liên quan. Mục quản lý sinh viên/lớp dùng các bảng `student`, `class`, `major`, `faculty` cùng schema đó.
 
-Seed `database/migrations/insert_data.sql` tạo 36 tài khoản mẫu. Email sinh viên dùng MSSV (`MSSV@dlu.edu.vn`), trợ lý dùng `ctsv01`...`ctsv05` và giảng viên dùng `gv01`...`gv10`, tất cả trong miền `@dlu.edu.vn`. Ngày sinh được hiển thị theo `dd/MM/yyyy`. Mật khẩu demo được băm trong PostgreSQL.
+Mười tài khoản trợ lý mẫu được gán lần lượt cho mười khoa bởi `database/migrations/zzz_assistant_faculty_assignments.sql`: `hieunt`–CT, `phattv`–KT, `chault`–AV, `baopq`–QT, `maivt`–DL, `annv`–KC, `hanhtt`–LU, `quanglm`–SP, `longdh`–TC và `tungbt`–XH. Với database đã khởi tạo trước đó, chạy migration này một lần để cập nhật trường `responsiblefaculty`.
 
-Các file SQL khởi tạo chỉ tự chạy khi PostgreSQL được khởi tạo lần đầu. Volume Docker đã tồn tại không tự nạp lại seed khi pull code mới.
+Seed `database/migrations/insert_data.sql` tạo tài khoản mẫu; mật khẩu khởi tạo là `DLU@2026` và được băm trong PostgreSQL. Sinh viên đăng nhập bằng MSSV; giảng viên và trợ lý công tác sinh viên dùng tên tài khoản được cấp (phần trước `@dlu.edu.vn`). Người dùng có thể đổi mật khẩu sau khi đăng nhập.
+
+Khi backend khởi động, migration xác thực sẽ tự thêm cột còn thiếu và đặt mật khẩu mặc định `DLU@2026` cho các tài khoản chưa đổi mật khẩu (chạy một lần, có đánh dấu trong database). Không chạy thủ công `database/migrations/zz_authentication.sql` sau khi người dùng đã đổi mật khẩu vì script này đặt lại mật khẩu tất cả tài khoản. Các file SQL khởi tạo chỉ tự chạy khi PostgreSQL được khởi tạo lần đầu. Volume Docker đã tồn tại không tự nạp lại seed khi pull code mới.
+
+### Đăng nhập và kiểm thử API
+
+- Sao chép `.env.example` thành `.env` và đặt `JWT_SECRET` thành một chuỗi ngẫu nhiên dài tối thiểu 32 ký tự.
+- Khởi động lại backend với `docker compose up --build -d backend` để áp dụng cấu hình kết nối nội bộ `postgres:5432` và migration database.
+- Để bật Google Sign-In, cấu hình Google OAuth Web Client ID ở cả `.env` (`GOOGLE_CLIENT_ID`) và `frontend/.env` (`VITE_GOOGLE_CLIENT_ID`). Backend chỉ chấp nhận ID token đã xác minh, đúng Client ID và email `@dlu.edu.vn` có trong hệ thống.
+- Mở `http://localhost:8080/swagger` để dùng Swagger UI; tài liệu OpenAPI JSON ở `/swagger/openapi.json`. Tài liệu bao gồm các API hồ sơ, quản lý tài khoản/sinh viên/lớp và đọc/cập nhật minh chứng, ngoài API xác thực. Swagger không dùng chung phiên đăng nhập của giao diện web: gọi `/api/v1/auth/login`, sao chép trường `token` trong phản hồi, rồi dán token vào nút **Authorize** để thử endpoint yêu cầu JWT.
+- Không có API đăng ký công khai. Tạo tài khoản vẫn được giới hạn trong mục quản lý người dùng có phân quyền.
 
 ## 📌 Chức năng chính
 

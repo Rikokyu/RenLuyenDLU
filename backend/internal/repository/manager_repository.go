@@ -204,7 +204,7 @@ func (r *managerRepository) GetAccounts(ctx context.Context) ([]dto.ManagerAccou
 				WHEN r.id = 3 THEN 'HOMEROOM_CLASS_OFFICER'
 				ELSE 'STUDENT'
 			END AS role_code,
-			COALESCE(sf.name, lf.name, '') AS unit,
+			COALESCE(NULLIF(u.responsiblefaculty, ''), sf.name, lf.name, '') AS unit,
 			COALESCE(c.class_code, assigned_class.class_code, '') AS class_code,
 			COALESCE(c.class_code, assigned_class.class_code, '') AS class_name,
 			COALESCE(user_positions.names, '') AS position,
@@ -284,7 +284,7 @@ func (r *managerRepository) GetAccountResetSeed(ctx context.Context, id int64) (
 
 func (r *managerRepository) ResetAccountPassword(ctx context.Context, id int64, passwordHash string) error {
 	result := r.db.WithContext(ctx).
-		Exec(`UPDATE "User" SET password = ? WHERE id = ?`, passwordHash, id)
+		Exec(`UPDATE "User" SET password = ?, password_changed = FALSE WHERE id = ?`, passwordHash, id)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -356,9 +356,9 @@ func (r *managerRepository) UpsertAccount(ctx context.Context, id int64, account
 				return err
 			}
 			if err := tx.Exec(`
-				INSERT INTO "User" (id, firstname, lastname, gender, dob, birthplace, phone, email, password, status, idrole)
-				VALUES (?, ?, ?, ?, ?::date, '', ?, ?, ?, ?, ?)
-			`, userID, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, status, roleID).Error; err != nil {
+				INSERT INTO "User" (id, firstname, lastname, gender, dob, birthplace, phone, email, password, status, idrole, responsiblefaculty)
+				VALUES (?, ?, ?, ?, ?::date, '', ?, ?, ?, ?, ?, ?)
+			`, userID, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, status, roleID, account.Unit).Error; err != nil {
 				return err
 			}
 		} else {
@@ -366,9 +366,10 @@ func (r *managerRepository) UpsertAccount(ctx context.Context, id int64, account
 				UPDATE "User"
 				SET firstname = ?, lastname = ?, gender = ?, dob = ?::date,
 				    phone = ?, email = ?, password = CASE WHEN ? = '' THEN password ELSE ? END,
-				    idrole = ?, status = ?
+				    password_changed = CASE WHEN ? = '' THEN password_changed ELSE FALSE END,
+				    idrole = ?, status = ?, responsiblefaculty = ?
 				WHERE id = ?
-			`, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, passwordHash, roleID, status, userID)
+			`, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, passwordHash, passwordHash, roleID, status, account.Unit, userID)
 			if result.Error != nil {
 				return result.Error
 			}

@@ -64,10 +64,10 @@ INSERT INTO "User" VALUES
 (53,'Đỗ Ngọc','Nhi','Nữ','2004-07-26','Gia Lai','0931000017','2312657@dlu.edu.vn',crypt('DLU@2312657',gen_salt('bf',10)),1,4),
 (54,'Bùi Hoàng','Phúc','Nam','2004-08-28','Bình Thuận','0931000018','2312658@dlu.edu.vn',crypt('DLU@2312658',gen_salt('bf',10)),1,4),
 (55,'Dương Khánh','Tiên','Nữ','2004-09-30','Lâm Đồng','0931000019','2312659@dlu.edu.vn',crypt('DLU@2312659',gen_salt('bf',10)),1,4),
-(56,'Phan Minh','Quân','Nam','2004-10-12','Đắk Lắk','0931000020','2312660@dlu.edu.vn',crypt('DLU@2312660',gen_salt('bf',10)),1,4);
-
-INSERT INTO "User" VALUES
+(56,'Phan Minh','Quân','Nam','2004-10-12','Đắk Lắk','0931000020','2312660@dlu.edu.vn',crypt('DLU@2312660',gen_salt('bf',10)),1,4),
 (57,'Sinh viên','Sư phạm','Nữ','2004-11-01','Lâm Đồng','0931000021','2312661@dlu.edu.vn',crypt('DLU@2312661',gen_salt('bf',10)),1,4);
+
+UPDATE "User" SET Password = crypt('DLU@2026', gen_salt('bf', 10)), Password_Changed = FALSE;
 
 UPDATE "User" SET IdRole = 2 WHERE ID BETWEEN 7 AND 11;
 UPDATE "User" SET IdRole = 4 WHERE ID BETWEEN 17 AND 57;

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { getCurrentUser } from "../../store/authStore";
 import "./ActivityList.css";
 
 const activities = [
@@ -101,6 +102,9 @@ const categoryOptions = [
 ];
 
 export default function ActivityList() {
+  const user = getCurrentUser();
+  const canManageActivities =
+    user?.role === "ADMIN" || user?.role === "STUDENT_AFFAIRS_ASSISTANT";
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState(categoryOptions[0]);
   const [status, setStatus] = useState(statusOptions[0]);
@@ -134,18 +138,22 @@ export default function ActivityList() {
           </div>
           <div>
             <h1 id="activities-heading">
-              Quản lý Danh sách Hoạt động & Đợt Rèn luyện
+              {canManageActivities
+                ? "Quản lý Danh sách Hoạt động & Đợt Rèn luyện"
+                : "Danh sách hoạt động rèn luyện"}
             </h1>
-            <p>
-              Quản lý sự kiện, phát hành mã điểm danh QR và ghi nhận điểm rèn
-              luyện số hóa
+            <p>{canManageActivities
+              ? "Quản lý sự kiện, phát hành mã điểm danh QR và ghi nhận điểm rèn luyện số hóa"
+              : "Tìm hiểu và đăng ký tham gia các hoạt động rèn luyện của trường"}
             </p>
           </div>
         </div>
-        <button className="create-activity-button" type="button">
-          <span aria-hidden="true">＋</span>
-          Tạo hoạt động mới
-        </button>
+        {canManageActivities && (
+          <button className="create-activity-button" type="button">
+            <span aria-hidden="true">＋</span>
+            Tạo hoạt động mới
+          </button>
+        )}
       </header>
 
       <div className="activities-toolbar">
@@ -259,22 +267,26 @@ export default function ActivityList() {
                       to={`/activities/${activity.id}`}
                       className="view-activity"
                     >
-                      ▦ <span>Xem</span>
+                      ▦ <span>{canManageActivities ? "Xem" : "Đăng ký"}</span>
                     </Link>
-                    <button
-                      type="button"
-                      className="qr-button"
-                      aria-label={`Mở mã QR cho ${activity.title}`}
-                    >
-                      ▣
-                    </button>
-                    <button
-                      type="button"
-                      className="check-button"
-                      aria-label={`Điểm danh ${activity.title}`}
-                    >
-                      ✓
-                    </button>
+                    {canManageActivities && (
+                      <>
+                        <button
+                          type="button"
+                          className="qr-button"
+                          aria-label={`Mở mã QR cho ${activity.title}`}
+                        >
+                          ▣
+                        </button>
+                        <button
+                          type="button"
+                          className="check-button"
+                          aria-label={`Điểm danh ${activity.title}`}
+                        >
+                          ✓
+                        </button>
+                      </>
+                    )}
                   </div>
                 </td>
               </tr>

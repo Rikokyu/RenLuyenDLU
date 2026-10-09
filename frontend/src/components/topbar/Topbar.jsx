@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PasswordModal from "../password/PasswordModal";
+import { clearSession, getCurrentUser } from "../../store/authStore";
 
 const initialNotifications = [
   {
@@ -33,6 +34,7 @@ export default function Topbar({ title }) {
   const [unreadIds, setUnreadIds] = useState(new Set([1, 2]));
   const [passwordOpen, setPasswordOpen] = useState(false);
   const ref = useRef(null);
+  const user = getCurrentUser();
 
   const unreadCount = unreadIds.size;
 
@@ -83,8 +85,7 @@ export default function Topbar({ title }) {
   }
 
   function logout() {
-    sessionStorage.removeItem("renluyen-authenticated");
-    sessionStorage.removeItem("renluyen-role");
+    clearSession();
     navigate("/login", { replace: true });
   }
 
@@ -205,10 +206,10 @@ export default function Topbar({ title }) {
 
               <span className="profile-badge__meta">
                 <span className="profile-badge__name">
-                  Nguyễn Trung Hiệp
+                  {user?.name || "Người dùng"}
                 </span>
                 <span className="profile-badge__sub">
-                  2312610 - CTK47A
+                  {user?.subtitle || user?.roleLabel || ""}
                 </span>
               </span>
             </button>

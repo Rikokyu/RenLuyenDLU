@@ -90,6 +90,7 @@ function ModalShell({
 
 function AccountModal({ initialData, roles, classes, onClose, onSave }) {
   const [assignmentError, setAssignmentError] = useState("");
+  const faculties = [...new Set(classes.map((item) => item.faculty).filter(Boolean))];
   const [form, setForm] = useState(() => ({
     name: initialData?.name || "",
     email: initialData?.email || "",
@@ -110,7 +111,7 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
     active: initialData?.active ?? true,
   }));
   function update(key, value) {
-    if (key === "classCode" || key === "position") {
+    if (key === "classCode" || key === "position" || key === "unit") {
       setAssignmentError("");
     }
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -123,8 +124,13 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
       (item) => item.code === form.classCode,
     );
     const isClassOfficer = form.roleCode === "HOMEROOM_CLASS_OFFICER";
+    const isAssistant = form.roleCode === "STUDENT_AFFAIRS_ASSISTANT";
     if (isClassOfficer && (!form.classCode || !form.position)) {
       setAssignmentError("Chọn một lớp và chức vụ cho tài khoản ban cán sự.");
+      return;
+    }
+    if (isAssistant && !form.unit) {
+      setAssignmentError("Chọn khoa phụ trách cho trợ lý công tác sinh viên.");
       return;
     }
 
@@ -133,14 +139,8 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
       ...form,
       name: form.name.trim(),
       email: form.email.trim(),
-      unit: isClassOfficer
-        ? selectedClass?.faculty || ""
-        : form.unit.trim(),
-      classCode: isClassOfficer
-        ? form.classCode
-        : initialData?.roleCode === "HOMEROOM_CLASS_OFFICER"
-          ? ""
-          : form.classCode,
+      unit: isClassOfficer ? selectedClass?.faculty || "" : isAssistant ? form.unit : "",
+      classCode: isClassOfficer ? form.classCode : "",
       position: isClassOfficer ? form.position : "",
     });
   }
@@ -148,7 +148,7 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
   return (
     <ModalShell
       title={initialData ? "Chỉnh sửa tài khoản" : "Tạo tài khoản mới"}
-      subtitle={`Email là tên đăng nhập; mật khẩu mặc định là DLU@${new Date().getFullYear()}.`}
+      subtitle="Email là tên đăng nhập; mật khẩu mặc định là DLU@2026."
       icon="profile"
       onClose={onClose}
     >
@@ -227,39 +227,56 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
           </select>
         </label>
 
-        <label className="manager-field">
-          <span>Khoa / lớp / đơn vị</span>
-          <select
-            value={form.classCode}
-            onChange={(event) => {
-              const classCode = event.target.value;
-              update("classCode", classCode);
-              update(
-                "unit",
-                classes.find((item) => item.code === classCode)?.faculty || "",
-              );
-            }}
-            required={form.roleCode === "HOMEROOM_CLASS_OFFICER"}
-          >
-            <option value="">Chọn lớp</option>
-            {classes.map((item) => (
-              <option key={item.code} value={item.code}>
-                {item.code} — {item.faculty || "Chưa cập nhật khoa"}
-              </option>
-            ))}
-          </select>
-          <small className="manager-class-option-faculty">
-            Khoa tự cập nhật:{" "}
-            {classes.find((item) => item.code === form.classCode)?.faculty ||
-              form.unit ||
-              "Chưa chọn lớp"}
-          </small>
-          {assignmentError && (
-            <small className="manager-form-error" role="alert">
-              {assignmentError}
-            </small>
-          )}
-        </label>
+        {form.roleCode === "STUDENT_AFFAIRS_ASSISTANT" && (
+          <label className="manager-field">
+            <span>Khoa phụ trách</span>
+            <select
+              value={form.unit}
+              onChange={(event) => update("unit", event.target.value)}
+              required
+            >
+              <option value="">Chọn khoa phụ trách</option>
+              {faculties.map((faculty) => (
+                <option key={faculty} value={faculty}>{faculty}</option>
+              ))}
+            </select>
+            {assignmentError && (
+              <small className="manager-form-error" role="alert">
+                {assignmentError}
+              </small>
+            )}
+          </label>
+        )}
+
+        {form.roleCode === "HOMEROOM_CLASS_OFFICER" && (
+          <label className="manager-field">
+            <span>Lớp phụ trách</span>
+            <select
+              value={form.classCode}
+              onChange={(event) => {
+                const classCode = event.target.value;
+                update("classCode", classCode);
+                update(
+                  "unit",
+                  classes.find((item) => item.code === classCode)?.faculty || "",
+                );
+              }}
+              required
+            >
+              <option value="">Chọn lớp</option>
+              {classes.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.code} — {item.faculty || "Chưa cập nhật khoa"}
+                </option>
+              ))}
+            </select>
+            {assignmentError && (
+              <small className="manager-form-error" role="alert">
+                {assignmentError}
+              </small>
+            )}
+          </label>
+        )}
 
         {form.roleCode === "HOMEROOM_CLASS_OFFICER" && (
           <label className="manager-field">
@@ -954,7 +971,7 @@ export default function Manager() {
   }
 
   async function resetAccountPassword(account) {
-    const defaultPassword = `DLU@${new Date().getFullYear()}`;
+    const defaultPassword = "DLU@2026";
     const confirmed = window.confirm(
       `Đặt lại mật khẩu cho ${account.email} về ${defaultPassword}?`,
     );

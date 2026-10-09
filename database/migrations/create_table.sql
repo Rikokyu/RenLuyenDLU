@@ -53,6 +53,8 @@ CREATE TABLE "User" (
     Password TEXT NOT NULL,
     Status INT DEFAULT 1,
     IdRole BIGINT,
+    ResponsibleFaculty TEXT NOT NULL DEFAULT '',
+    Password_Changed BOOLEAN NOT NULL DEFAULT FALSE,
     CONSTRAINT fk_user_role
         FOREIGN KEY (IdRole) REFERENCES Role(ID)
 );

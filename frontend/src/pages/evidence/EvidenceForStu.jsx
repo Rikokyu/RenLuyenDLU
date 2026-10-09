@@ -1,36 +1,60 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import SubmitEvidence from './SubmitEvidence';
 import DetailForStu from './DetailForStu';
+import { getProfile } from '../../services/authService';
+import { getCurrentUser } from '../../store/authStore';
 import './EvidenceStu.css';
 
 export default function EvidenceForStu() {
+  const user = getCurrentUser();
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [selectedEvidence, setSelectedEvidence] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [evidenceList, setEvidenceList] = useState([]);
+  const [loadError, setLoadError] = useState('');
+  const facultyClass = [user?.faculty, user?.classCode].filter(Boolean).join(' - ');
 
-  // Dữ liệu danh sách minh chứng ban đầu
-  const [evidenceList, setEvidenceList] = useState([
-    {
-      id: 1,
-      studentName: 'Nguyễn Văn A',
-      studentId: '2111101',
-      facultyClass: 'CNTT - K45',
-      event: 'Mùa hè xanh 2026',
-      proofName: 'Minh chứng đã tải lên',
-      score: 10,
-      status: 'Chờ phê duyệt',
-    },
-    {
-      id: 2,
-      studentName: 'Nguyễn Văn A',
-      studentId: '2111101',
-      facultyClass: 'CNTT - K45',
-      event: 'Hiến máu nhân đạo',
-      proofName: 'Minh chứng đã tải lên',
-      score: 5,
-      status: 'Đã phê duyệt',
-    },
-  ]);
+  useEffect(() => {
+    let active = true;
+    getProfile()
+      .then((profile) => {
+        if (!active) return;
+        setEvidenceList(
+          profile.activities.map((activity, index) => ({
+            id: `${activity.title}-${index}`,
+            studentName: profile.user.name,
+            studentId: profile.user.studentId,
+            facultyClass: [profile.user.faculty, profile.user.classCode]
+              .filter(Boolean)
+              .join(' - '),
+            event: activity.title,
+            proofName:
+              activity.evidenceStatus === 'Chưa nộp'
+                ? 'Chưa nộp minh chứng'
+                : 'Minh chứng đã nộp',
+            score: activity.score,
+            status:
+              activity.evidenceStatus === 'Đã duyệt'
+                ? 'Đã phê duyệt'
+                : activity.evidenceStatus === 'Đã từ chối'
+                  ? 'Đã từ chối'
+                  : activity.evidenceStatus === 'Chưa nộp'
+                    ? 'Chưa nộp minh chứng'
+                    : 'Chờ phê duyệt',
+          })),
+        );
+      })
+      .catch((error) => {
+        if (active) {
+          setLoadError(
+            error.response?.data?.message || 'Không thể tải minh chứng cá nhân.',
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Thống kê số lượng
   const totalCount = evidenceList.length;
@@ -43,15 +67,15 @@ export default function EvidenceForStu() {
   const handleAddEvidence = (newProof) => {
     const newItem = {
       id: Date.now(),
-      studentName: 'Nguyễn Văn A',
-      studentId: '2111101',
-      facultyClass: 'CNTT - K45',
+      studentName: user?.name || '',
+      studentId: user?.studentId || '',
+      facultyClass,
       event: newProof.event,
       proofName: newProof.proof,
       score: 0,
       status: 'Chờ phê duyệt',
     };
-    setEvidenceList([newItem, ...evidenceList]);
+    setEvidenceList((current) => [newItem, ...current]);
   };
 
   // Xóa minh chứng
@@ -123,6 +147,7 @@ export default function EvidenceForStu() {
 
       {/* Bảng Danh sách minh chứng */}
       <div className="table-container-stu">
+        {loadError && <p role="alert">{loadError}</p>}
         <table className="table-stu">
           <thead>
             <tr>
