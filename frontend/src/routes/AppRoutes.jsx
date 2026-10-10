@@ -14,11 +14,17 @@ import { getCurrentUser } from "../store/authStore";
 const allRoles = [
   "ADMIN",
   "STUDENT_AFFAIRS_ASSISTANT",
-  "HOMEROOM_TEACHER",
-  "CLASS_OFFICER",
+  "HOMEROOM_CLASS_OFFICER",
   "STUDENT",
 ];
 const reportRoles = allRoles.filter((role) => role !== "STUDENT");
+
+function normalizeRole(role) {
+  if (role === "HOMEROOM_TEACHER" || role === "CLASS_OFFICER") {
+    return "HOMEROOM_CLASS_OFFICER";
+  }
+  return role;
+}
 
 function RequireAuth({ children }) {
   return getCurrentUser() ? children : <Navigate to="/login" replace />;
@@ -26,7 +32,7 @@ function RequireAuth({ children }) {
 
 function RequireRole({ roles, children }) {
   const user = getCurrentUser();
-  return roles.includes(user?.role) ? (
+  return roles.includes(normalizeRole(user?.role)) ? (
     children
   ) : (
     <Navigate to="/dashboard" replace />

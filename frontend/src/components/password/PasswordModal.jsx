@@ -5,6 +5,7 @@ export default function PasswordModal({ open, onClose }) {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,25 +51,19 @@ export default function PasswordModal({ open, onClose }) {
       >
         <div className="password-dialog__header">
           <h2 id="passwordHeading">ĐỔI MẬT KHẨU</h2>
-          <button className="password-dialog__close" type="button" onClick={onClose}>
+          <button
+            className="password-dialog__close"
+            type="button"
+            onClick={onClose}
+          >
             <img src="/icons/close.svg" alt="Đóng" />
           </button>
         </div>
 
         <form className="password-form" onSubmit={submit}>
-          {error && (
-            <p className="password-form__message is-error" role="alert">
-              {error}
-            </p>
-          )}
-          {success && (
-            <p className="password-form__message is-success" role="status">
-              {success}
-            </p>
-          )}
           <div className="password-field">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder=" "
               value={oldPassword}
               onChange={(e) => setOldPassword(e.target.value)}
@@ -80,7 +75,7 @@ export default function PasswordModal({ open, onClose }) {
 
           <div className="password-field">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder=" "
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
@@ -93,15 +88,36 @@ export default function PasswordModal({ open, onClose }) {
 
           <div className="password-field">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder=" "
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
             />
             <label>Nhập lại mật khẩu mới</label>
-            <p className="password-field__error">Vui lòng nhập lại mật khẩu mới</p>
+            <p className="password-field__error">
+              Vui lòng nhập lại mật khẩu mới
+            </p>
           </div>
+          <label className="show-password">
+            <input
+              type="checkbox"
+              checked={showPassword}
+              onChange={(event) => setShowPassword(event.target.checked)}
+            />
+            <span>Hiện mật khẩu</span>
+          </label>
+
+          {error && (
+            <p className="password-form__message is-error" role="alert">
+              {error}
+            </p>
+          )}
+          {success && (
+            <p className="password-form__message is-success" role="status">
+              {success}
+            </p>
+          )}
 
           <button className="password-submit" type="submit" disabled={loading}>
             {loading
