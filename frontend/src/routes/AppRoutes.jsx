@@ -9,24 +9,30 @@ import Reports from "../pages/reports/Reports";
 import Profile from "../pages/profile/Profile";
 import Manager from "../pages/manager/Manager";
 import EvidenceForStu from "../pages/evidence/EvidenceForStu";
-import { getCurrentUser } from "../store/authStore";
+import { useCurrentUser } from "../hooks/useAuth";
 
 const allRoles = [
   "ADMIN",
   "STUDENT_AFFAIRS_ASSISTANT",
-  "HOMEROOM_TEACHER",
-  "CLASS_OFFICER",
+  "HOMEROOM_CLASS_OFFICER",
   "STUDENT",
 ];
 const reportRoles = allRoles.filter((role) => role !== "STUDENT");
 
+function normalizeRole(role) {
+  if (role === "HOMEROOM_TEACHER" || role === "CLASS_OFFICER") {
+    return "HOMEROOM_CLASS_OFFICER";
+  }
+  return role;
+}
+
 function RequireAuth({ children }) {
-  return getCurrentUser() ? children : <Navigate to="/login" replace />;
+  return useCurrentUser() ? children : <Navigate to="/login" replace />;
 }
 
 function RequireRole({ roles, children }) {
-  const user = getCurrentUser();
-  return roles.includes(user?.role) ? (
+  const user = useCurrentUser();
+  return roles.includes(normalizeRole(user?.role)) ? (
     children
   ) : (
     <Navigate to="/dashboard" replace />
@@ -34,7 +40,7 @@ function RequireRole({ roles, children }) {
 }
 
 export default function AppRoutes() {
-  const role = getCurrentUser()?.role;
+  const role = useCurrentUser()?.role;
 
   return (
     <Routes>
