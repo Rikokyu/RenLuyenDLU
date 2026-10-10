@@ -218,6 +218,23 @@ button {
   display: block;
 }
 
+.login-show-password {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: -10px 0 16px;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.login-show-password input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-green);
+  cursor: pointer;
+}
+
 .login-submit,
 .google-submit {
   width: 100%;

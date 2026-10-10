@@ -11,6 +11,7 @@ export default function Login() {
   );
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -131,7 +132,7 @@ export default function Login() {
             className={`login-field${submitted && !password.trim() ? " is-invalid" : ""}`}
           >
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder=" "
               value={password}
               autoComplete="current-password"
@@ -141,6 +142,15 @@ export default function Login() {
             <label>Mật khẩu</label>
             <p className="login-error">Mật khẩu là bắt buộc</p>
           </div>
+
+          <label className="login-show-password">
+            <input
+              type="checkbox"
+              checked={showPassword}
+              onChange={(event) => setShowPassword(event.target.checked)}
+            />
+            <span>Hiện mật khẩu</span>
+          </label>
 
           <button className="login-submit" type="submit" disabled={loading}>
             {loading ? "ĐANG ĐĂNG NHẬP..." : "ĐĂNG NHẬP"}
