@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import SubmitEvidence from './SubmitEvidence';
 import DetailForStu from './DetailForStu';
 import { getProfile } from '../../services/authService';
-import { getCurrentUser } from '../../store/authStore';
+import { useCurrentUser } from '../../hooks/useAuth';
 import './EvidenceStu.css';
 
 export default function EvidenceForStu() {
-  const user = getCurrentUser();
+  const user = useCurrentUser();
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [selectedEvidence, setSelectedEvidence] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');

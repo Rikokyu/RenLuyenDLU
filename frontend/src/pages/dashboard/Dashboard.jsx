@@ -1,9 +1,9 @@
 import TeacherDashboard from "./TeacherDashboard";
 import StudentDashboard from "./StudentDashboard";
-import { getCurrentUser } from "../../store/authStore";
+import { useCurrentUser } from "../../hooks/useAuth";
 
 export default function Dashboard() {
-  const role = getCurrentUser()?.role;
+  const role = useCurrentUser()?.role;
 
   return (
     <section className="dashboard-page" aria-label="Bảng điều khiển">

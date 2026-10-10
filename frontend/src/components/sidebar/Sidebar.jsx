@@ -1,8 +1,8 @@
 import { NavLink } from "react-router-dom";
-import { getCurrentUser } from "../../store/authStore";
+import { useCurrentUser } from "../../hooks/useAuth";
 
 export default function Sidebar() {
-  const user = getCurrentUser();
+  const user = useCurrentUser();
   const isAdmin = user?.role === "ADMIN";
   const isAssistant = user?.role === "STUDENT_AFFAIRS_ASSISTANT";
   const isStudent = user?.role === "STUDENT";

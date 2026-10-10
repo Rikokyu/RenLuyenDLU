@@ -9,7 +9,7 @@ import Reports from "../pages/reports/Reports";
 import Profile from "../pages/profile/Profile";
 import Manager from "../pages/manager/Manager";
 import EvidenceForStu from "../pages/evidence/EvidenceForStu";
-import { getCurrentUser } from "../store/authStore";
+import { useCurrentUser } from "../hooks/useAuth";
 
 const allRoles = [
   "ADMIN",
@@ -27,11 +27,11 @@ function normalizeRole(role) {
 }
 
 function RequireAuth({ children }) {
-  return getCurrentUser() ? children : <Navigate to="/login" replace />;
+  return useCurrentUser() ? children : <Navigate to="/login" replace />;
 }
 
 function RequireRole({ roles, children }) {
-  const user = getCurrentUser();
+  const user = useCurrentUser();
   return roles.includes(normalizeRole(user?.role)) ? (
     children
   ) : (
@@ -40,7 +40,7 @@ function RequireRole({ roles, children }) {
 }
 
 export default function AppRoutes() {
-  const role = getCurrentUser()?.role;
+  const role = useCurrentUser()?.role;
 
   return (
     <Routes>

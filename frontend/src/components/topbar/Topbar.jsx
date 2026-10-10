@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PasswordModal from "../password/PasswordModal";
-import { clearSession, getCurrentUser } from "../../store/authStore";
+import { clearSession } from "../../store/authStore";
+import { useCurrentUser } from "../../hooks/useAuth";
 
 const initialNotifications = [
   {
@@ -34,7 +35,7 @@ export default function Topbar({ title }) {
   const [unreadIds, setUnreadIds] = useState(new Set([1, 2]));
   const [passwordOpen, setPasswordOpen] = useState(false);
   const ref = useRef(null);
-  const user = getCurrentUser();
+  const user = useCurrentUser();
 
   const unreadCount = unreadIds.size;
 
