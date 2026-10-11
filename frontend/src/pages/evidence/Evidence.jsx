@@ -326,7 +326,6 @@ const mapBackendToFrontend = (item) => {
 
   return (
     <div className="evidence-container">
-      <a href="/evidence/student">Xem minh chứng của sinh viên</a>
       {/* Khung tìm kiếm & Thống kê */}
       <div className="evidence-header-card">
         <h1 className="text-large text-white font-bold">
