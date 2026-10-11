@@ -82,6 +82,7 @@ export default function AppRoutes() {
           }
         />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/evidence/student" element={<EvidenceForStu />} />
         <Route
           path="/manager"
           element={

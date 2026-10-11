@@ -25,7 +25,9 @@ func InitDatabase(cfg *config.Config) *gorm.DB {
 	if err := migrateAuthentication(db); err != nil {
 		log.Fatalf("❌ Không thể cập nhật schema xác thực: %v", err)
 	}
-
+	if err := MigrateEvidenceUploads(db); err != nil {
+		log.Fatalf("Không thể cập nhật lưu trữ minh chứng: %v", err)
+	}
 	fmt.Println("========================================")
 	fmt.Println("✅ KẾT NỐI DATABASE THÀNH CÔNG!")
 	fmt.Println("========================================")

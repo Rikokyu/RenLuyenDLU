@@ -4,12 +4,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"renluyen-dlu-backend/internal/config"
+	"renluyen-dlu-backend/internal/handler"
 	"renluyen-dlu-backend/internal/middleware"
 	"renluyen-dlu-backend/internal/service"
+	"renluyen-dlu-backend/internal/storage"
 )
 
 // SetupRoutes khởi tạo toàn bộ router, middleware và đăng ký các module routes
-func SetupRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config) {
+func SetupRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config, objectStorage storage.Storage) {
 	// 1. Cấu hình Middleware toàn cục (Logger, Recovery, CORS, ...)
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
@@ -43,6 +45,11 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config) {
 		authService := service.NewAuthService(db, cfg.JWTSecret, cfg.JWTExpireHours, cfg.GoogleClientID)
 		authMiddleware := middleware.RequireAuth(authService, db)
 		MapAuthRoutes(v1, authService, authMiddleware)
+		v1.GET("/student-evidences", authMiddleware, handler.StudentEvidenceList(db))
+		v1.GET("/student-evidences/activities", authMiddleware, handler.StudentEvidenceActivities(db))
+		v1.POST("/student-evidences", authMiddleware, handler.StudentEvidenceCreate(db, objectStorage))
+		v1.GET("/student-evidences/:id", authMiddleware, handler.StudentEvidenceDetail(db))
+		v1.GET("/student-evidences/:id/file", authMiddleware, handler.StudentEvidenceFile(db, objectStorage))
 
 		managerRoutes := v1.Group("")
 		managerRoutes.Use(authMiddleware, middleware.AllowRoles("ADMIN", "STUDENT_AFFAIRS_ASSISTANT"))
