@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/joho/godotenv"
@@ -22,13 +23,25 @@ type Config struct {
 	JWTSecret      string
 	JWTExpireHours int
 	GoogleClientID string
+	MinIO          MinIOConfig
 }
 
 // LoadConfig đọc cấu hình từ .env hoặc môi trường Docker/OS
 func LoadConfig() *Config {
-	// Đọc file .env (Nếu chạy trong Docker hoặc không có file .env thì bỏ qua)
-	if err := godotenv.Load(); err != nil {
+	envFiles := []string{}
+	if _, err := os.Stat(".env"); err == nil {
+		envFiles = append(envFiles, ".env")
+	}
+	if _, err := os.Stat(filepath.Join("..", "docker-compose.yml")); err == nil {
+		rootEnv := filepath.Join("..", ".env")
+		if _, err := os.Stat(rootEnv); err == nil {
+			envFiles = append(envFiles, rootEnv)
+		}
+	}
+	if len(envFiles) == 0 {
 		log.Println("Lưu ý: Không tìm thấy file .env, hệ thống sẽ sử dụng biến môi trường từ OS/Docker.")
+	} else if err := godotenv.Load(envFiles...); err != nil {
+		log.Printf("Không thể đọc cấu hình môi trường: %v", err)
 	}
 
 	jwtExpire, _ := strconv.Atoi(getEnv("JWT_EXPIRE_HOURS", "24"))
@@ -49,6 +62,7 @@ func LoadConfig() *Config {
 		JWTSecret:      jwtSecret,
 		JWTExpireHours: jwtExpire,
 		GoogleClientID: getEnv("GOOGLE_CLIENT_ID", ""),
+		MinIO:          loadMinIOConfig(),
 	}
 
 	return cfg

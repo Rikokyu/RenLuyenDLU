@@ -15,7 +15,7 @@
   font-family: Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Khung màn hình chính 1650x1000 */
+/* Khung màn hình chính */
 .evidence-stu-container {
   width: 100%;
   max-width: 1650px;
@@ -46,12 +46,13 @@
   border-radius: var(--radius-20);
   font-size: var(--text-small);
   font-weight: bold;
-  padding: 12px 28px;
+  padding: 10px 24px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: opacity 0.2s;
+  white-space: nowrap;
 }
 
 .btn-stu:hover {
@@ -76,14 +77,14 @@
 .input-stu {
   border-radius: var(--radius-20);
   border: 1px solid #ccc;
-  padding: 12px 20px;
+  padding: 10px 18px;
   font-size: var(--text-small);
   outline: none;
   background-color: #ffffff;
   width: 100%;
 }
 
-/* === MÀN HÌNH CHÍNH (HÌNH 1) === */
+/* === MÀN HÌNH CHÍNH (HEADER GREEN CARD) === */
 .header-card-stu {
   background-color: var(--primary-green);
   border-radius: var(--radius-20);
@@ -106,15 +107,32 @@
 }
 
 .stat-card-stu {
+  border: 2px solid transparent;
+  font: inherit;
+  cursor: pointer;
   background-color: #ffffff;
-  border-radius: var(--radius-20);
-  padding: 16px 10px;
+  border-radius: 12px;
+  padding: 12px 10px;
   text-align: center;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+}
+
+.stat-card-stu:hover {
+  background-color: #eef8f3;
+}
+
+.stat-card-stu[aria-pressed="true"] {
+  border-color: #006b46;
+  background-color: #e5f5ed;
+}
+
+.stat-card-stu:focus-visible {
+  outline: 3px solid #ffbf47;
+  outline-offset: 3px;
 }
 
 .stat-card-stu .stat-title {
@@ -128,24 +146,81 @@
   color: #000000;
 }
 
-/* Filter Bar */
+/* === THANH LỌC VÀ SẮP XẾP MỚI === */
 .filter-bar-stu {
   display: flex;
-  gap: 16px;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.filter-row-top,
+.filter-row-bottom {
+  display: flex;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .filter-input-search {
-  flex: 2;
+  flex: 1;
+  min-width: 250px;
 }
 
-.filter-select-stu {
-  flex: 1;
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 16px center;
-  background-size: 16px;
+.filter-label {
+  font-weight: bold;
+  font-size: var(--text-small);
+  color: #ffffff;
+}
+
+.input-date {
+  width: 160px;
+}
+
+/* Nhóm nút Tăng / Giảm */
+.btn-group-toggle {
+  display: inline-flex;
+  background-color: #ffffff;
+  border-radius: var(--radius-20);
+  overflow: hidden;
+  padding: 2px;
+}
+
+.btn-toggle {
+  border: none;
+  background: transparent;
+  padding: 8px 18px;
+  border-radius: var(--radius-20);
+  font-size: var(--text-small);
+  font-weight: bold;
+  cursor: pointer;
+  color: #000000;
+}
+
+.btn-toggle.active {
+  background-color: #e0e0e0;
+}
+
+/* Nhóm Radio Button chọn tiêu chí */
+.radio-group {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-left: 10px;
+  color: #ffffff;
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: var(--text-small);
+}
+
+.radio-item input[type="radio"] {
+  accent-color: #ffffff;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
 }
 
@@ -153,70 +228,83 @@
   margin-bottom: 24px;
 }
 
-/* Bảng minh chứng */
-.table-container-stu {
+/* === BẢNG MINH CHỨNG VÀ THANH CUỘN (SCROLLBAR) === */
+.table-wrapper-stu {
   border-radius: var(--radius-20);
   border: 1px solid #d0d0d0;
-  overflow: hidden;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  background-color: #ffffff;
 }
 
 .table-stu {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  min-width: 760px;
 }
 
 .table-stu th {
   background-color: var(--primary-green);
   color: #ffffff;
-  font-size: var(--text-large);
+  font-size: 20px;
   font-weight: bold;
-  padding: 18px;
+  padding: 14px 10px;
   text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .table-stu td {
-  padding: 24px 18px;
+  padding: 14px 10px;
   text-align: center;
   font-size: var(--text-small);
   border-bottom: 1px solid #e0e0e0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.table-stu th:nth-child(1),
-.table-stu td:nth-child(1) {
-  width: 20%;
-}
-.table-stu th:nth-child(2),
-.table-stu td:nth-child(2) {
-  width: 25%;
-}
-.table-stu th:nth-child(3),
-.table-stu td:nth-child(3) {
-  width: 25%;
-}
-.table-stu th:nth-child(4),
-.table-stu td:nth-child(4) {
-  width: 12%;
-}
-.table-stu th:nth-child(5),
-.table-stu td:nth-child(5) {
-  width: 18%;
+.evidence-col-student { width: 16%; }
+.evidence-col-activity { width: 22%; }
+.evidence-col-date { width: 13%; }
+.evidence-col-file { width: 25%; }
+.evidence-col-score { width: 8%; }
+.evidence-col-status { width: 16%; }
+
+.evidence-filename {
+  white-space: nowrap;
+  text-align: left !important;
 }
 
-.row-stu-gray {
-  background-color: #e8e8e8;
+/* Khung cuộn dữ liệu danh sách */
+.table-scroll-body {
+  max-height: 420px;
+  overflow: auto;
 }
-.row-stu-white {
-  background-color: #ffffff;
+
+/* Thiết kế thanh kéo (Scrollbar) tùy chỉnh */
+.table-scroll-body::-webkit-scrollbar {
+  width: 8px;
 }
-.row-stu-clickable {
-  cursor: pointer;
-  transition: background-color 0.2s;
+
+.table-scroll-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 0 0 12px 0;
 }
-.row-stu-clickable:hover {
-  background-color: #d1f2d9;
+
+.table-scroll-body::-webkit-scrollbar-thumb {
+  background: #b0b0b0;
+  border-radius: 4px;
 }
+
+.table-scroll-body::-webkit-scrollbar-thumb:hover {
+  background: #888888;
+}
+
+.row-stu-gray { background-color: #e8e8e8; }
+.row-stu-white { background-color: #ffffff; }
+.row-stu-clickable { cursor: pointer; transition: background-color 0.2s; }
+.row-stu-clickable:hover { background-color: #d1f2d9; }
 
 /* === MODAL DÙNG CHUNG === */
 .modal-overlay-stu {
@@ -245,7 +333,7 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
-/* === MÀN HÌNH NỘP MINH CHỨNG (HÌNH 2) === */
+/* === MÀN HÌNH NỘP MINH CHỨNG (MODAL) === */
 .dropzone-box {
   border: 2px solid var(--border-dark);
   border-radius: var(--radius-20);
@@ -303,7 +391,7 @@
   margin-top: 10px;
 }
 
-/* === MÀN HÌNH CHI TIẾT MINH CHỨNG (HÌNH 3) === */
+/* === MÀN HÌNH CHI TIẾT MINH CHỨNG (MODAL) === */
 .detail-box-border {
   border: 2px solid var(--border-dark);
   border-radius: var(--radius-20);
@@ -343,4 +431,254 @@
 .btn-delete-evidence {
   align-self: flex-end;
   margin-top: 10px;
+}
+.student-evidence-error {
+  color: #b42318;
+  background: #fff0ed;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+}
+
+.evidence-stu-container .btn-stu:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.evidence-stu-container .table-stu td:nth-child(1),
+.evidence-stu-container .table-stu td:nth-child(2),
+.evidence-stu-container .table-stu td:nth-child(6) {
+  overflow-wrap: anywhere;
+}
+
+/* ===== SUBMIT MODAL ===== */
+.submit-modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.detail-modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Tieu de modal co nut X */
+.modal-title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.btn-modal-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #555;
+  line-height: 1;
+  padding: 2px 8px;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+.btn-modal-close:hover {
+  background: #f0f0f0;
+  color: #000;
+}
+
+/* Section nhan nop */
+.submit-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.submit-section-label {
+  font-weight: bold;
+  font-size: 16px;
+  color: #333;
+}
+
+/* Danh sach hoat dong de chon */
+.activity-list-box {
+  border: 1.5px solid #d0d0d0;
+  border-radius: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #fafafa;
+  padding: 8px 0;
+}
+
+.activity-hint {
+  text-align: center;
+  padding: 16px;
+  font-size: 14px;
+  color: #777;
+}
+
+.error-hint {
+  color: #b42318;
+}
+
+.activity-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 18px;
+  cursor: pointer;
+  border-bottom: 1px solid #ececec;
+  transition: background 0.15s;
+}
+
+.activity-option:last-child {
+  border-bottom: none;
+}
+
+.activity-option:hover {
+  background: #e8f8f0;
+}
+
+.activity-option.selected {
+  background: #c6f0da;
+  border-left: 3px solid #00a859;
+}
+
+.activity-option-title {
+  font-weight: bold;
+  font-size: 15px;
+  color: #222;
+}
+
+.activity-option-meta {
+  font-size: 13px;
+  color: #666;
+}
+
+.selected-activity-badge {
+  background: #e0f8ec;
+  border: 1px solid #00a859;
+  border-radius: 12px;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #007a42;
+}
+
+/* Dropzone nang cap */
+.dropzone-box {
+  border: 2px dashed #bbb;
+  border-radius: 20px;
+  min-height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  background-color: #fafafa;
+  padding: 20px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.dropzone-box:hover,
+.dropzone-box:focus {
+  border-color: #00a859;
+  background: #f0fff7;
+  outline: none;
+}
+
+.dropzone-box.dragover {
+  border-color: #00a859;
+  background: #e0f8ec;
+}
+
+.dropzone-box.has-file {
+  border-style: solid;
+  border-color: #00a859;
+}
+
+.dropzone-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.dropzone-icon {
+  font-size: 40px;
+}
+
+.dropzone-text {
+  font-size: 18px;
+  color: #444;
+  text-align: center;
+}
+
+.dropzone-hint {
+  font-size: 13px;
+  color: #888;
+}
+
+.dropzone-preview-img {
+  max-width: 100%;
+  max-height: 340px;
+  border-radius: 12px;
+  object-fit: contain;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+}
+
+.file-name-hint {
+  font-size: 13px;
+  color: #555;
+}
+
+/* ===== DETAIL MODAL - HINH ANH MINH CHUNG ===== */
+.detail-section-title {
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #888;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.score-pill {
+  color: #00a859;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.evidence-image-box {
+  margin-top: 12px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f5f5f5;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.img-loading-placeholder {
+  padding: 24px;
+  color: #888;
+  font-size: 14px;
+  text-align: center;
+}
+
+.img-no-file {
+  color: #aaa;
+}
+
+.evidence-preview-img {
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  display: block;
+  border-radius: 12px;
+  cursor: zoom-in;
+  transition: transform 0.2s;
+}
+
+.evidence-preview-img:hover {
+  transform: scale(1.01);
 }

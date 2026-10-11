@@ -1,215 +1,255 @@
-import React, { useEffect, useState } from 'react';
-import SubmitEvidence from './SubmitEvidence';
-import DetailForStu from './DetailForStu';
-import { getProfile } from '../../services/authService';
+import React, { useEffect, useRef, useState } from 'react';
+import { evidenceApi } from '../../services/evidenceService';
 import { useCurrentUser } from '../../hooks/useAuth';
+import DetailForStu from './DetailForStu';
+import SubmitEvidence from './SubmitEvidence';
 import './EvidenceStu.css';
 
 export default function EvidenceForStu() {
-  const user = useCurrentUser();
-  const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [selectedEvidence, setSelectedEvidence] = useState(null);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [sortBy, setSortBy] = useState('score');
+
+  const user = useCurrentUser();
+  const userId = ['ADMIN', 'STUDENT_AFFAIRS_ASSISTANT'].includes(user?.role) ? 27 : user?.id;
   const [evidenceList, setEvidenceList] = useState([]);
-  const [loadError, setLoadError] = useState('');
-  const facultyClass = [user?.faculty, user?.classCode].filter(Boolean).join(' - ');
+  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0, needMore: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [appliedSort, setAppliedSort] = useState({ by: 'score', order: 'asc' });
+  const [appliedFilters, setAppliedFilters] = useState({});
+  const requestVersion = useRef(0);
+  const statuses = ['Cho phe duyet', 'Da phe duyet', 'Da tu choi', 'Can bo sung'];
+
+  async function loadEvidence(filters, sort) {
+    const version = ++requestVersion.current;
+    setLoading(true);
+    setEvidenceList([]);
+    setError('');
+    try {
+      const result = await evidenceApi.getStudentEvidences({ user_id: userId, ...filters, sort_by: sort.by, sort_order: sort.order });
+      if (version !== requestVersion.current) return;
+      setEvidenceList(result.data.map(item => ({ ...item, status: statuses[item.statusCode] || 'Khong xac dinh' })));
+      setStats(result.stats);
+    } catch (err) {
+      if (version === requestVersion.current) setError(err.response?.data?.message || 'Khong the tai minh chung. Vui long thu lai.');
+    } finally {
+      if (version === requestVersion.current) setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    let active = true;
-    getProfile()
-      .then((profile) => {
-        if (!active) return;
-        setEvidenceList(
-          profile.activities.map((activity, index) => ({
-            id: `${activity.title}-${index}`,
-            studentName: profile.user.name,
-            studentId: profile.user.studentId,
-            facultyClass: [profile.user.faculty, profile.user.classCode]
-              .filter(Boolean)
-              .join(' - '),
-            event: activity.title,
-            proofName:
-              activity.evidenceStatus === 'Chưa nộp'
-                ? 'Chưa nộp minh chứng'
-                : 'Minh chứng đã nộp',
-            score: activity.score,
-            status:
-              activity.evidenceStatus === 'Đã duyệt'
-                ? 'Đã phê duyệt'
-                : activity.evidenceStatus === 'Đã từ chối'
-                  ? 'Đã từ chối'
-                  : activity.evidenceStatus === 'Chưa nộp'
-                    ? 'Chưa nộp minh chứng'
-                    : 'Chờ phê duyệt',
-          })),
-        );
-      })
-      .catch((error) => {
-        if (active) {
-          setLoadError(
-            error.response?.data?.message || 'Không thể tải minh chứng cá nhân.',
-          );
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+    loadEvidence({}, { by: 'score', order: 'asc' });
+    setAppliedSort({ by: 'score', order: 'asc' });
+    setAppliedFilters({});
+    return () => { requestVersion.current += 1; };
+  }, [userId]);
 
-  // Thống kê số lượng
-  const totalCount = evidenceList.length;
-  const pendingCount = evidenceList.filter((i) => i.status === 'Chờ phê duyệt').length;
-  const approvedCount = evidenceList.filter((i) => i.status === 'Đã phê duyệt').length;
-  const rejectedCount = evidenceList.filter((i) => i.status === 'Đã từ chối').length;
-  const needMoreCount = evidenceList.filter((i) => i.status === 'Cần bổ sung').length;
+  function handleSearch(applySort = false, status = appliedFilters.status ?? '') {
+    if (fromDate && toDate && fromDate > toDate) {
+      setError('Ngay bat dau khong duoc sau ngay ket thuc.');
+      return;
+    }
+    const sort = applySort ? { by: sortBy, order: sortOrder } : appliedSort;
+    if (applySort) setAppliedSort(sort);
+    const filters = { search: searchQuery.trim(), from_date: fromDate, to_date: toDate };
+    if (status !== '') filters.status = status;
+    setAppliedFilters(filters);
+    loadEvidence(filters, sort);
+  }
 
-  // Thêm minh chứng mới
-  const handleAddEvidence = (newProof) => {
-    const newItem = {
-      id: Date.now(),
-      studentName: user?.name || '',
-      studentId: user?.studentId || '',
-      facultyClass,
-      event: newProof.event,
-      proofName: newProof.proof,
-      score: 0,
-      status: 'Chờ phê duyệt',
-    };
-    setEvidenceList((current) => [newItem, ...current]);
-  };
+  function handleSubmitSuccess() {
+    // Reload danh sach sau khi nop thanh cong
+    loadEvidence(appliedFilters, appliedSort);
+  }
 
-  // Xóa minh chứng
-  const handleDeleteEvidence = (id) => {
-    setEvidenceList(evidenceList.filter((item) => item.id !== id));
-    setSelectedEvidence(null);
-  };
+  const totalCount = stats.total;
+  const pendingCount = stats.pending;
+  const approvedCount = stats.approved;
+  const rejectedCount = stats.rejected;
+  const needMoreCount = stats.needMore;
 
   return (
     <div className="evidence-stu-container">
-      {/* Khung Header chính */}
+      {/* Header */}
       <div className="header-card-stu">
         <h1 className="text-large font-bold">
-          NỘP MINH CHỨNG VÀ PHÊ DUYỆT MINH CHỨNG ĐÃ THAM GIA
+          NOP MINH CHUNG VA PHE DUYET MINH CHUNG DA THAM GIA
         </h1>
         <p className="text-small header-subtitle">
-          Ghi nhận minh chứng hình ảnh và phê duyệt điểm rèn luyện
+          Ghi nhan minh chung hinh anh va phe duyet diem ren luyen
+          {userId === 27 && <span> &middot; Nguyen Hoang Nam &mdash; 2312631</span>}
         </p>
 
-        {/* 5 ô thống kê */}
+        {/* 5 o thong ke */}
         <div className="stats-grid-stu">
-          <div className="stat-card-stu">
-            <span className="stat-title" style={{ color: '#000000' }}>Tất cả minh chứng</span>
-            <span className="stat-num">{totalCount}</span>
-          </div>
-          <div className="stat-card-stu">
-            <span className="stat-title" style={{ color: '#ff6a38' }}>Chờ phê duyệt</span>
-            <span className="stat-num">{pendingCount}</span>
-          </div>
-          <div className="stat-card-stu">
-            <span className="stat-title" style={{ color: '#00a859' }}>Đã phê duyệt</span>
-            <span className="stat-num">{approvedCount}</span>
-          </div>
-          <div className="stat-card-stu">
-            <span className="stat-title" style={{ color: '#ff0000' }}>Đã từ chối</span>
-            <span className="stat-num">{rejectedCount}</span>
-          </div>
-          <div className="stat-card-stu">
-            <span className="stat-title" style={{ color: '#a855f7' }}>Cần bổ sung</span>
-            <span className="stat-num">{needMoreCount}</span>
-          </div>
+          {[
+            { status: '', title: 'Tất cả minh chứng', count: totalCount, color: '#000000' },
+            { status: 0, title: 'Chờ phê duyệt', count: pendingCount, color: '#ff6a38' },
+            { status: 1, title: 'Đã phê duyệt', count: approvedCount, color: '#00a859' },
+            { status: 2, title: 'Đã từ chối', count: rejectedCount, color: '#ff0000' },
+            { status: 3, title: 'Cần bổ sung', count: needMoreCount, color: '#a855f7' },
+          ].map(({ status, title, count, color }) => (
+            <button
+              key={status}
+              type="button"
+              className="stat-card-stu"
+              aria-pressed={(appliedFilters.status ?? '') === status}
+              onClick={() => handleSearch(false, status)}
+            >
+              <span className="stat-title" style={{ color }}>{title}</span>
+              <span className="stat-num">{count}</span>
+            </button>
+          ))}
         </div>
 
-        {/* Thanh Tìm kiếm & Chọn khoa lớp */}
+        {/* Thanh Tim kiem & Loc */}
         <div className="filter-bar-stu">
-          <input
-            type="text"
-            className="input-stu filter-input-search"
-            placeholder="Tìm kiếm theo tên hoặc mã hoạt động"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <select className="input-stu filter-select-stu">
-            <option>Tất cả khoa - lớp</option>
-          </select>
-          <button className="btn-stu btn-white font-bold">Tìm</button>
+          <div className="filter-row-top">
+            <input
+              type="text"
+              className="input-stu filter-input-search"
+              aria-label="Ten hoac ma hoat dong"
+              placeholder="Tim kiem theo ten hoac ma hoat dong"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <span className="filter-label">Ngay</span>
+            <input
+              type="date"
+              className="input-stu input-date"
+              aria-label="Tu ngay nop"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+            />
+            <span className="filter-label">den</span>
+            <input
+              type="date"
+              className="input-stu input-date"
+              aria-label="Den ngay nop"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+            />
+          </div>
+
+          <div className="filter-row-bottom">
+            <button className="btn-stu btn-white font-bold" disabled={loading} onClick={() => handleSearch()}>Tim</button>
+            <button className="btn-stu btn-white font-bold" disabled={loading} onClick={() => handleSearch(true)}>Sap xep</button>
+
+            <div className="btn-group-toggle">
+              <button className={`btn-toggle ${sortOrder === 'asc' ? 'active' : ''}`} onClick={() => setSortOrder('asc')}>Tang</button>
+              <button className={`btn-toggle ${sortOrder === 'desc' ? 'active' : ''}`} onClick={() => setSortOrder('desc')}>Giam</button>
+            </div>
+
+            <div className="radio-group font-bold">
+              <label className="radio-item">
+                <input type="radio" name="sortBy" value="score" checked={sortBy === 'score'} onChange={() => setSortBy('score')} />
+                <span>Diem</span>
+              </label>
+              <label className="radio-item">
+                <input type="radio" name="sortBy" value="date" checked={sortBy === 'date'} onChange={() => setSortBy('date')} />
+                <span>Ngay</span>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Nút Nộp minh chứng */}
+      {/* Nut Nop minh chung */}
       <div className="btn-add-evidence">
         <button
+          id="btn-submit-evidence"
           className="btn-stu btn-green"
           onClick={() => setShowSubmitModal(true)}
         >
-          + Nộp minh chứng
+          + Nop minh chung
         </button>
       </div>
 
-      {/* Bảng Danh sách minh chứng */}
-      <div className="table-container-stu">
-        {loadError && <p role="alert">{loadError}</p>}
-        <table className="table-stu">
-          <thead>
-            <tr>
-              <th>Sinh viên</th>
-              <th>Hoạt động</th>
-              <th>Minh chứng</th>
-              <th>Điểm</th>
-              <th>Trạng thái</th>
-            </tr>
-          </thead>
-          <tbody>
-            {evidenceList.length === 0 ? (
+      {error && <p role="alert" className="student-evidence-error">{error}</p>}
+      {loading && <p role="status">Dang tai minh chung...</p>}
+
+      {/* Bang Danh sach minh chung */}
+      <div className="table-wrapper-stu table-scroll-body">
+          <table className="table-stu">
+            <colgroup>
+              <col className="evidence-col-student" />
+              <col className="evidence-col-activity" />
+              <col className="evidence-col-date" />
+              <col className="evidence-col-file" />
+              <col className="evidence-col-score" />
+              <col className="evidence-col-status" />
+            </colgroup>
+            <thead>
               <tr>
-                <td colSpan="5" style={{ padding: '40px' }}>Chưa có minh chứng nào</td>
+                <th>Sinh vien</th>
+                <th>Hoat dong</th>
+                <th>Ngay nop</th>
+                <th>Minh chung</th>
+                <th>Diem</th>
+                <th>Trang thai</th>
               </tr>
-            ) : (
-              evidenceList.map((item, index) => (
-                <tr
-                  key={item.id}
-                  className={`row-stu-clickable ${index % 2 === 0 ? 'row-stu-gray' : 'row-stu-white'}`}
-                  onClick={() => setSelectedEvidence(item)}
-                >
-                  <td>{item.studentName}</td>
-                  <td>{item.event}</td>
-                  <td>{item.proofName}</td>
-                  <td>{item.score}</td>
-                  <td
-                    style={{
-                      color:
-                        item.status === 'Đã phê duyệt'
-                          ? '#00a859'
-                          : item.status === 'Đã từ chối'
-                          ? '#ff0000'
-                          : item.status === 'Cần bổ sung'
-                          ? '#a855f7'
-                          : '#ff6a38',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {item.status}
+            </thead>
+            <tbody>
+              {evidenceList.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ padding: '40px', textAlign: 'center' }}>
+                    {loading ? 'Dang tai...' : 'Khong co minh chung phu hop'}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                evidenceList.map((item, index) => (
+                  <tr
+                    key={item.id}
+                    className={`row-stu-clickable ${index % 2 === 0 ? 'row-stu-gray' : 'row-stu-white'}`}
+                    onClick={() => setSelectedEvidence(item)}
+                    title="Bam de xem chi tiet minh chung"
+                  >
+                    <td>{item.studentName}</td>
+                    <td>{item.event}<br /><small>{item.activityCode}</small></td>
+                    <td>{item.submitDate}</td>
+                    <td className="evidence-filename" title={item.proofName}>
+                      {item.proofName || "—"}
+                    </td>
+                    <td>{item.score}</td>
+                    <td
+                      style={{
+                        color:
+                          item.statusCode === 1 ? '#00a859'
+                          : item.statusCode === 2 ? '#ff0000'
+                          : item.statusCode === 3 ? '#a855f7'
+                          : '#ff6a38',
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      {item.status}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
       </div>
 
-      {/* Hiển thị Modal Nộp Minh Chứng (Hình 2) */}
-      {showSubmitModal && (
-        <SubmitEvidence
-          onClose={() => setShowSubmitModal(false)}
-          onSubmitSuccess={handleAddEvidence}
-        />
-      )}
-
-      {/* Hiển thị Modal Chi Tiết Minh Chứng (Hình 3) */}
+      {/* Modal Chi Tiet Minh Chung */}
       {selectedEvidence && (
         <DetailForStu
           data={selectedEvidence}
           onClose={() => setSelectedEvidence(null)}
-          onDelete={handleDeleteEvidence}
+        />
+      )}
+
+      {/* Modal Nop Minh Chung */}
+      {showSubmitModal && (
+        <SubmitEvidence
+          onClose={() => setShowSubmitModal(false)}
+          onSubmitSuccess={handleSubmitSuccess}
+          targetUserId={userId}
         />
       )}
     </div>
