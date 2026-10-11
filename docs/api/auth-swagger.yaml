@@ -1,0 +1,82 @@
+openapi: 3.0.3
+info:
+  title: RenLuyenDLU Auth API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+paths:
+  /auth/login:
+    post:
+      summary: Sign in with the provisioned account username and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string, example: "2312610" }
+                password: { type: string, example: "DLU@2026" }
+      responses:
+        "200": { description: Access token and logged in user profile }
+        "401": { description: Invalid credentials }
+  /auth/google:
+    post:
+      summary: Verify Google ID token and sign in an existing DLU account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credential]
+              properties:
+                credential: { type: string, description: Google ID token }
+      responses:
+        "200": { description: Access token and logged in user profile }
+        "401": { description: Invalid token or email outside verified dlu.edu.vn domain }
+  /auth/me:
+    get:
+      summary: Get current user's profile and training score
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: User profile }
+        "401": { description: Missing or invalid bearer token }
+  /auth/history:
+    get:
+      summary: Get activity and evidence history for the current user
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Current user's participation history }
+        "401": { description: Missing or invalid bearer token }
+  /auth/evidences:
+    get:
+      summary: List evidence belonging to the current signed in student
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Current student's evidence records }
+        "401": { description: Missing or invalid bearer token }
+  /auth/password:
+    patch:
+      summary: Change current user's password
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password: { type: string }
+                new_password: { type: string, minLength: 8 }
+      responses:
+        "204": { description: Password changed and stored as a bcrypt hash }
+        "400": { description: Invalid current password or request }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

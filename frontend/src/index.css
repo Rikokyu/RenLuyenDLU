@@ -526,9 +526,9 @@ img {
 
 .password-dialog {
   width: 600px;
-  height: 445px;
-  padding: 22px 44px 8px;
-  overflow: hidden;
+  max-height: calc(100vh - 40px);
+  padding: 22px 44px;
+  overflow-y: auto;
   color: var(--text);
   background: var(--popover-bg);
   border: 1px solid var(--border);
@@ -568,8 +568,8 @@ img {
 .password-form {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  margin-top: 30px;
+  gap: 18px;
+  margin-top: 20px;
 }
 
 .password-field {
@@ -618,6 +618,22 @@ img {
   font-size: 16px;
 }
 
+.show-password {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.show-password input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-green);
+  cursor: pointer;
+}
+
 .password-field__error {
   display: none;
   margin: 4px 18px 0;
@@ -662,8 +678,8 @@ img {
 }
 
 .password-form__message {
-  margin-bottom: 14px;
   font-size: 14px;
+  line-height: 1.4;
 }
 
 .password-form__message.is-error {

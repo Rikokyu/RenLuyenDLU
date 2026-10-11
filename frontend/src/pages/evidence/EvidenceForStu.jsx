@@ -1,6 +1,6 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { evidenceApi } from '../../services/evidenceService';
-import { getCurrentUser } from '../../store/authStore';
+import { useCurrentUser } from '../../hooks/useAuth';
 import DetailForStu from './DetailForStu';
 import SubmitEvidence from './SubmitEvidence';
 import './EvidenceStu.css';
@@ -15,7 +15,7 @@ export default function EvidenceForStu() {
   const [sortOrder, setSortOrder] = useState('asc');
   const [sortBy, setSortBy] = useState('score');
 
-  const user = getCurrentUser();
+  const user = useCurrentUser();
   const userId = ['ADMIN', 'STUDENT_AFFAIRS_ASSISTANT'].includes(user?.role) ? 27 : user?.id;
   const [evidenceList, setEvidenceList] = useState([]);
   const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0, needMore: 0 });

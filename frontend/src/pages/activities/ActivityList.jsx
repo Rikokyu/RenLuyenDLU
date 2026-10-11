@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { getCurrentUser } from "../../store/authStore";
+import { useCurrentUser } from "../../hooks/useAuth";
 import "./ActivityList.css";
 
 const activities = [
@@ -102,7 +102,7 @@ const categoryOptions = [
 ];
 
 export default function ActivityList() {
-  const user = getCurrentUser();
+  const user = useCurrentUser();
   const canManageActivities =
     user?.role === "ADMIN" || user?.role === "STUDENT_AFFAIRS_ASSISTANT";
   const [search, setSearch] = useState("");
