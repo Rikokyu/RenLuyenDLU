@@ -10,6 +10,8 @@ type ManagerStudent struct {
 	ClassName          string `json:"className"`
 	FacultyName        string `json:"facultyName"`
 	StudyProgramID     string `json:"studyProgramId"`
+	StudyProgramName   string `json:"studyProgramName"`
+	AcademicStatus     string `json:"academicStatus"`
 	Gender             string `json:"gender"`
 	BirthDay           string `json:"birthDay"`
 	BirthPlace         string `json:"birthPlace"`
@@ -27,4 +29,7 @@ type ManagerStudent struct {
 type ManagerStudentQuery struct {
 	Search    string `form:"search"`
 	ClassCode string `form:"class_code"`
+	Faculty   string `form:"faculty"`
+	MajorCode string `form:"major_code"`
+	Status    string `form:"status"`
 }

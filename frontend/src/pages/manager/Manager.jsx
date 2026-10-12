@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import ManagerAccounts from "./ManagerAccounts";
 import ManagerStudentClass from "./ManagerStudentClass";
+import LocationFields from "./LocationFields";
 import {
   deleteManagerAccount,
   deleteManagerClass,
@@ -13,6 +14,7 @@ import {
   saveManagerAccount,
   saveManagerClass,
   saveManagerStudent,
+  updateManagerStudentStatus,
 } from "../../services/managerService";
 import { exportManagerWorkbook } from "../../utils/managerExport";
 import {
@@ -91,22 +93,32 @@ function ModalShell({
 function AccountModal({ initialData, roles, classes, onClose, onSave }) {
   const [assignmentError, setAssignmentError] = useState("");
   const faculties = [...new Set(classes.map((item) => item.faculty).filter(Boolean))];
+  const initialClass = classes.find(
+    (item) => item.code === initialData?.classCode,
+  );
   const [form, setForm] = useState(() => ({
     name: initialData?.name || "",
     email: initialData?.email || "",
     gender: initialData?.gender || "Nam",
     birthDay: initialData?.birthDay?.slice(0, 10) || "",
     phone: initialData?.phone || "",
+    studentId: initialData?.studentId || "",
+    originalStudentId: initialData?.studentId || "",
+    faculty: initialClass?.faculty || initialData?.unit || "",
+    majorCode: initialClass?.majorCode || "",
+    birthPlace: initialData?.birthPlace || "",
+    hometownCountry: initialData?.hometownCountry || "",
+    hometownProvince: initialData?.hometownProvince || "",
+    hometownCity: initialData?.hometownCity || "",
+    hometownAddress: initialData?.hometownAddress || "",
+    academicStatus: initialData?.academicStatus || "STUDYING",
     roleCode:
       initialData?.roleCode ||
       roles.find((role) => role.code === "STUDENT_AFFAIRS_ASSISTANT")?.code ||
       roles[0]?.code ||
       "",
     unit: initialData?.unit || "",
-    classCode:
-      initialData?.classCode ||
-      classes.find((item) => item.faculty === initialData?.unit)?.code ||
-      "",
+    classCode: initialData?.classCode || "",
     position: initialData?.position || "",
     active: initialData?.active ?? true,
   }));
@@ -114,8 +126,31 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
     if (key === "classCode" || key === "position" || key === "unit") {
       setAssignmentError("");
     }
+    if (key === "faculty") {
+      setForm((prev) => ({ ...prev, faculty: value, majorCode: "", classCode: "" }));
+      return;
+    }
+    if (key === "majorCode") {
+      setForm((prev) => ({ ...prev, majorCode: value, classCode: "" }));
+      return;
+    }
     setForm((prev) => ({ ...prev, [key]: value }));
   }
+
+  const majors = [
+    ...new Map(
+      classes
+        .filter((item) => item.faculty === form.faculty && item.majorCode)
+        .map((item) => [item.majorCode, item]),
+    ).values(),
+  ];
+  const filteredClasses = classes.filter(
+    (item) =>
+      item.faculty === form.faculty &&
+      (form.majorCode
+        ? item.majorCode === form.majorCode
+        : !majors.length || !item.majorCode),
+  );
 
   function submit(event) {
     event.preventDefault();
@@ -125,12 +160,24 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
     );
     const isClassOfficer = form.roleCode === "HOMEROOM_CLASS_OFFICER";
     const isAssistant = form.roleCode === "STUDENT_AFFAIRS_ASSISTANT";
-    if (isClassOfficer && (!form.classCode || !form.position)) {
+    const isStudent = form.roleCode === "STUDENT";
+    if (
+      (isClassOfficer || isStudent) &&
+      (!form.faculty || (majors.length > 0 && !form.majorCode) || !form.classCode)
+    ) {
+      setAssignmentError("Chọn khoa, chuyên ngành (nếu có) và lớp.");
+      return;
+    }
+    if (isClassOfficer && !form.position) {
       setAssignmentError("Chọn một lớp và chức vụ cho tài khoản ban cán sự.");
       return;
     }
     if (isAssistant && !form.unit) {
       setAssignmentError("Chọn khoa phụ trách cho trợ lý công tác sinh viên.");
+      return;
+    }
+    if (isStudent && !/^\d{7}$/.test(form.studentId)) {
+      setAssignmentError("Mã sinh viên phải gồm đúng 7 chữ số.");
       return;
     }
 
@@ -139,8 +186,15 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
       ...form,
       name: form.name.trim(),
       email: form.email.trim(),
-      unit: isClassOfficer ? selectedClass?.faculty || "" : isAssistant ? form.unit : "",
-      classCode: isClassOfficer ? form.classCode : "",
+      studentId: isStudent ? form.studentId.trim() : form.studentId,
+      originalStudentId: form.originalStudentId,
+      birthPlace: [form.hometownCity, form.hometownProvince, form.hometownCountry]
+        .filter(Boolean)
+        .join(", ") || form.birthPlace,
+      unit: isClassOfficer || isStudent
+        ? selectedClass?.faculty || ""
+        : isAssistant ? form.unit : "",
+      classCode: isClassOfficer || isStudent ? form.classCode : "",
       position: isClassOfficer ? form.position : "",
     });
   }
@@ -170,6 +224,7 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
             value={form.email}
             onChange={(event) => update("email", event.target.value)}
             placeholder="example@dlu.edu.vn"
+            pattern="[A-Za-z0-9._%+-]+@dlu\\.edu\\.vn"
             required
           />
         </label>
@@ -202,6 +257,10 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
             type="tel"
             value={form.phone}
             onChange={(event) => update("phone", event.target.value)}
+            placeholder="0901234567"
+            inputMode="numeric"
+            maxLength={10}
+            pattern="[0-9]{10}"
             required
           />
         </label>
@@ -213,19 +272,44 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
             onChange={(event) => update("roleCode", event.target.value)}
             required
           >
-            {roles
-              .filter(
-                (role) =>
-                  role.code !== "STUDENT" ||
-                  initialData?.roleCode === "STUDENT",
-              )
-              .map((role) => (
+            {roles.map((role) => (
                 <option key={role.code} value={role.code}>
                   {role.name}
                 </option>
               ))}
           </select>
         </label>
+
+        {form.roleCode === "STUDENT" && (
+          <label className="manager-field">
+            <span>Mã số sinh viên</span>
+            <input
+              value={form.studentId}
+              onChange={(event) => update("studentId", event.target.value)}
+              inputMode="numeric"
+              maxLength={7}
+              pattern="[0-9]{7}"
+              required
+            />
+          </label>
+        )}
+
+        {form.roleCode === "STUDENT" && (
+          <label className="manager-field">
+            <span>Trạng thái học vụ</span>
+            <select
+              value={form.academicStatus}
+              onChange={(event) => update("academicStatus", event.target.value)}
+            >
+              <option value="STUDYING">Đang học</option>
+              <option value="LEAVE">Nghỉ học</option>
+              <option value="RESERVED">Bảo lưu</option>
+              <option value="SUSPENDED">Đình chỉ</option>
+              <option value="GRADUATED">Đã tốt nghiệp</option>
+              <option value="OTHER">Khác</option>
+            </select>
+          </label>
+        )}
 
         {form.roleCode === "STUDENT_AFFAIRS_ASSISTANT" && (
           <label className="manager-field">
@@ -248,9 +332,42 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
           </label>
         )}
 
-        {form.roleCode === "HOMEROOM_CLASS_OFFICER" && (
+        {(form.roleCode === "HOMEROOM_CLASS_OFFICER" ||
+          form.roleCode === "STUDENT") && (
+          <>
           <label className="manager-field">
-            <span>Lớp phụ trách</span>
+            <span>Khoa</span>
+            <select
+              value={form.faculty}
+              onChange={(event) => update("faculty", event.target.value)}
+              required
+            >
+              <option value="">Chọn khoa</option>
+              {faculties.map((faculty) => (
+                <option key={faculty} value={faculty}>{faculty}</option>
+              ))}
+            </select>
+          </label>
+          <label className="manager-field">
+            <span>Chuyên ngành</span>
+            <select
+              value={form.majorCode}
+              onChange={(event) => update("majorCode", event.target.value)}
+              disabled={!form.faculty || majors.length === 0}
+              required={majors.length > 0}
+            >
+              <option value="">
+                {majors.length ? "Chọn chuyên ngành" : "Khoa không có chuyên ngành"}
+              </option>
+              {majors.map((item) => (
+                <option key={item.majorCode} value={item.majorCode}>
+                  {item.majorName || item.majorCode}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="manager-field">
+            <span>{form.roleCode === "STUDENT" ? "Lớp sinh hoạt" : "Lớp phụ trách"}</span>
             <select
               value={form.classCode}
               onChange={(event) => {
@@ -261,12 +378,13 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
                   classes.find((item) => item.code === classCode)?.faculty || "",
                 );
               }}
+              disabled={!form.faculty || (majors.length > 0 && !form.majorCode)}
               required
             >
               <option value="">Chọn lớp</option>
-              {classes.map((item) => (
+              {filteredClasses.map((item) => (
                 <option key={item.code} value={item.code}>
-                  {item.code} — {item.faculty || "Chưa cập nhật khoa"}
+                  {item.code}
                 </option>
               ))}
             </select>
@@ -276,6 +394,7 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
               </small>
             )}
           </label>
+          </>
         )}
 
         {form.roleCode === "HOMEROOM_CLASS_OFFICER" && (
@@ -304,6 +423,11 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
           </label>
         )}
 
+        <LocationFields
+          value={form}
+          onChange={(location) => setForm((prev) => ({ ...prev, ...location }))}
+        />
+
         <div className="manager-modal-actions">
           <button
             type="button"
@@ -325,33 +449,69 @@ function AccountModal({ initialData, roles, classes, onClose, onSave }) {
 }
 
 function StudentModal({ initialData, classes, onClose, onSave }) {
-  const firstClass = classes[0]?.code || "";
+  const initialClass = classes.find((item) => item.code === initialData?.classCode);
+  const faculties = [...new Set(classes.map((item) => item.faculty).filter(Boolean))];
   const [form, setForm] = useState(() => ({
     name: initialData?.name || "",
     mssv: initialData?.mssv || "",
     phone: initialData?.phone || "",
     email: initialData?.email || "",
-    classCode: initialData?.classCode || firstClass,
+    faculty: initialClass?.faculty || "",
+    majorCode: initialClass?.majorCode || "",
+    classCode: initialData?.classCode || "",
     gender: initialData?.gender || "Nam",
     birthDay: initialData?.birthDay
       ? String(initialData.birthDay).replace(/T00:00:00(?:\\.000)?Z$/, "")
       : "",
     birthPlace: initialData?.birthPlace || "",
+    hometownCountry: initialData?.hometownCountry || "",
+    hometownProvince: initialData?.hometownProvince || "",
+    hometownCity: initialData?.hometownCity || "",
+    hometownAddress: initialData?.hometownAddress || "",
+    academicStatus: initialData?.academicStatus || "STUDYING",
   }));
 
   function update(key, value) {
+    if (key === "faculty") {
+      setForm((prev) => ({ ...prev, faculty: value, majorCode: "", classCode: "" }));
+      return;
+    }
+    if (key === "majorCode") {
+      setForm((prev) => ({ ...prev, majorCode: value, classCode: "" }));
+      return;
+    }
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
+  const majors = [
+    ...new Map(
+      classes
+        .filter((item) => item.faculty === form.faculty && item.majorCode)
+        .map((item) => [item.majorCode, item]),
+    ).values(),
+  ];
+  const filteredClasses = classes.filter(
+    (item) =>
+      item.faculty === form.faculty &&
+      (form.majorCode
+        ? item.majorCode === form.majorCode
+        : !majors.length || !item.majorCode),
+  );
   const selectedClass = classes.find((item) => item.code === form.classCode);
 
   function submit(event) {
     event.preventDefault();
-    if (!form.name.trim() || !form.mssv.trim() || !form.email.trim()) return;
-
-    const nameParts = form.name.trim().split(/\s+/);
-    const lastName = nameParts.length > 1 ? nameParts.pop() : "";
-    const firstName = nameParts.join(" ");
+    if (
+      !form.name.trim() ||
+      !/^\d{7}$/.test(form.mssv) ||
+      !/^[^\s@]+@dlu\.edu\.vn$/i.test(form.email.trim()) ||
+      (form.phone && !/^\d{10}$/.test(form.phone)) ||
+      !form.classCode ||
+      !form.faculty ||
+      (majors.length > 0 && !form.majorCode)
+    ) {
+      return;
+    }
 
     onSave({
       ...(initialData || {}),
@@ -360,10 +520,11 @@ function StudentModal({ initialData, classes, onClose, onSave }) {
       mssv: form.mssv.trim(),
       email: form.email.trim(),
       studentId: form.mssv.trim(),
-      firstName,
-      lastName,
       studentName: form.name.trim(),
       className: selectedClass?.code || form.classCode,
+      birthPlace: [form.hometownCity, form.hometownProvince, form.hometownCountry]
+        .filter(Boolean)
+        .join(", ") || form.birthPlace,
       birthDay: form.birthDay ? `${form.birthDay}T00:00:00Z` : "",
     });
   }
@@ -392,6 +553,9 @@ function StudentModal({ initialData, classes, onClose, onSave }) {
             value={form.mssv}
             onChange={(event) => update("mssv", event.target.value)}
             placeholder="21120045"
+            inputMode="numeric"
+            maxLength={7}
+            pattern="[0-9]{7}"
             required
           />
         </label>
@@ -402,7 +566,9 @@ function StudentModal({ initialData, classes, onClose, onSave }) {
             type="tel"
             value={form.phone}
             onChange={(event) => update("phone", event.target.value)}
-            placeholder="0901 234 567"
+            placeholder="0901234567"
+            inputMode="numeric"
+            pattern="[0-9]{10}"
           />
         </label>
 
@@ -413,8 +579,42 @@ function StudentModal({ initialData, classes, onClose, onSave }) {
             value={form.email}
             onChange={(event) => update("email", event.target.value)}
             placeholder="mssv@dlu.edu.vn"
+            pattern="[A-Za-z0-9._%+-]+@dlu\\.edu\\.vn"
             required
           />
+        </label>
+
+        <label className="manager-field">
+          <span>Khoa</span>
+          <select
+            value={form.faculty}
+            onChange={(event) => update("faculty", event.target.value)}
+            required
+          >
+            <option value="">Chọn khoa</option>
+            {faculties.map((faculty) => (
+              <option key={faculty} value={faculty}>{faculty}</option>
+            ))}
+          </select>
+        </label>
+
+        <label className="manager-field">
+          <span>Chuyên ngành</span>
+          <select
+            value={form.majorCode}
+            onChange={(event) => update("majorCode", event.target.value)}
+            disabled={!form.faculty || majors.length === 0}
+            required={majors.length > 0}
+          >
+            <option value="">
+              {majors.length ? "Chọn chuyên ngành" : "Khoa không có chuyên ngành"}
+            </option>
+            {majors.map((item) => (
+              <option key={item.majorCode} value={item.majorCode}>
+                {item.majorName || item.majorCode}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className="manager-field">
@@ -422,12 +622,13 @@ function StudentModal({ initialData, classes, onClose, onSave }) {
           <select
             value={form.classCode}
             onChange={(event) => update("classCode", event.target.value)}
+            disabled={!form.majorCode}
             required
           >
-            <option value="" disabled>
+            <option value="">
               Chọn lớp sinh hoạt
             </option>
-            {classes.map((item) => (
+            {filteredClasses.map((item) => (
               <option key={item.code} value={item.code}>
                 {item.code}
               </option>
@@ -457,13 +658,24 @@ function StudentModal({ initialData, classes, onClose, onSave }) {
         </label>
 
         <label className="manager-field">
-          <span>Nơi sinh</span>
-          <input
-            value={form.birthPlace}
-            onChange={(event) => update("birthPlace", event.target.value)}
-            placeholder="Tỉnh/thành phố"
-          />
+          <span>Trạng thái sinh viên</span>
+          <select
+            value={form.academicStatus}
+            onChange={(event) => update("academicStatus", event.target.value)}
+          >
+            <option value="STUDYING">Đang học</option>
+            <option value="LEAVE">Nghỉ học</option>
+            <option value="RESERVED">Bảo lưu</option>
+            <option value="SUSPENDED">Đình chỉ</option>
+            <option value="GRADUATED">Đã tốt nghiệp</option>
+            <option value="OTHER">Khác</option>
+          </select>
         </label>
+
+        <LocationFields
+          value={form}
+          onChange={(location) => setForm((prev) => ({ ...prev, ...location }))}
+        />
 
         <div className="manager-modal-actions">
           <button
@@ -938,6 +1150,14 @@ export default function Manager() {
         classCode: data.classCode,
         position: data.position,
         active: data.active,
+        studentId: data.studentId,
+        originalStudentId: data.originalStudentId,
+        birthPlace: data.birthPlace,
+        hometownCountry: data.hometownCountry,
+        hometownProvince: data.hometownProvince,
+        hometownCity: data.hometownCity,
+        hometownAddress: data.hometownAddress,
+        academicStatus: data.academicStatus,
       });
       await reloadManagerData();
       closeModal();
@@ -962,6 +1182,14 @@ export default function Manager() {
         classCode: account.classCode,
         position: account.position,
         active: !account.active,
+        studentId: account.studentId,
+        originalStudentId: account.studentId,
+        birthPlace: account.birthPlace,
+        hometownCountry: account.hometownCountry,
+        hometownProvince: account.hometownProvince,
+        hometownCity: account.hometownCity,
+        hometownAddress: account.hometownAddress,
+        academicStatus: account.academicStatus,
       });
       await reloadManagerData();
       notify(account.active ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản");
@@ -995,10 +1223,13 @@ export default function Manager() {
         classCode: data.classCode,
         gender: data.gender,
         birthDay: data.birthDay ? data.birthDay.slice(0, 10) : "",
-        firstName: data.firstName,
-        lastName: data.lastName,
         studentName: data.studentName,
         birthPlace: data.birthPlace,
+        hometownCountry: data.hometownCountry,
+        hometownProvince: data.hometownProvince,
+        hometownCity: data.hometownCity,
+        hometownAddress: data.hometownAddress,
+        academicStatus: data.academicStatus,
       });
       await reloadManagerData();
       closeModal();
@@ -1009,6 +1240,20 @@ export default function Manager() {
       );
     } catch (error) {
       notify(error.response?.data?.message || "Không thể lưu sinh viên");
+    }
+  }
+
+  async function updateStudentStatus(student, status) {
+    try {
+      await updateManagerStudentStatus(student.id, status);
+      setStudents((previous) =>
+        previous.map((item) =>
+          item.id === student.id ? { ...item, academicStatus: status } : item,
+        ),
+      );
+      notify("Đã cập nhật trạng thái sinh viên");
+    } catch (error) {
+      notify(error.response?.data?.message || "Không thể cập nhật trạng thái sinh viên");
     }
   }
 
@@ -1156,14 +1401,20 @@ export default function Manager() {
     }
   }
 
-  async function handleExport() {
+  async function handleExport(filteredStudents = students, filtersActive = false) {
     try {
+      const studentCodes = new Set(filteredStudents.map((item) => item.mssv));
+      const classCodes = new Set(filteredStudents.map((item) => item.classCode));
       await exportManagerWorkbook({
-        students,
-        classes,
-        accounts: accountRows,
+        students: filteredStudents,
+        classes: filtersActive
+          ? classes.filter((item) => classCodes.has(item.code))
+          : classes,
+        accounts: filtersActive
+          ? accountRows.filter((item) => studentCodes.has(item.studentId))
+          : accountRows,
       });
-      notify("Đã xuất Excel gồm 3 sheet");
+      notify(`Đã xuất Excel gồm ${filteredStudents.length} sinh viên theo bộ lọc`);
     } catch (error) {
       console.error("Lỗi xuất Excel:", error);
       notify("Không thể xuất file Excel");
@@ -1228,6 +1479,7 @@ export default function Manager() {
           onOpenModal={openModal}
           onDelete={handleDelete}
           onExport={handleExport}
+          onStatusChange={updateStudentStatus}
           onImport={importManagerFile}
           onDownloadTemplate={handleDownloadTemplate}
           isImporting={isImporting}

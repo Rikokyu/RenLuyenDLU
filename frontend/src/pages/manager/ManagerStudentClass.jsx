@@ -31,6 +31,15 @@ function classStats(students, code) {
   };
 }
 
+const academicStatuses = [
+  ["STUDYING", "Đang học"],
+  ["LEAVE", "Nghỉ học"],
+  ["RESERVED", "Bảo lưu"],
+  ["SUSPENDED", "Đình chỉ"],
+  ["GRADUATED", "Đã tốt nghiệp"],
+  ["OTHER", "Khác"],
+];
+
 function EmptyState({ onReset }) {
   return (
     <div className="manager-empty">
@@ -46,6 +55,7 @@ export default function ManagerStudentClass({
   onOpenModal,
   onDelete,
   onExport,
+  onStatusChange,
   onSync,
   isSyncing,
   dataError,
@@ -61,11 +71,23 @@ export default function ManagerStudentClass({
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("Tất cả lớp");
   const [facultyFilter, setFacultyFilter] = useState("Tất cả khoa");
+  const [majorFilter, setMajorFilter] = useState("Tất cả chuyên ngành");
+  const [statusFilter, setStatusFilter] = useState("Tất cả trạng thái");
   const importInputRef = useRef(null);
-  const classCodes = classes.map((item) => item.code);
-  const faculties = [
-    ...new Set(students.map((item) => item.facultyName).filter(Boolean)),
+  const faculties = [...new Set(classes.map((item) => item.faculty).filter(Boolean))];
+  const availableMajors = [
+    ...new Map(
+      classes
+        .filter((item) => facultyFilter === "Tất cả khoa" || item.faculty === facultyFilter)
+        .filter((item) => item.majorCode)
+        .map((item) => [item.majorCode, item]),
+    ).values(),
   ];
+  const availableClasses = classes.filter(
+    (item) =>
+      (facultyFilter === "Tất cả khoa" || item.faculty === facultyFilter) &&
+      (majorFilter === "Tất cả chuyên ngành" || item.majorCode === majorFilter),
+  );
   const filteredStudents = useMemo(
     () =>
       students.filter((item) => {
@@ -75,11 +97,21 @@ export default function ManagerStudentClass({
           text.includes(search.toLowerCase()) &&
           (classFilter === "Tất cả lớp" || item.classCode === classFilter) &&
           (facultyFilter === "Tất cả khoa" ||
-            item.facultyName === facultyFilter)
+            item.facultyName === facultyFilter) &&
+          (majorFilter === "Tất cả chuyên ngành" ||
+            item.studyProgramId === majorFilter) &&
+          (statusFilter === "Tất cả trạng thái" ||
+            (item.academicStatus || "STUDYING") === statusFilter)
         );
       }),
-    [students, search, classFilter, facultyFilter],
+    [students, search, classFilter, facultyFilter, majorFilter, statusFilter],
   );
+  const filtersActive =
+    search.trim() !== "" ||
+    classFilter !== "Tất cả lớp" ||
+    facultyFilter !== "Tất cả khoa" ||
+    majorFilter !== "Tất cả chuyên ngành" ||
+    statusFilter !== "Tất cả trạng thái";
 
   return (
     <>
@@ -134,7 +166,7 @@ export default function ManagerStudentClass({
           />
           <button
             className="manager-button manager-button--outline"
-            onClick={onExport}
+            onClick={() => onExport(filteredStudents, filtersActive)}
             type="button"
           >
             <Icon name="report" /> Xuất Excel
@@ -205,21 +237,48 @@ export default function ManagerStudentClass({
               />
             </label>
             <select
-              value={classFilter}
-              onChange={(event) => setClassFilter(event.target.value)}
-            >
-              <option>Tất cả lớp</option>
-              {classCodes.map((code) => (
-                <option key={code}>{code}</option>
-              ))}
-            </select>
-            <select
               value={facultyFilter}
-              onChange={(event) => setFacultyFilter(event.target.value)}
+              onChange={(event) => {
+                setFacultyFilter(event.target.value);
+                setMajorFilter("Tất cả chuyên ngành");
+                setClassFilter("Tất cả lớp");
+              }}
             >
               <option>Tất cả khoa</option>
               {faculties.map((facultyName) => (
                 <option key={facultyName}>{facultyName}</option>
+              ))}
+            </select>
+            <select
+              value={majorFilter}
+              onChange={(event) => {
+                setMajorFilter(event.target.value);
+                setClassFilter("Tất cả lớp");
+              }}
+            >
+              <option value="Tất cả chuyên ngành">Tất cả chuyên ngành</option>
+              {availableMajors.map((item) => (
+                <option key={item.majorCode} value={item.majorCode}>
+                  {item.majorName || item.majorCode}
+                </option>
+              ))}
+            </select>
+            <select
+              value={classFilter}
+              onChange={(event) => setClassFilter(event.target.value)}
+            >
+              <option>Tất cả lớp</option>
+              {availableClasses.map((item) => (
+                <option key={item.code} value={item.code}>{item.code}</option>
+              ))}
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+            >
+              <option value="Tất cả trạng thái">Tất cả trạng thái</option>
+              {academicStatuses.map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
           </div>
@@ -269,7 +328,7 @@ export default function ManagerStudentClass({
                         Lớp {item.className}
                       </strong>
                       <small>{item.facultyName || "Chưa cập nhật khoa"}</small>
-                      <small>{item.studyProgramId || "Chưa cập nhật"}</small>
+                      <small>{item.studyProgramName || item.studyProgramId || "Chưa cập nhật"}</small>
                     </td>
                     <td>
                       <strong>{item.phone || "Chưa cập nhật SĐT"}</strong>
@@ -280,10 +339,19 @@ export default function ManagerStudentClass({
                       <strong>{item.birthPlace || "Chưa cập nhật"}</strong>
                     </td>
                     <td>
-                      <span className="manager-student-status">
-                        {item.isInClass ? "Đang học" : "Ngoài lớp"}
-                      </span>
-                      <strong>Sinh viên</strong>
+                      <select
+                        className="manager-student-status-select"
+                        value={item.academicStatus || "STUDYING"}
+                        onChange={(event) =>
+                          onStatusChange(item, event.target.value)
+                        }
+                        aria-label={`Trạng thái học vụ của ${item.name}`}
+                      >
+                        {academicStatuses.map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                      </select>
+                      <small>{item.isInClass ? "Đang trong lớp" : "Lớp không hoạt động"}</small>
                     </td>
                     <td>
                       <div className="manager-row-actions">
@@ -318,6 +386,9 @@ export default function ManagerStudentClass({
                 onReset={() => {
                   setSearch("");
                   setClassFilter("Tất cả lớp");
+                  setFacultyFilter("Tất cả khoa");
+                  setMajorFilter("Tất cả chuyên ngành");
+                  setStatusFilter("Tất cả trạng thái");
                 }}
               />
             )}

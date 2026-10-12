@@ -1,43 +1,59 @@
 package dto
 
 type ManagerAccount struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"name"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Gender    string `json:"gender"`
-	BirthDay  string `json:"birthDay"`
-	Phone     string `json:"phone"`
-	Role      string `json:"role"`
-	RoleCode  string `json:"roleCode"`
-	Unit      string `json:"unit"`
-	ClassCode string `json:"classCode"`
-	ClassName string `json:"className"`
-	Position  string `json:"position"`
-	StudentID string `json:"studentId"`
-	Status    string `json:"status"`
-	Active    bool   `json:"active"`
-	LastLogin string `json:"lastLogin"`
+	ID               int64  `json:"id"`
+	Name             string `json:"name"`
+	Username         string `json:"username"`
+	Email            string `json:"email"`
+	Gender           string `json:"gender"`
+	BirthDay         string `json:"birthDay"`
+	Phone            string `json:"phone"`
+	Role             string `json:"role"`
+	RoleCode         string `json:"roleCode"`
+	Unit             string `json:"unit"`
+	ClassCode        string `json:"classCode"`
+	ClassName        string `json:"className"`
+	Position         string `json:"position"`
+	StudentID        string `json:"studentId"`
+	Status           string `json:"status"`
+	Active           bool   `json:"active"`
+	LastLogin        string `json:"lastLogin"`
+	BirthPlace       string `json:"birthPlace"`
+	HometownCountry  string `json:"hometownCountry"`
+	HometownProvince string `json:"hometownProvince"`
+	HometownCity     string `json:"hometownCity"`
+	HometownAddress  string `json:"hometownAddress"`
+	AcademicStatus   string `json:"academicStatus"`
 }
 
 type ManagerAccountMutation struct {
-	Name      string `json:"name"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	Gender    string `json:"gender"`
-	BirthDay  string `json:"birthDay"`
-	Phone     string `json:"phone"`
-	RoleCode  string `json:"roleCode"`
-	Unit      string `json:"unit"`
-	ClassCode string `json:"classCode"`
-	Position  string `json:"position"`
-	Active    bool   `json:"active"`
+	Name              string `json:"name"`
+	Username          string `json:"username"`
+	Email             string `json:"email"`
+	Password          string `json:"password"`
+	Gender            string `json:"gender"`
+	BirthDay          string `json:"birthDay"`
+	Phone             string `json:"phone"`
+	RoleCode          string `json:"roleCode"`
+	Unit              string `json:"unit"`
+	ClassCode         string `json:"classCode"`
+	Position          string `json:"position"`
+	Active            bool   `json:"active"`
+	StudentID         string `json:"studentId"`
+	OriginalStudentID string `json:"originalStudentId"`
+	BirthPlace        string `json:"birthPlace"`
+	HometownCountry   string `json:"hometownCountry"`
+	HometownProvince  string `json:"hometownProvince"`
+	HometownCity      string `json:"hometownCity"`
+	HometownAddress   string `json:"hometownAddress"`
+	AcademicStatus    string `json:"academicStatus"`
 }
 
 type ManagerClass struct {
 	Code         string `json:"code"`
 	Faculty      string `json:"faculty"`
+	MajorCode    string `json:"majorCode"`
+	MajorName    string `json:"majorName"`
 	AcademicYear string `json:"academicYear"`
 	StudentCount int64  `json:"studentCount"`
 }
@@ -68,6 +84,7 @@ type ManagerStudentMutation struct {
 	HometownProvince   string `json:"hometownProvince"`
 	HometownCity       string `json:"hometownCity"`
 	HometownAddress    string `json:"hometownAddress"`
+	AcademicStatus     string `json:"academicStatus"`
 }
 
 type ManagerRole struct {

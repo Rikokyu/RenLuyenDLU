@@ -11,6 +11,15 @@ export async function getManagerStudents(filters = {}) {
   if (filters.classCode) {
     params.class_code = filters.classCode;
   }
+  if (filters.faculty) {
+    params.faculty = filters.faculty;
+  }
+  if (filters.majorCode) {
+    params.major_code = filters.majorCode;
+  }
+  if (filters.status) {
+    params.status = filters.status;
+  }
 
   const response = await apiClient.get(`${API_BASE_URL}/manager/students`, {
     params,
@@ -78,6 +87,14 @@ export async function saveManagerStudent(student) {
         payload,
       )
     : await apiClient.post(`${API_BASE_URL}/manager/students`, payload);
+  return response.data;
+}
+
+export async function updateManagerStudentStatus(studentId, status) {
+  const response = await apiClient.put(
+    `${API_BASE_URL}/manager/students/${encodeURIComponent(studentId)}/status`,
+    { status },
+  );
   return response.data;
 }
 

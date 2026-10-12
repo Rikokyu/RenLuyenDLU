@@ -24,6 +24,16 @@ Optional query parameters:
 
 Successful responses use `{ "status": "success", "message": "...", "data": [...] }`.
 
+## Student management
+
+`GET /manager/students` accepts optional `search`, `class_code`, `faculty`, `major_code`, and `status` filters. Student status is independent of the user account's active/locked status and is one of `STUDYING`, `LEAVE`, `RESERVED`, `SUSPENDED`, `GRADUATED`, or `OTHER`.
+
+`PUT /manager/students/{id}/status` updates the academic status for the student code in `{ "status": "RESERVED" }`.
+
+Creating or updating a student requires a seven-digit student code and an `@dlu.edu.vn` email. A non-empty phone number must contain exactly ten digits. Student names are split into the stored `firstname` and `lastname` fields by the backend. Birth country, province, ward/locality, and home address are persisted on the related user record.
+
+`GET /manager/classes` includes each class's faculty and major code/name for dependent faculty → major → class selectors. Country and administrative-area choices in the management forms are loaded from public geographic APIs; Vietnam ward options use the Vietnam administrative-division API.
+
 ### `GET /evidences/filters`
 
 Returns active faculties, majors, and classes from the database. The client narrows majors by faculty and classes by selected faculty and/or major.

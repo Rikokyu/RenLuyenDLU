@@ -25,12 +25,32 @@ func InitDatabase(cfg *config.Config) *gorm.DB {
 	if err := migrateAuthentication(db); err != nil {
 		log.Fatalf("❌ Không thể cập nhật schema xác thực: %v", err)
 	}
+	if err := migrateManagerStudentProfile(db); err != nil {
+		log.Fatalf("❌ Không thể cập nhật schema quản lý sinh viên: %v", err)
+	}
 
 	fmt.Println("========================================")
 	fmt.Println("✅ KẾT NỐI DATABASE THÀNH CÔNG!")
 	fmt.Println("========================================")
 
 	return db
+}
+
+func migrateManagerStudentProfile(db *gorm.DB) error {
+	if err := db.Exec(`
+		ALTER TABLE "User"
+			ADD COLUMN IF NOT EXISTS birth_country TEXT NOT NULL DEFAULT '',
+			ADD COLUMN IF NOT EXISTS birth_province TEXT NOT NULL DEFAULT '',
+			ADD COLUMN IF NOT EXISTS birth_ward TEXT NOT NULL DEFAULT '',
+			ADD COLUMN IF NOT EXISTS home_address TEXT NOT NULL DEFAULT ''
+	`).Error; err != nil {
+		return err
+	}
+	return db.Exec(`
+		ALTER TABLE student
+			ADD COLUMN IF NOT EXISTS academic_status TEXT NOT NULL DEFAULT 'STUDYING'
+				CHECK (academic_status IN ('STUDYING', 'LEAVE', 'RESERVED', 'SUSPENDED', 'GRADUATED', 'OTHER'))
+	`).Error
 }
 
 func migrateAuthentication(db *gorm.DB) error {

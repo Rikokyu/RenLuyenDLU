@@ -450,7 +450,7 @@
   grid-template-columns: minmax(220px, 1.3fr) minmax(220px, 1.3fr);
 }
 .manager-filter--student-data {
-  grid-template-columns: minmax(300px, 1.8fr) repeat(3, minmax(180px, 0.8fr));
+  grid-template-columns: minmax(270px, 1.8fr) repeat(4, minmax(150px, 0.8fr));
 }
 .manager-filter--account-list {
   grid-template-columns: minmax(300px, 1.5fr) minmax(220px, 1fr) minmax(
@@ -532,6 +532,16 @@
 .manager-student-status {
   margin-bottom: 5px;
   color: #27855a;
+}
+.manager-student-status-select {
+  max-width: 160px;
+  min-height: 32px;
+  padding: 4px 7px;
+  color: #218657;
+  background: var(--manager-surface-soft);
+  border: 1px solid #aee7cb;
+  border-radius: 7px;
+  font-weight: 700;
 }
 .manager-student-status--warning {
   color: #dd7545;

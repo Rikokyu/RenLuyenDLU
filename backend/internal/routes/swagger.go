@@ -60,7 +60,10 @@ const openAPIDocument = `{
         "security": [{"BearerAuth": []}],
         "parameters": [
           {"name": "search", "in": "query", "schema": {"type": "string"}},
-          {"name": "class_code", "in": "query", "schema": {"type": "string"}}
+          {"name": "class_code", "in": "query", "schema": {"type": "string"}},
+          {"name": "faculty", "in": "query", "schema": {"type": "string"}},
+          {"name": "major_code", "in": "query", "schema": {"type": "string"}},
+          {"name": "status", "in": "query", "schema": {"type": "string", "enum": ["STUDYING", "LEAVE", "RESERVED", "SUSPENDED", "GRADUATED", "OTHER"]}}
         ],
         "responses": {"200": {"description": "Danh sách sinh viên"}, "401": {"description": "Chưa đăng nhập"}, "403": {"description": "Không đủ quyền"}}
       },
@@ -86,6 +89,16 @@ const openAPIDocument = `{
         "summary": "Xóa sinh viên",
         "security": [{"BearerAuth": []}],
         "responses": {"204": {"description": "Đã xóa"}, "400": {"description": "Mã sinh viên không hợp lệ"}, "403": {"description": "Không đủ quyền"}}
+      }
+    },
+    "/manager/students/{id}/status": {
+      "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "string", "example": "2312660"}}],
+      "put": {
+        "tags": ["Quản lý"],
+        "summary": "Cập nhật trạng thái học vụ sinh viên",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["status"], "properties": {"status": {"type": "string", "enum": ["STUDYING", "LEAVE", "RESERVED", "SUSPENDED", "GRADUATED", "OTHER"]}}}}}},
+        "responses": {"200": {"description": "Đã cập nhật trạng thái sinh viên"}, "400": {"description": "Trạng thái không hợp lệ"}, "404": {"description": "Không tìm thấy sinh viên"}}
       }
     },
     "/manager/classes": {

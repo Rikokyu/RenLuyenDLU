@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"net/mail"
+	"regexp"
 	"strings"
 	"time"
 
@@ -10,6 +12,11 @@ import (
 	"renluyen-dlu-backend/internal/repository"
 
 	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	managerPhonePattern = regexp.MustCompile(`^[0-9]{10}$`)
+	studentIDPattern    = regexp.MustCompile(`^[0-9]{7}$`)
 )
 
 type ManagerService interface {
@@ -26,6 +33,7 @@ type ManagerService interface {
 	SaveClass(ctx context.Context, oldCode string, class dto.ManagerClassMutation) error
 	DeleteClass(ctx context.Context, code string) error
 	SaveStudent(ctx context.Context, oldID string, student dto.ManagerStudentMutation) error
+	UpdateStudentStatus(ctx context.Context, id, status string) error
 	DeleteStudent(ctx context.Context, id string) error
 }
 
@@ -48,8 +56,7 @@ func (s *managerService) GetStudents(
 
 	return s.repo.GetStudents(
 		ctx,
-		req.Search,
-		req.ClassCode,
+		req,
 	)
 }
 
@@ -80,6 +87,12 @@ func (s *managerService) SaveAccount(ctx context.Context, id int64, account dto.
 		account.Gender == "" || account.BirthDay == "" || account.Phone == "" {
 		return errors.New("họ tên, email, vai trò, giới tính, ngày sinh và số điện thoại là bắt buộc")
 	}
+	if !validUniversityEmail(account.Email) {
+		return errors.New("email phải đúng định dạng và có đuôi @dlu.edu.vn")
+	}
+	if !managerPhonePattern.MatchString(account.Phone) {
+		return errors.New("số điện thoại phải gồm đúng 10 chữ số")
+	}
 	if account.RoleCode == "HOMEROOM_CLASS_OFFICER" &&
 		(account.ClassCode == "" || account.Position == "") {
 		return errors.New("lớp và chức vụ là bắt buộc với vai trò giảng viên / ban cán sự")
@@ -89,6 +102,40 @@ func (s *managerService) SaveAccount(ctx context.Context, id int64, account dto.
 	}
 	if _, err := time.Parse("2006-01-02", account.BirthDay); err != nil {
 		return errors.New("ngày sinh không hợp lệ")
+	}
+	if account.RoleCode == "STUDENT" {
+		account.StudentID = strings.TrimSpace(account.StudentID)
+		if !studentIDPattern.MatchString(account.StudentID) {
+			return errors.New("mã sinh viên phải gồm đúng 7 chữ số")
+		}
+		if account.ClassCode == "" {
+			return errors.New("lớp là bắt buộc với vai trò sinh viên")
+		}
+		oldStudentID := account.OriginalStudentID
+		if oldStudentID == "" && id != 0 {
+			oldStudentID = account.StudentID
+		}
+		if err := s.SaveStudent(ctx, oldStudentID, dto.ManagerStudentMutation{
+			StudentID:        account.StudentID,
+			Email:            account.Email,
+			ClassCode:        account.ClassCode,
+			Gender:           account.Gender,
+			BirthDay:         account.BirthDay,
+			StudentName:      account.Name,
+			BirthPlace:       account.BirthPlace,
+			Phone:            account.Phone,
+			HometownCountry:  account.HometownCountry,
+			HometownProvince: account.HometownProvince,
+			HometownCity:     account.HometownCity,
+			HometownAddress:  account.HometownAddress,
+			AcademicStatus:   account.AcademicStatus,
+		}); err != nil {
+			return err
+		}
+		if id == 0 {
+			return nil
+		}
+		return s.repo.UpsertAccount(ctx, id, account, "")
 	}
 
 	passwordHash := ""
@@ -147,17 +194,63 @@ func (s *managerService) SaveStudent(ctx context.Context, oldID string, student 
 	student.FirstName = strings.TrimSpace(student.FirstName)
 	student.LastName = strings.TrimSpace(student.LastName)
 	student.StudentName = strings.TrimSpace(student.StudentName)
-	if student.StudentID == "" || student.ClassCode == "" || student.Email == "" || student.BirthDay == "" {
-		return errors.New("mã sinh viên, email, lớp và ngày sinh là bắt buộc")
+	if !studentIDPattern.MatchString(student.StudentID) {
+		return errors.New("mã sinh viên phải gồm đúng 7 chữ số")
 	}
-	if student.StudentName == "" {
-		student.StudentName = strings.TrimSpace(student.FirstName + " " + student.LastName)
+	if student.ClassCode == "" || student.Email == "" || student.BirthDay == "" || student.StudentName == "" {
+		return errors.New("họ tên, mã sinh viên, email, lớp và ngày sinh là bắt buộc")
 	}
+	if !validUniversityEmail(student.Email) {
+		return errors.New("email phải đúng định dạng và có đuôi @dlu.edu.vn")
+	}
+	if student.Phone != "" && !managerPhonePattern.MatchString(student.Phone) {
+		return errors.New("số điện thoại phải gồm đúng 10 chữ số")
+	}
+	if _, err := time.Parse("2006-01-02", student.BirthDay); err != nil {
+		return errors.New("ngày sinh không hợp lệ")
+	}
+	if student.AcademicStatus == "" {
+		student.AcademicStatus = "STUDYING"
+	}
+	if !validAcademicStatus(student.AcademicStatus) {
+		return errors.New("trạng thái sinh viên không hợp lệ")
+	}
+	student.FirstName, student.LastName = splitStudentName(student.StudentName)
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(defaultPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 	return s.repo.UpsertStudent(ctx, oldID, student, string(passwordHash))
+}
+
+func (s *managerService) UpdateStudentStatus(ctx context.Context, id, status string) error {
+	status = strings.TrimSpace(status)
+	if !validAcademicStatus(status) {
+		return errors.New("trạng thái sinh viên không hợp lệ")
+	}
+	return s.repo.UpdateStudentStatus(ctx, id, status)
+}
+
+func validUniversityEmail(email string) bool {
+	address, err := mail.ParseAddress(email)
+	return err == nil && address.Address == email && strings.HasSuffix(strings.ToLower(email), "@dlu.edu.vn")
+}
+
+func validAcademicStatus(status string) bool {
+	switch status {
+	case "STUDYING", "LEAVE", "RESERVED", "SUSPENDED", "GRADUATED", "OTHER":
+		return true
+	default:
+		return false
+	}
+}
+
+func splitStudentName(name string) (string, string) {
+	parts := strings.Fields(name)
+	if len(parts) < 2 {
+		return name, ""
+	}
+	return strings.Join(parts[:len(parts)-1], " "), parts[len(parts)-1]
 }
 
 func (s *managerService) DeleteStudent(ctx context.Context, id string) error {

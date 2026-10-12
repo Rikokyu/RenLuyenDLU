@@ -169,6 +169,21 @@ func (h *ManagerHandler) DeleteStudent(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+func (h *ManagerHandler) UpdateStudentStatus(c *gin.Context) {
+	var request struct {
+		Status string `json:"status" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		writeManagerError(c, errors.New("trạng thái sinh viên là bắt buộc"))
+		return
+	}
+	if err := h.service.UpdateStudentStatus(c.Request.Context(), c.Param("id"), request.Status); err != nil {
+		writeManagerError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Đã cập nhật trạng thái sinh viên"})
+}
+
 func optionalPathID(c *gin.Context, key string) (int64, error) {
 	value := c.Param(key)
 	if value == "" {

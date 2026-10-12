@@ -1,5 +1,14 @@
 import { formatDate } from "./formatDate";
 
+const academicStatusLabels = {
+  STUDYING: "Đang học",
+  LEAVE: "Nghỉ học",
+  RESERVED: "Bảo lưu",
+  SUSPENDED: "Đình chỉ",
+  GRADUATED: "Đã tốt nghiệp",
+  OTHER: "Khác",
+};
+
 function addSheet(workbook, name, columns, rows) {
   const sheet = workbook.addWorksheet(name);
   sheet.columns = columns;
@@ -38,12 +47,12 @@ export async function exportManagerWorkbook({ students, classes, accounts }) {
       { header: "Email đăng nhập", key: "email", width: 32 },
       { header: "Lớp", key: "classCode", width: 16 },
       { header: "Khoa", key: "faculty", width: 28 },
-      { header: "Chương trình", key: "program", width: 20 },
+      { header: "Chuyên ngành", key: "program", width: 24 },
       { header: "Giới tính", key: "gender", width: 14 },
       { header: "Ngày sinh", key: "birthDay", width: 16 },
       { header: "Quốc gia", key: "hometownCountry", width: 20 },
       { header: "Tỉnh", key: "hometownProvince", width: 24 },
-      { header: "Thành phố", key: "hometownCity", width: 24 },
+      { header: "Phường / xã", key: "hometownCity", width: 24 },
       { header: "Địa chỉ chi tiết", key: "hometownAddress", width: 36 },
       { header: "Vai trò lớp", key: "classRole", width: 18 },
       { header: "Trạng thái lớp", key: "status", width: 18 },
@@ -55,7 +64,7 @@ export async function exportManagerWorkbook({ students, classes, accounts }) {
       email: student.email,
       classCode: student.classCode,
       faculty: student.facultyName,
-      program: student.studyProgramId,
+      program: student.studyProgramName || student.studyProgramId,
       gender: student.gender,
       birthDay: formatDate(student.birthDay),
       hometownCountry: student.hometownCountry,
@@ -63,7 +72,7 @@ export async function exportManagerWorkbook({ students, classes, accounts }) {
       hometownCity: student.hometownCity,
       hometownAddress: student.hometownAddress,
       classRole: student.classRoleId === 1 ? "Lớp trưởng" : "Học viên",
-      status: student.isInClass ? "Đang học" : "Ngoài lớp",
+      status: academicStatusLabels[student.academicStatus] || "Đang học",
     })),
   );
 

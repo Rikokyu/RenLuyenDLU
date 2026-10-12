@@ -28,6 +28,7 @@ func MapManagerRoutes(
 	{
 		manager.GET("/students", managerHandler.GetStudents)
 		manager.POST("/students", managerHandler.SaveStudent)
+		manager.PUT("/students/:id/status", managerHandler.UpdateStudentStatus)
 		manager.PUT("/students/:id", managerHandler.SaveStudent)
 		manager.DELETE("/students/:id", managerHandler.DeleteStudent)
 		manager.GET("/classes", managerHandler.GetClasses)

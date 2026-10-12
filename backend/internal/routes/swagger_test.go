@@ -33,6 +33,7 @@ func TestSwaggerDocumentIsAvailableAndContainsAuthEndpoints(t *testing.T) {
 		"/auth/password",
 		"/manager/students",
 		"/manager/students/{id}",
+		"/manager/students/{id}/status",
 		"/manager/classes",
 		"/manager/classes/{code}",
 		"/manager/accounts",

@@ -12,7 +12,7 @@ import (
 )
 
 type ManagerRepository interface {
-	GetStudents(ctx context.Context, search, classCode string) ([]dto.ManagerStudent, error)
+	GetStudents(ctx context.Context, req dto.ManagerStudentQuery) ([]dto.ManagerStudent, error)
 	GetClasses(ctx context.Context) ([]dto.ManagerClass, error)
 	GetAccounts(ctx context.Context) ([]dto.ManagerAccount, error)
 	GetRoles(ctx context.Context) ([]dto.ManagerRole, error)
@@ -23,6 +23,7 @@ type ManagerRepository interface {
 	UpsertClass(ctx context.Context, oldCode string, class dto.ManagerClassMutation) error
 	DeleteClass(ctx context.Context, code string) error
 	UpsertStudent(ctx context.Context, oldID string, student dto.ManagerStudentMutation, passwordHash string) error
+	UpdateStudentStatus(ctx context.Context, id, status string) error
 	DeleteStudent(ctx context.Context, id string) error
 }
 
@@ -38,8 +39,7 @@ func NewManagerRepository(db *gorm.DB) ManagerRepository {
 
 func (r *managerRepository) GetStudents(
 	ctx context.Context,
-	search string,
-	classCode string,
+	req dto.ManagerStudentQuery,
 ) ([]dto.ManagerStudent, error) {
 
 	var students []dto.ManagerStudent
@@ -56,15 +56,17 @@ func (r *managerRepository) GetStudents(
 			COALESCE(c.class_code, '') AS class_name,
 			COALESCE(f.name, '') AS faculty_name,
 			COALESCE(m.major_code, '') AS study_program_id,
+			COALESCE(m.name, '') AS study_program_name,
+			COALESCE(s.academic_status, 'STUDYING') AS academic_status,
 			COALESCE(u.gender, '') AS gender,
 			COALESCE(u.dob::text, '') AS birth_day,
 			COALESCE(u.birthplace, '') AS birth_place,
 			COALESCE(u.phone, '') AS phone,
 			COALESCE(u.email, '') AS email,
-			'' AS hometown_country,
-			'' AS hometown_province,
-			'' AS hometown_city,
-			'' AS hometown_address,
+			COALESCE(u.birth_country, '') AS hometown_country,
+			COALESCE(u.birth_province, '') AS hometown_province,
+			COALESCE(u.birth_ward, '') AS hometown_city,
+			COALESCE(u.home_address, '') AS hometown_address,
 			(COALESCE(c.status, 0) = 1) AS is_in_class,
 			COALESCE((
 				SELECT CASE
@@ -91,8 +93,8 @@ func (r *managerRepository) GetStudents(
 		Where(`s.id IS NOT NULL`).
 		Where(`COALESCE(u.status, 1) <> 0`)
 
-	if search != "" {
-		pattern := "%" + search + "%"
+	if req.Search != "" {
+		pattern := "%" + req.Search + "%"
 
 		query = query.Where(`
 			s.student_code ILIKE ?
@@ -107,8 +109,17 @@ func (r *managerRepository) GetStudents(
 		)
 	}
 
-	if classCode != "" {
-		query = query.Where(`c.class_code = ?`, classCode)
+	if req.ClassCode != "" {
+		query = query.Where(`c.class_code = ?`, req.ClassCode)
+	}
+	if req.Faculty != "" {
+		query = query.Where(`f.name = ?`, req.Faculty)
+	}
+	if req.MajorCode != "" {
+		query = query.Where(`m.major_code = ?`, req.MajorCode)
+	}
+	if req.Status != "" {
+		query = query.Where(`s.academic_status = ?`, req.Status)
 	}
 
 	err := query.
@@ -126,6 +137,8 @@ func (r *managerRepository) GetClasses(ctx context.Context) ([]dto.ManagerClass,
 		Select(`
 			c.class_code AS code,
 			COALESCE(f.name, '') AS faculty,
+			COALESCE(m.major_code, '') AS major_code,
+			COALESCE(m.name, '') AS major_name,
 			COALESCE(sy.year, '') AS academic_year,
 			COUNT(DISTINCT CASE WHEN COALESCE(u.status, 1) <> 0 THEN s.id END) AS student_count
 		`).
@@ -144,7 +157,7 @@ func (r *managerRepository) GetClasses(ctx context.Context) ([]dto.ManagerClass,
 			) sy ON TRUE
 		`).
 		Where(`c.status = 1`).
-		Group(`c.id, c.class_code, f.name, sy.year`).
+		Group(`c.id, c.class_code, f.name, m.major_code, m.name, sy.year`).
 		Order(`c.class_code ASC`).
 		Scan(&classes).Error
 	return classes, err
@@ -209,6 +222,12 @@ func (r *managerRepository) GetAccounts(ctx context.Context) ([]dto.ManagerAccou
 			COALESCE(c.class_code, assigned_class.class_code, '') AS class_name,
 			COALESCE(user_positions.names, '') AS position,
 			COALESCE(s.student_code, '') AS student_id,
+			COALESCE(u.birthplace, '') AS birth_place,
+			COALESCE(u.birth_country, '') AS hometown_country,
+			COALESCE(u.birth_province, '') AS hometown_province,
+			COALESCE(u.birth_ward, '') AS hometown_city,
+			COALESCE(u.home_address, '') AS hometown_address,
+			COALESCE(s.academic_status, 'STUDYING') AS academic_status,
 			CASE WHEN u.status <> 0 THEN 'Đang hoạt động' ELSE 'Đã khóa' END AS status,
 			(u.status <> 0) AS active,
 			'Chưa đăng nhập' AS last_login
@@ -356,20 +375,21 @@ func (r *managerRepository) UpsertAccount(ctx context.Context, id int64, account
 				return err
 			}
 			if err := tx.Exec(`
-				INSERT INTO "User" (id, firstname, lastname, gender, dob, birthplace, phone, email, password, status, idrole, responsiblefaculty)
-				VALUES (?, ?, ?, ?, ?::date, '', ?, ?, ?, ?, ?, ?)
-			`, userID, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, status, roleID, account.Unit).Error; err != nil {
+				INSERT INTO "User" (id, firstname, lastname, gender, dob, birthplace, birth_country, birth_province, birth_ward, home_address, phone, email, password, status, idrole, responsiblefaculty)
+				VALUES (?, ?, ?, ?, ?::date, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			`, userID, firstName, lastName, account.Gender, account.BirthDay, account.BirthPlace, account.HometownCountry, account.HometownProvince, account.HometownCity, account.HometownAddress, account.Phone, account.Email, passwordHash, status, roleID, account.Unit).Error; err != nil {
 				return err
 			}
 		} else {
 			result := tx.Exec(`
 				UPDATE "User"
 				SET firstname = ?, lastname = ?, gender = ?, dob = ?::date,
+				    birthplace = ?, birth_country = ?, birth_province = ?, birth_ward = ?, home_address = ?,
 				    phone = ?, email = ?, password = CASE WHEN ? = '' THEN password ELSE ? END,
 				    password_changed = CASE WHEN ? = '' THEN password_changed ELSE FALSE END,
 				    idrole = ?, status = ?, responsiblefaculty = ?
 				WHERE id = ?
-			`, firstName, lastName, account.Gender, account.BirthDay, account.Phone, account.Email, passwordHash, passwordHash, passwordHash, roleID, status, account.Unit, userID)
+			`, firstName, lastName, account.Gender, account.BirthDay, account.BirthPlace, account.HometownCountry, account.HometownProvince, account.HometownCity, account.HometownAddress, account.Phone, account.Email, passwordHash, passwordHash, passwordHash, roleID, status, account.Unit, userID)
 			if result.Error != nil {
 				return result.Error
 			}
@@ -653,7 +673,7 @@ func splitUserName(name string) (string, string) {
 	if len(parts) < 2 {
 		return name, ""
 	}
-	return parts[0], strings.Join(parts[1:], " ")
+	return strings.Join(parts[:len(parts)-1], " "), parts[len(parts)-1]
 }
 
 func (r *managerRepository) UpsertClass(ctx context.Context, oldCode string, class dto.ManagerClassMutation) error {
@@ -902,9 +922,9 @@ func (r *managerRepository) UpsertStudent(ctx context.Context, oldID string, stu
 				return gorm.ErrRecordNotFound
 			}
 			if err := tx.Exec(`
-				INSERT INTO "User" (id, firstname, lastname, gender, dob, birthplace, phone, email, password, status, idrole)
-				VALUES (?, ?, ?, ?, ?::date, ?, ?, ?, ?, 1, ?)
-			`, existingUserID, student.FirstName, student.LastName, student.Gender, student.BirthDay, student.BirthPlace, student.Phone, student.Email, passwordHash, roleID).Error; err != nil {
+				INSERT INTO "User" (id, firstname, lastname, gender, dob, birthplace, birth_country, birth_province, birth_ward, home_address, phone, email, password, status, idrole)
+				VALUES (?, ?, ?, ?, ?::date, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+			`, existingUserID, student.FirstName, student.LastName, student.Gender, student.BirthDay, student.BirthPlace, student.HometownCountry, student.HometownProvince, student.HometownCity, student.HometownAddress, student.Phone, student.Email, passwordHash, roleID).Error; err != nil {
 				return err
 			}
 			userID = &existingUserID
@@ -912,9 +932,10 @@ func (r *managerRepository) UpsertStudent(ctx context.Context, oldID string, stu
 			result := tx.Exec(`
 				UPDATE "User"
 				SET firstname = ?, lastname = ?, gender = ?, dob = ?::date,
-				    birthplace = ?, phone = ?, email = ?
+				    birthplace = ?, birth_country = ?, birth_province = ?, birth_ward = ?, home_address = ?,
+				    phone = ?, email = ?
 				WHERE id = ?
-			`, student.FirstName, student.LastName, student.Gender, student.BirthDay, student.BirthPlace, student.Phone, student.Email, *userID)
+			`, student.FirstName, student.LastName, student.Gender, student.BirthDay, student.BirthPlace, student.HometownCountry, student.HometownProvince, student.HometownCity, student.HometownAddress, student.Phone, student.Email, *userID)
 			if result.Error != nil {
 				return result.Error
 			}
@@ -928,14 +949,15 @@ func (r *managerRepository) UpsertStudent(ctx context.Context, oldID string, stu
 				return err
 			}
 			return tx.Exec(`
-				INSERT INTO student (id, student_code, idclass, iduser)
-				VALUES (?, ?, ?, ?)
-			`, studentID, student.StudentID, classID, *userID).Error
+				INSERT INTO student (id, student_code, idclass, iduser, academic_status)
+				VALUES (?, ?, ?, ?, ?)
+			`, studentID, student.StudentID, classID, *userID, student.AcademicStatus).Error
 		}
 		result := tx.Exec(`
-			UPDATE student SET student_code = ?, idclass = ?, iduser = ?
+			UPDATE student
+			SET student_code = ?, idclass = ?, iduser = ?, academic_status = ?
 			WHERE id = ?
-		`, student.StudentID, classID, *userID, studentID)
+		`, student.StudentID, classID, *userID, student.AcademicStatus, studentID)
 		if result.Error != nil {
 			return result.Error
 		}
@@ -962,4 +984,18 @@ func (r *managerRepository) DeleteStudent(ctx context.Context, id string) error 
 		}
 		return nil
 	})
+}
+
+func (r *managerRepository) UpdateStudentStatus(ctx context.Context, id, status string) error {
+	result := r.db.WithContext(ctx).
+		Table(`student`).
+		Where(`student_code = ?`, id).
+		Update(`academic_status`, status)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
