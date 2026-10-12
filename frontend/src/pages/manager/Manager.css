@@ -521,14 +521,6 @@
   overflow-wrap: anywhere;
   line-height: 1.4;
 }
-.manager-table--students td:first-child {
-  width: 35px;
-}
-.manager-table--students input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--primary-green);
-}
 .manager-student-status {
   margin-bottom: 5px;
   color: #27855a;

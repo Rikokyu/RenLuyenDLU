@@ -286,7 +286,6 @@ export default function ManagerStudentClass({
             <table className="manager-table manager-table--students">
               <thead>
                 <tr>
-                  <th></th>
                   <th>THÔNG TIN SINH VIÊN</th>
                   <th>LỚP & KHOA</th>
                   <th>THÔNG TIN CÁ NHÂN</th>
@@ -298,9 +297,6 @@ export default function ManagerStudentClass({
               <tbody>
                 {filteredStudents.map((item) => (
                   <tr key={item.id}>
-                    <td>
-                      <input type="checkbox" />
-                    </td>
                     <td>
                       <div className="manager-person">
                         <span className="manager-avatar manager-avatar--student">
