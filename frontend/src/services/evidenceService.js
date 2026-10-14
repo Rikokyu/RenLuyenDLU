@@ -41,11 +41,24 @@ export const evidenceApi = {
   },
 
   // Lay URL de xem anh minh chung
+  cancelStudentEvidence: async (evidenceId) => {
+    const response = await apiClient.delete(`${STUDENT_EVIDENCE_URL}/${evidenceId}`);
+    return response.data;
+  },
+
   getEvidenceFileUrl: (evidenceId) => {
     return `${STUDENT_EVIDENCE_URL}/${evidenceId}/file`;
   },
 
   // === MANAGER / ADMIN EVIDENCE APIs ===
+
+  getManagerEvidenceFile: async (evidenceId, signal) => {
+    const response = await apiClient.get(`${EVIDENCE_API_URL}/${evidenceId}/file`, {
+      responseType: "blob",
+      signal,
+    });
+    return response.data;
+  },
 
   // 1. Lay du lieu cho 4 the thong ke
   getStats: async () => {

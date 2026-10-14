@@ -648,3 +648,10 @@ select.input-custom:focus {
     width: 100%;
   }
 }
+.manager-evidence-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  margin: 12px auto;
+}

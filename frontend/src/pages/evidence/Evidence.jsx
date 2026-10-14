@@ -101,9 +101,8 @@ const mapBackendToFrontend = (item) => {
     semester: schoolYear.semester ?? schoolYear.Semester,
     event: activity.title || activity.Title || 'Không có tên',
     proof: item.data ? 'Minh chứng đã tải lên' : 'Chưa nộp',
-    proofUrl: item.data,
-    submittedAt: formatDate(registration.registered_at || registration.RegisteredAt),
-    submittedAtValue: String(registration.registered_at || registration.RegisteredAt || '').slice(0, 10),
+    submittedAt: formatDate(item.submitted_at),
+    submittedAtValue: String(item.submitted_at || '').slice(0, 10),
     score: activity.score ?? activity.Score ?? 0,
     status: statusText,
   };
@@ -147,17 +146,17 @@ const mapBackendToFrontend = (item) => {
     if (filters.classId) params.class_id = filters.classId;
 
     const res = await apiClient.get(EVIDENCE_API_URL, { params });
-    console.log("Dữ liệu gốc từ Backend:", res.data.data);
 
     if (res.data && res.data.data) {
       const rawList = Array.isArray(res.data.data) ? res.data.data : [];
       const mappedList = rawList.map(mapBackendToFrontend).filter(Boolean);
 
-      console.log("Dữ liệu sau khi ép kiểu thành công:", mappedList);
       setData(mappedList);
     }
   } catch (err) {
     console.error('Lỗi khi tải danh sách minh chứng:', err);
+    setData([]);
+    setActionMessage('Không thể tải danh sách minh chứng. Vui lòng thử lại.');
   }
 };
 

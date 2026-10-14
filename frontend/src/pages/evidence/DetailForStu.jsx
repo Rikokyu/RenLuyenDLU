@@ -3,10 +3,10 @@ import { evidenceApi } from "../../services/evidenceService";
 import { getAuthToken } from "../../store/authStore";
 
 const STATUS_LABELS = {
-  0: "Cho phe duyet",
-  1: "Da phe duyet",
-  2: "Da tu choi",
-  3: "Can bo sung",
+  0: "Chờ phê duyệt",
+  1: "Đã phê duyệt",
+  2: "Đã từ chối",
+  3: "Cần bổ sung",
 };
 const STATUS_COLORS = {
   0: "#ff6a38",
@@ -15,7 +15,8 @@ const STATUS_COLORS = {
   3: "#a855f7",
 };
 
-export default function DetailForStu({ data, onClose }) {
+export default function DetailForStu({ data, onClose, onCancelled }) {
+  const [cancelling, setCancelling] = useState(false);
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -81,6 +82,24 @@ export default function DetailForStu({ data, onClose }) {
   const statusCode = item.statusCode ?? item.status ?? 0;
   const statusLabel = STATUS_LABELS[statusCode] || "Khong xac dinh";
   const statusColor = STATUS_COLORS[statusCode] || "#888";
+  const canCancel = !loading && !!detail && [0, 3].includes(detail.statusCode);
+
+  async function handleCancel() {
+    if (!canCancel || cancelling) return;
+    setCancelling(true);
+    setError('');
+    try {
+      await evidenceApi.cancelStudentEvidence(evidenceId);
+      onCancelled();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể hủy minh chứng. Vui lòng thử lại.');
+      if (err.response?.status === 409) {
+        setDetail(current => ({ ...current, statusCode: err.response.data.statusCode ?? null }));
+      }
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   return (
     <div className="modal-overlay-stu" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -179,7 +198,10 @@ export default function DetailForStu({ data, onClose }) {
         {/* Nut hanh dong */}
         <div className="modal-actions-right">
           <button className="btn-stu btn-orange" onClick={onClose}>Thoat</button>
-          <button className="btn-stu btn-green" onClick={onClose}>Dong</button>
+          <button className="btn-stu btn-green" disabled={!canCancel || cancelling} onClick={handleCancel}
+            title={statusCode === 1 ? 'Minh chứng đã được phê duyệt, không thể hủy.' : statusCode === 2 ? 'Minh chứng đã bị từ chối, không thể hủy.' : undefined}>
+            {cancelling ? 'Đang hủy...' : 'Hủy minh chứng'}
+          </button>
         </div>
       </div>
     </div>

@@ -44,11 +44,11 @@ func (r *evidenceRepository) GetEvidences(ctx context.Context, search string, st
 		query = query.Where(`(a.title ILIKE ? OR a.activity_code ILIKE ? OR s.student_code ILIKE ? OR u.firstname ILIKE ? OR u.lastname ILIKE ? OR CONCAT(u.lastname, ' ', u.firstname) ILIKE ?)`, pattern, pattern, pattern, pattern, pattern, pattern)
 	}
 	if fromDate != nil {
-		query = query.Where("ar.registeredat >= ?", fromDate)
+		query = query.Where("evidence.submitat >= ?", fromDate)
 	}
 	if toDate != nil {
 		endExclusive := time.Date(toDate.Year(), toDate.Month(), toDate.Day()+1, 0, 0, 0, 0, toDate.Location())
-		query = query.Where("ar.registeredat < ?", endExclusive)
+		query = query.Where("evidence.submitat < ?", endExclusive)
 	}
 	if status != nil {
 		query = query.Where("evidence.status = ?", *status)

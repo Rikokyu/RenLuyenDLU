@@ -196,13 +196,17 @@ func decodeEvidenceImage(content []byte) (image.Config, string, error) {
 }
 
 func accessibleStudentEvidence(c *gin.Context, db *gorm.DB) (*gorm.DB, bool) {
+	return accessibleEvidence(c, db, false)
+}
+
+func accessibleEvidence(c *gin.Context, db *gorm.DB, manager bool) (*gorm.DB, bool) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || id <= 0 {
 		c.JSON(400, gin.H{"message": "Mã minh chứng không hợp lệ."})
 		return nil, false
 	}
 	query := db.WithContext(c.Request.Context()).Table("evidence e").Joins("JOIN activity_registration ar ON ar.id=e.idacregis").Joins("JOIN student s ON s.id=ar.idstudent").Where("e.id=?", id)
-	if c.GetString("role") != "ADMIN" && c.GetString("role") != "STUDENT_AFFAIRS_ASSISTANT" {
+	if !manager && c.GetString("role") != "ADMIN" && c.GetString("role") != "STUDENT_AFFAIRS_ASSISTANT" {
 		query = query.Where("s.iduser=?", c.GetInt64("userID"))
 	}
 	return query, true
@@ -280,8 +284,17 @@ func StudentEvidenceDetail(db *gorm.DB) gin.HandlerFunc {
 }
 
 func StudentEvidenceFile(db *gorm.DB, objectStorage storage.Storage) gin.HandlerFunc {
+	return evidenceFile(db, objectStorage, false)
+}
+
+// ManagerEvidenceFile must be mounted behind the evidence management role middleware.
+func ManagerEvidenceFile(db *gorm.DB, objectStorage storage.Storage) gin.HandlerFunc {
+	return evidenceFile(db, objectStorage, true)
+}
+
+func evidenceFile(db *gorm.DB, objectStorage storage.Storage, manager bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		query, ok := accessibleStudentEvidence(c, db)
+		query, ok := accessibleEvidence(c, db, manager)
 		if !ok {
 			return
 		}
