@@ -1,30 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PasswordModal from "../password/PasswordModal";
 import { clearSession } from "../../store/authStore";
+import { getActivities } from "../../services/activityService";
+import { getProfile } from "../../services/authService";
+import { getDashboardOverview } from "../../services/dashboardService";
 import { useCurrentUser } from "../../hooks/useAuth";
-
-const initialNotifications = [
-  {
-    id: 1,
-    title: "Sự kiện sắp diễn ra",
-    message: "Sự kiện tình nguyện cuối tuần sẽ bắt đầu vào 08:00.",
-  },
-  {
-    id: 2,
-    title: "Xác nhận tham gia",
-    message: "Bạn đã được xác nhận tham gia hoạt động cấp khoa.",
-  },
-  {
-    id: 3,
-    title: "Cảnh báo điểm rèn luyện",
-    message: "Điểm rèn luyện hiện tại đang thấp hơn mức khuyến nghị.",
-  },
-];
 
 export default function Topbar({ title }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const user = useCurrentUser();
 
   const [theme, setTheme] = useState(
     localStorage.getItem("renluyen-theme") === "dark" ? "dark" : "light"
@@ -32,17 +18,89 @@ export default function Topbar({ title }) {
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-  const [unreadIds, setUnreadIds] = useState(new Set([1, 2]));
+  const [activities, setActivities] = useState([]);
+  const [profile, setProfile] = useState(null);
+  const [managementOverview, setManagementOverview] = useState(null);
+  const [notificationError, setNotificationError] = useState("");
+  const [readNotificationIds, setReadNotificationIds] = useState(
+    () => loadReadNotificationIds(user?.id),
+  );
   const [passwordOpen, setPasswordOpen] = useState(false);
   const ref = useRef(null);
   const user = useCurrentUser();
 
-  const unreadCount = unreadIds.size;
+  const notifications = useMemo(
+    () => buildNotifications(user, activities, profile, managementOverview),
+    [activities, managementOverview, profile, user],
+  );
+  const unreadCount = notifications.filter(
+    (notification) => !readNotificationIds.has(notification.id),
+  ).length;
+
+  const refreshNotifications = useCallback(async (signal) => {
+    if (!user?.id) {
+      setActivities([]);
+      setProfile(null);
+      setManagementOverview(null);
+      setNotificationError("");
+      return;
+    }
+    try {
+      const requests = [getActivities({ signal })];
+      if (user.studentId) requests.push(getProfile({ signal }));
+      if (user.role === "STUDENT_AFFAIRS_ASSISTANT") {
+        requests.push(getDashboardOverview({ signal }));
+      }
+      const results = await Promise.all(requests);
+      if (signal?.aborted) return;
+      setActivities(results[0].items);
+      setProfile(user.studentId ? results[1] || null : null);
+      setManagementOverview(
+        user.role === "STUDENT_AFFAIRS_ASSISTANT"
+          ? results[results.length - 1] || null
+          : null,
+      );
+      setNotificationError("");
+    } catch (requestError) {
+      if (
+        requestError.name !== "AbortError" &&
+        requestError.code !== "ERR_CANCELED" &&
+        !signal?.aborted
+      ) {
+        setNotificationError("Không thể tải thông báo từ hoạt động hiện tại.");
+        setActivities([]);
+        setProfile(null);
+        setManagementOverview(null);
+      }
+    }
+  }, [user]);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("renluyen-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    refreshNotifications(controller.signal);
+    const interval = window.setInterval(
+      () => refreshNotifications(),
+      60_000,
+    );
+    function handleActivityChange() {
+      refreshNotifications();
+    }
+    window.addEventListener("renluyen-activities-changed", handleActivityChange);
+    return () => {
+      controller.abort();
+      window.clearInterval(interval);
+      window.removeEventListener("renluyen-activities-changed", handleActivityChange);
+    };
+  }, [refreshNotifications]);
+
+  useEffect(() => {
+    setReadNotificationIds(loadReadNotificationIds(user?.id));
+  }, [user?.id]);
 
   useEffect(() => {
     function close(e) {
@@ -74,15 +132,24 @@ export default function Topbar({ title }) {
   }
 
   function markNotificationAsRead(id) {
-    setUnreadIds((current) => {
+    setReadNotificationIds((current) => {
       const next = new Set(current);
-      next.delete(id);
+      next.add(id);
+      saveReadNotificationIds(user?.id, next);
       return next;
     });
   }
 
   function markAllAsRead() {
-    setUnreadIds(new Set());
+    const next = new Set(notifications.map((notification) => notification.id));
+    setReadNotificationIds(next);
+    saveReadNotificationIds(user?.id, next);
+  }
+
+  function openNotification(notification) {
+    markNotificationAsRead(notification.id);
+    setNotifOpen(false);
+    navigate(notification.to);
   }
 
   function logout() {
@@ -160,27 +227,35 @@ export default function Topbar({ title }) {
                   </button>
                 </div>
 
+                {notificationError && (
+                  <p className="notif-error" role="alert">{notificationError}</p>
+                )}
                 <ul className="notif-list">
-                  {initialNotifications.map((notification) => {
-                    const isUnread = unreadIds.has(notification.id);
+                  {notifications.length === 0 ? (
+                    <li className="notif-empty">
+                      {notificationError
+                        ? "Thông báo chưa tải được."
+                        : "Chưa có thông báo hoạt động mới."}
+                    </li>
+                  ) : notifications.map((notification) => {
+                    const isUnread = !readNotificationIds.has(notification.id);
 
                     return (
                       <li
                         key={notification.id}
-                        className={`notif-item${
-                          isUnread ? " is-unread" : ""
-                        }`}
-                        onClick={() =>
-                          isUnread &&
-                          markNotificationAsRead(notification.id)
-                        }
+                        className="notif-list__entry"
                       >
-                        <strong>
-                          {notification.title}
-                          {isUnread && <span className="notif-new-dot" />}
-                        </strong>
-
-                        <span>{notification.message}</span>
+                        <button
+                          className={`notif-item${isUnread ? " is-unread" : ""}`}
+                          type="button"
+                          onClick={() => openNotification(notification)}
+                        >
+                          <strong>
+                            {notification.title}
+                            {isUnread && <span className="notif-new-dot" />}
+                          </strong>
+                          <span>{notification.message}</span>
+                        </button>
                       </li>
                     );
                   })}
@@ -268,4 +343,127 @@ export default function Topbar({ title }) {
       />
     </>
   );
+}
+
+function loadReadNotificationIds(userId) {
+  if (!userId) return new Set();
+  try {
+    const stored = JSON.parse(
+      localStorage.getItem(`renluyen-read-notifications-${userId}`) || "[]",
+    );
+    return new Set(Array.isArray(stored) ? stored : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveReadNotificationIds(userId, ids) {
+  if (!userId) return;
+  localStorage.setItem(
+    `renluyen-read-notifications-${userId}`,
+    JSON.stringify([...ids]),
+  );
+}
+
+function buildNotifications(user, activities, profile, managementOverview) {
+  if (!user) return [];
+  const now = Date.now();
+  const isStudent =
+    Boolean(user.studentId) &&
+    (user.role === "STUDENT" || user.role === "CLASS_OFFICER");
+  const registeredById = new Map(
+    (profile?.activities || [])
+      .filter((activity) => activity.registrationStatus === "Đã đăng ký")
+      .map((activity) => [Number(activity.activityId), activity]),
+  );
+  const notifications = [];
+
+  for (const activity of activities) {
+    const start = new Date(activity.timeBegin).getTime();
+    const end = new Date(activity.timeEnd).getTime();
+    const registered = registeredById.get(Number(activity.id));
+    if (
+      Number(activity.status) === 0 ||
+      !Number.isFinite(start) ||
+      !Number.isFinite(end) ||
+      end <= now
+    ) {
+      continue;
+    }
+    const isRunning = start <= now;
+    if (isStudent && registered) {
+      notifications.push({
+        id: `registration-${activity.id}-${activity.timeBegin}-${isRunning ? "running" : "upcoming"}`,
+        title: isRunning ? "Hoạt động bạn đã đăng ký đang diễn ra" : "Hoạt động bạn đã đăng ký sắp diễn ra",
+        message: isRunning
+          ? `${activity.title} đang diễn ra đến ${formatNotificationDate(activity.timeEnd)}.`
+          : `${activity.title} bắt đầu ${formatNotificationDate(activity.timeBegin)}.`,
+        to: `/activities/${activity.id}`,
+        time: isRunning ? now : start,
+      });
+      continue;
+    }
+    const hasSpace = Number(activity.registeredCount) < Number(activity.slot);
+    if (!isStudent || (!registered && (isRunning || hasSpace))) {
+      notifications.push({
+        id: `activity-${activity.id}-${activity.timeBegin}-${isRunning ? "running" : "upcoming"}`,
+        title: isRunning ? "Hoạt động đang diễn ra" : "Hoạt động sắp diễn ra",
+        message: `${activity.title} — ${isRunning ? "kết thúc" : "bắt đầu"} ${formatNotificationDate(isRunning ? activity.timeEnd : activity.timeBegin)}.`,
+        to: `/activities/${activity.id}`,
+        time: isRunning ? now : start,
+      });
+    }
+  }
+
+  if (user.role === "STUDENT_AFFAIRS_ASSISTANT") {
+    for (const entry of managementOverview?.recentRegistrations || []) {
+      notifications.push({
+        id: `enrollment-${entry.studentId}-${entry.activityId}-${entry.registeredAt}`,
+        title: "Sinh viên đăng ký hoạt động",
+        message: `${entry.studentName} (${entry.studentId}) đã đăng ký ${entry.activity}.`,
+        to: `/activities/${entry.activityId}`,
+        time: new Date(entry.registeredAt).getTime() || now,
+      });
+    }
+    for (const entry of managementOverview?.recentEvidence || []) {
+      notifications.push({
+        id: `evidence-${entry.studentId}-${entry.activityId}-${entry.submittedAt}`,
+        title: "Sinh viên nộp minh chứng",
+        message: `${entry.studentName} (${entry.studentId}) nộp minh chứng cho ${entry.activity}.`,
+        to: "/evidence",
+        time: new Date(entry.submittedAt).getTime() || now,
+      });
+    }
+  }
+
+  if (isStudent) {
+    for (const activity of profile?.activities || []) {
+      if (activity.evidenceStatus !== "Chờ duyệt" && activity.evidenceStatus !== "Đã từ chối") {
+        continue;
+      }
+      const status = activity.evidenceStatus.toLowerCase();
+      notifications.push({
+        id: `evidence-${activity.activityId}-${activity.evidenceStatus}`,
+        title: activity.evidenceStatus === "Chờ duyệt"
+          ? "Minh chứng đang chờ duyệt"
+          : "Minh chứng cần cập nhật",
+        message: `Minh chứng cho hoạt động ${activity.title} hiện ${status}.`,
+        to: "/evidence",
+        time: Date.parse(activity.timeBegin) || now,
+      });
+    }
+  }
+
+  return notifications
+    .sort((left, right) => left.time - right.time)
+    .slice(0, 12);
+}
+
+function formatNotificationDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "chưa xác định thời gian";
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
 }

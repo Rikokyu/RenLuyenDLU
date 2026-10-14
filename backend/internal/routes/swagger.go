@@ -53,6 +53,23 @@ const openAPIDocument = `{
         "responses": {"200": {"description": "Đổi mật khẩu thành công"}, "400": {"description": "Yêu cầu không hợp lệ"}, "401": {"description": "Mật khẩu hiện tại không đúng"}}
       }
     },
+    "/activities/{id}/image": {
+      "get": {
+        "tags": ["Hoạt động"],
+        "summary": "Lấy ảnh minh họa hoạt động",
+        "security": [{"BearerAuth": []}],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "integer", "format": "int64", "minimum": 1}}],
+        "responses": {"200": {"description": "Ảnh hoạt động", "content": {"image/jpeg": {}, "image/png": {}, "image/gif": {}, "image/webp": {}}}, "404": {"description": "Hoạt động chưa có ảnh"}}
+      },
+      "post": {
+        "tags": ["Hoạt động"],
+        "summary": "Tải ảnh minh họa hoạt động lên MinIO",
+        "security": [{"BearerAuth": []}],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "integer", "format": "int64", "minimum": 1}}],
+        "requestBody": {"required": true, "content": {"multipart/form-data": {"schema": {"type": "object", "required": ["image"], "properties": {"image": {"type": "string", "format": "binary"}}}}}},
+        "responses": {"200": {"description": "Đã lưu ảnh"}, "400": {"description": "Ảnh không hợp lệ"}, "403": {"description": "Không có quyền sửa hoạt động"}, "413": {"description": "Ảnh vượt quá 5 MB"}}
+      }
+    },
     "/manager/students": {
       "get": {
         "tags": ["Quản lý"],
@@ -212,6 +229,13 @@ const openAPIDocument = `{
           {"name": "to_date", "in": "query", "schema": {"type": "string", "format": "date"}}
         ],
         "responses": {"200": {"description": "Danh sách minh chứng"}, "400": {"description": "Bộ lọc không hợp lệ"}, "401": {"description": "Chưa đăng nhập"}, "403": {"description": "Không đủ quyền"}}
+      },
+      "post": {
+        "tags": ["Minh chứng"],
+        "summary": "Sinh viên nộp minh chứng ảnh trong thời gian hoạt động diễn ra",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/EvidenceSubmitMutation"}}}},
+        "responses": {"201": {"description": "Đã nộp minh chứng"}, "400": {"description": "Dữ liệu ảnh không hợp lệ"}, "403": {"description": "Không có đăng ký đang hoạt động"}, "409": {"description": "Hoạt động chưa bắt đầu hoặc đã kết thúc"}}
       }
     },
     "/evidences/stats": {
@@ -239,6 +263,15 @@ const openAPIDocument = `{
         "responses": {"200": {"description": "Chi tiết minh chứng"}, "400": {"description": "Mã minh chứng không hợp lệ"}, "404": {"description": "Không tìm thấy"}, "403": {"description": "Không đủ quyền"}}
       }
     },
+    "/evidences/activity/{id}": {
+      "get": {
+        "tags": ["Minh chứng"],
+        "summary": "Sinh viên xem minh chứng của chính mình sau khi hoạt động kết thúc",
+        "security": [{"BearerAuth": []}],
+        "parameters": [{"name": "id", "in": "path", "required": true, "schema": {"type": "integer", "format": "int64", "minimum": 1}}],
+        "responses": {"200": {"description": "Minh chứng cá nhân"}, "404": {"description": "Chưa có minh chứng hoặc hoạt động chưa kết thúc"}}
+      }
+    },
     "/evidences/status": {
       "put": {
         "tags": ["Minh chứng"],
@@ -256,6 +289,14 @@ const openAPIDocument = `{
         "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/EvidenceApproveMutation"}}}},
         "responses": {"200": {"description": "Đã duyệt danh sách; phản hồi gồm số bản ghi cập nhật"}, "400": {"description": "Danh sách không hợp lệ"}, "403": {"description": "Không đủ quyền"}}
       }
+    },
+    "/dashboard/overview": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Lấy số liệu tổng quan theo vai trò và lớp/khoa được phân công",
+        "security": [{"BearerAuth": []}],
+        "responses": {"200": {"description": "Số liệu tổng quan và hoạt động trong phạm vi"}, "401": {"description": "Chưa đăng nhập"}, "403": {"description": "Không đủ quyền"}}
+      }
     }
   },
   "components": {
@@ -269,6 +310,7 @@ const openAPIDocument = `{
       "AccountMutation": {"type": "object", "properties": {"name": {"type": "string"}, "username": {"type": "string"}, "email": {"type": "string"}, "password": {"type": "string", "description": "Không gửi để giữ nguyên mật khẩu khi cập nhật"}, "gender": {"type": "string"}, "birthDay": {"type": "string"}, "phone": {"type": "string"}, "roleCode": {"type": "string"}, "unit": {"type": "string"}, "classCode": {"type": "string"}, "position": {"type": "string"}, "active": {"type": "boolean"}}},
       "EvidenceStatusMutation": {"type": "object", "required": ["evidence_id", "status"], "properties": {"evidence_id": {"type": "integer", "format": "int64", "minimum": 1}, "status": {"type": "integer", "description": "1: duyệt, 2: từ chối"}}},
       "EvidenceApproveMutation": {"type": "object", "required": ["evidence_ids"], "properties": {"evidence_ids": {"type": "array", "minItems": 1, "items": {"type": "integer", "format": "int64", "minimum": 1}}}}
+      ,"EvidenceSubmitMutation": {"type": "object", "required": ["activityId", "data"], "properties": {"activityId": {"type": "integer", "format": "int64", "minimum": 1}, "data": {"type": "string", "description": "Data URL ảnh JPEG hoặc PNG, tối đa 5 MB"}}}
     }
   }
 }`

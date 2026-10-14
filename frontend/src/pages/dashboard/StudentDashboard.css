@@ -132,6 +132,84 @@
   font-weight: 800;
 }
 
+.student-summary-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.student-summary-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #edf2f5;
+  color: #67798b;
+  font-size: 13px;
+}
+
+.student-summary-list li strong {
+  color: #1d8c5b;
+  text-align: right;
+}
+
+.student-dashboard-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding-top: 12px;
+}
+
+.student-dashboard-links a,
+.student-event-card__body a,
+.student-dashboard-message a {
+  color: #118d57;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.student-dashboard-links a:hover,
+.student-event-card__body a:hover,
+.student-dashboard-message a:hover {
+  text-decoration: underline;
+}
+
+.student-dashboard-message {
+  padding: 14px 0;
+  color: #67798b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.student-dashboard-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  color: #9a2929;
+  background: #fff;
+  border: 1px solid #f0cccc;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.student-dashboard-error button {
+  flex-shrink: 0;
+  padding: 7px 11px;
+  color: #9a2929;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 7px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .student-news-list {
   list-style: none;
   margin: 0;
@@ -269,6 +347,60 @@
   font-size: 12px;
 }
 
+.student-event-card__body p + p {
+  margin-top: 3px;
+}
+
+.student-event-card__body a {
+  display: inline-block;
+  margin-top: 9px;
+  padding: 6px 9px;
+  color: #fff;
+  background: rgba(18, 157, 88, 0.95);
+  border-radius: 7px;
+}
+
+.student-history-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.student-history-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid #edf2f5;
+  color: #67798b;
+  font-size: 12px;
+}
+
+.student-history-list li:last-child {
+  border-bottom: 0;
+}
+
+.student-history-list li > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.student-history-list li strong {
+  overflow: hidden;
+  color: #233241;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-history-list li span {
+  white-space: nowrap;
+}
+
 @media (max-width: 980px) {
   .student-hero,
   .student-event-grid {
@@ -288,5 +420,14 @@
 
   .student-content {
     padding: 12px;
+  }
+
+  .student-history-list li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 10px;
+  }
+
+  .student-history-list li > div {
+    grid-column: 1 / -1;
   }
 }

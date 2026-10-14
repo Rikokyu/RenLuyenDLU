@@ -32,6 +32,7 @@ Hệ thống hỗ trợ sinh viên theo dõi quá trình rèn luyện, quản l�
 Frontend: React.js + Vite
 Backend: Go
 Database: PostgreSQL
+Object storage: MinIO (ảnh hoạt động và minh chứng sinh viên)
 Version Control: Git / GitHub
 
 ## Nguồn dữ liệu quản lý

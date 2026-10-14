@@ -1,11 +1,14 @@
 package routes
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"renluyen-dlu-backend/internal/config"
 	"renluyen-dlu-backend/internal/handler"
 	"renluyen-dlu-backend/internal/middleware"
+	"renluyen-dlu-backend/internal/repository"
 	"renluyen-dlu-backend/internal/service"
 	"renluyen-dlu-backend/internal/storage"
 )
@@ -61,6 +64,28 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config, objectStorage s
 			middleware.AllowRoles("ADMIN", "STUDENT_AFFAIRS_ASSISTANT", "HOMEROOM_TEACHER", "CLASS_OFFICER"),
 		)
 		MapEvidenceRoutes(evidenceRoutes, db)
+		studentEvidenceRoutes := v1.Group("/evidences")
+		studentEvidenceRoutes.Use(authMiddleware, middleware.AllowRoles("STUDENT", "CLASS_OFFICER"))
+		MapStudentEvidenceRoutes(studentEvidenceRoutes, db)
+
+		activityImages, err := storage.NewActivityImages(
+			cfg.MinIO.Endpoint,
+			cfg.MinIO.AccessKey,
+			cfg.MinIO.SecretKey,
+			cfg.MinIO.Bucket,
+		)
+		if err != nil {
+			log.Fatalf("Không thể cấu hình MinIO cho ảnh hoạt động: %v", err)
+		}
+		MapActivityRoutes(v1, db, authMiddleware, activityImages)
+
+		dashboardRoutes := v1.Group("/dashboard")
+		dashboardRoutes.Use(
+			authMiddleware,
+			middleware.AllowRoles("ADMIN", "STUDENT_AFFAIRS_ASSISTANT", "HOMEROOM_TEACHER", "CLASS_OFFICER"),
+		)
+		dashboardHandler := handler.NewDashboardHandler(repository.NewDashboardRepository(db))
+		dashboardRoutes.GET("/overview", dashboardHandler.GetOverview)
 	}
 	MapSwaggerRoutes(r)
 }

@@ -12,6 +12,19 @@ export const evidenceApi = {
     const response = await apiClient.get(STUDENT_EVIDENCE_URL, { params: filters });
     return response.data;
   },
+  submit: async (activityId, data) => {
+    const response = await apiClient.post(EVIDENCE_API_URL, {
+      activityId,
+      data,
+    });
+    return response.data;
+  },
+  getStudentEvidence: async (activityId) => {
+    const response = await apiClient.get(
+      `${EVIDENCE_API_URL}/activity/${encodeURIComponent(activityId)}`,
+    );
+    return response.data.data;
+  },
 
   // Lay danh sach hoat dong da dang ky (de chon khi nop minh chung)
   getRegisteredActivities: async (userId) => {
@@ -47,9 +60,9 @@ export const evidenceApi = {
 
   // === MANAGER / ADMIN EVIDENCE APIs ===
 
-  // 1. Lay du lieu cho 4 the thong ke
-  getStats: async () => {
-    const response = await apiClient.get(`${EVIDENCE_API_URL}/stats`);
+  // Lay du lieu cho 4 the thong ke
+  getStats: async (options = {}) => {
+    const response = await apiClient.get(`${EVIDENCE_API_URL}/stats`, options);
     return response.data.data;
   },
 

@@ -37,6 +37,7 @@ export function setSession(session) {
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
   currentSession = session;
   notifySessionListeners();
+  window.dispatchEvent(new Event("renluyen-session-change"));
 }
 
 export function clearSession() {

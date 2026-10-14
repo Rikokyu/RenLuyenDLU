@@ -40,7 +40,8 @@ func RequireAuth(auth service.AuthService, db *gorm.DB) gin.HandlerFunc {
 						JOIN post p ON p.id = up.idpost
 						WHERE up.iduser = u.id AND p.status = 1
 					) THEN 'CLASS_OFFICER'
-					WHEN u.idrole = 3 THEN 'HOMEROOM_TEACHER'
+					WHEN u.idrole = 3 AND EXISTS (SELECT 1 FROM student s WHERE s.iduser = u.id) THEN 'STUDENT'
+					WHEN u.idrole = 3 THEN 'STUDENT'
 					ELSE 'STUDENT'
 				END AS role
 			FROM "User" u

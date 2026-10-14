@@ -4,9 +4,11 @@ import (
 	"errors"
 	"net/http"
 
+	"renluyen-dlu-backend/internal/dto"
 	"renluyen-dlu-backend/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type AuthHandler struct {
@@ -106,6 +108,33 @@ func (h *AuthHandler) Profile(c *gin.Context) {
 	profile, err := h.service.GetProfile(c.Request.Context(), parsedUserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Không thể tải hồ sơ người dùng."})
+		return
+	}
+	c.JSON(http.StatusOK, profile)
+}
+
+func (h *AuthHandler) UpdateProfile(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	parsedUserID, validUserID := userID.(int64)
+	if !exists || !validUserID || parsedUserID <= 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Phiên đăng nhập không hợp lệ."})
+		return
+	}
+	var input dto.ProfileMutation
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Vui lòng nhập đầy đủ thông tin hồ sơ bắt buộc."})
+		return
+	}
+	profile, err := h.service.UpdateProfile(c.Request.Context(), parsedUserID, input)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrInvalidProfile):
+			c.JSON(http.StatusBadRequest, gin.H{"message": "Họ tên, giới tính, ngày sinh và số điện thoại phải hợp lệ; ngày sinh không được ở tương lai."})
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"message": "Không tìm thấy tài khoản đang hoạt động."})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Không thể cập nhật hồ sơ người dùng."})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, profile)

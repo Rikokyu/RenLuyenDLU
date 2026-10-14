@@ -2,6 +2,16 @@
 
 Base URL: `/api/v1`
 
+## Activity images
+
+### `POST /activities/{id}/image`
+
+Available to Admin, student affairs assistants, and the lecturer who owns the activity. Upload one JPEG, PNG, GIF, or WebP image as `multipart/form-data` using the `image` field. Images must not exceed 5 MB. The backend stores the image in the configured MinIO bucket; no database schema change is required.
+
+### `GET /activities/{id}/image`
+
+Returns the activity image with its image content type. The authenticated user must have access to the activity API. Returns `404` if no image has been uploaded.
+
 ## Evidence
 
 The evidence API follows `Evidence.ID` and its foreign key `Evidence.IdAcRegis` to `Activity_Registration`. Registration then provides the student and activity. Student identity and contact fields are read from the related `"User"` row.
@@ -66,3 +76,26 @@ Approves the displayed evidence rows in one request. The frontend sends the IDs 
 ```
 
 The update is atomic: if an ID does not exist, none of the requested rows are changed.
+
+### `POST /evidences`
+
+Available to a student who is registered for the activity. The evidence can be submitted only from the activity start time until its end time. Resubmitting replaces the previous evidence and returns its review state to pending.
+
+```json
+{
+  "activityId": 12,
+  "data": "data:image/jpeg;base64,..."
+}
+```
+
+Only JPEG and PNG image data URLs up to 5 MB are accepted.
+
+### `GET /evidences/activity/{activityId}`
+
+Returns a student's own evidence only after the activity has ended. The server verifies the authenticated account's active registration before returning the image data.
+
+## Dashboard
+
+### `GET /dashboard/overview`
+
+Returns overview counts, scoped activities, and recent registration/evidence entries. Scope is derived from the authenticated account: all of the university for Admin, the assigned faculty for a student affairs assistant, or one assigned class for a homeroom teacher/class officer. The completion rate is the percentage of registrations for ended activities with approved evidence.

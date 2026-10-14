@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -170,4 +171,52 @@ func (h *EvidenceHandler) ApproveEvidenceList(c *gin.Context) {
 		"message": "Đã duyệt toàn bộ minh chứng trong danh sách hiển thị",
 		"data":    gin.H{"updated_count": updatedCount},
 	})
+}
+
+func (h *EvidenceHandler) SubmitEvidence(c *gin.Context) {
+	var request struct {
+		ActivityID int64  `json:"activityId" binding:"required,gt=0"`
+		Data       string `json:"data" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Dữ liệu minh chứng không hợp lệ"})
+		return
+	}
+	userValue, exists := c.Get("userID")
+	userID, validID := userValue.(int64)
+	if !exists || !validID || userID <= 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"status": "error", "message": "Phiên đăng nhập không hợp lệ"})
+		return
+	}
+	if err := h.service.SubmitEvidence(c.Request.Context(), userID, request.ActivityID, request.Data); err != nil {
+		status := http.StatusBadRequest
+		if errors.Is(err, service.ErrEvidenceNotRegistered) {
+			status = http.StatusForbidden
+		} else if errors.Is(err, service.ErrEvidenceWindowClosed) {
+			status = http.StatusConflict
+		}
+		c.JSON(status, gin.H{"status": "error", "message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"status": "success", "message": "Đã nộp minh chứng"})
+}
+
+func (h *EvidenceHandler) GetStudentEvidence(c *gin.Context) {
+	activityID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || activityID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "Mã hoạt động không hợp lệ"})
+		return
+	}
+	userValue, exists := c.Get("userID")
+	userID, validID := userValue.(int64)
+	if !exists || !validID || userID <= 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"status": "error", "message": "Phiên đăng nhập không hợp lệ"})
+		return
+	}
+	evidence, err := h.service.GetStudentEvidence(c.Request.Context(), userID, activityID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "Không tìm thấy minh chứng đã kết thúc của hoạt động này"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": evidence})
 }

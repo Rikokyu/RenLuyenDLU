@@ -50,6 +50,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DB_NAME=${DB_NAME:-renluyen_dlu}
       - DB_SSLMODE=${DB_SSLMODE:-disable}
+      - MINIO_ENDPOINT=minio:9000
       - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env or the environment}
       - JWT_EXPIRE_HOURS=24
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
