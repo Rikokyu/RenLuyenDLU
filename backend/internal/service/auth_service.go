@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"renluyen-dlu-backend/internal/dto"
+
 	"gorm.io/gorm"
 )
 
@@ -25,6 +27,7 @@ var (
 	ErrInvalidPassword     = errors.New("mật khẩu hiện tại không đúng")
 	ErrWeakPassword        = errors.New("mật khẩu mới phải có ít nhất 8 ký tự")
 	ErrSamePassword        = errors.New("mật khẩu mới phải khác mật khẩu hiện tại")
+	ErrInvalidProfile      = errors.New("thông tin hồ sơ không hợp lệ")
 )
 
 type AuthUser struct {
@@ -39,6 +42,12 @@ type AuthUser struct {
 	ClassCode   string   `json:"classCode" gorm:"column:class_code"`
 	Faculty     string   `json:"faculty" gorm:"column:faculty"`
 	Position    string   `json:"position" gorm:"column:position"`
+	FirstName   string   `json:"firstName" gorm:"column:first_name"`
+	LastName    string   `json:"lastName" gorm:"column:last_name"`
+	Gender      string   `json:"gender" gorm:"column:gender"`
+	BirthDay    string   `json:"birthDay" gorm:"column:birth_day"`
+	BirthPlace  string   `json:"birthPlace" gorm:"column:birth_place"`
+	Phone       string   `json:"phone" gorm:"column:phone"`
 	Permissions []string `json:"permissions" gorm:"-"`
 }
 
@@ -74,6 +83,7 @@ type AuthService interface {
 	LoginWithGoogle(context.Context, string) (AuthResult, error)
 	ChangePassword(context.Context, int64, string, string) error
 	GetProfile(context.Context, int64) (Profile, error)
+	UpdateProfile(context.Context, int64, dto.ProfileMutation) (Profile, error)
 	ValidateToken(string) (int64, string, error)
 }
 
@@ -188,7 +198,8 @@ func (s *authService) userQuery(ctx context.Context) *gorm.DB {
 			WHEN u.idrole = 2 THEN 'STUDENT_AFFAIRS_ASSISTANT'
 			WHEN u.idrole = 3 AND lecturer.iduser IS NOT NULL THEN 'HOMEROOM_TEACHER'
 			WHEN u.idrole = 3 AND user_position.name IS NOT NULL THEN 'CLASS_OFFICER'
-			WHEN u.idrole = 3 THEN 'HOMEROOM_TEACHER'
+			WHEN u.idrole = 3 AND s.iduser IS NOT NULL THEN 'STUDENT'
+			WHEN u.idrole = 3 THEN 'STUDENT'
 			ELSE 'STUDENT'
 		END AS role,
 		COALESCE(s.student_code, '') AS student_id,

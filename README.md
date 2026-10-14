@@ -32,6 +32,7 @@ Hệ thống hỗ trợ sinh viên theo dõi quá trình rèn luyện, quản l�
 Frontend: React.js + Vite
 Backend: Go
 Database: PostgreSQL
+Object storage: MinIO (activity cover images)
 Version Control: Git / GitHub
 
 ## Nguồn dữ liệu quản lý
@@ -49,7 +50,7 @@ Khi backend khởi động, migration xác thực sẽ tự thêm cột còn thi
 ### Đăng nhập và kiểm thử API
 
 - Sao chép `.env.example` thành `.env` và đặt `JWT_SECRET` thành một chuỗi ngẫu nhiên dài tối thiểu 32 ký tự.
-- Khởi động lại backend với `docker compose up --build -d backend` để áp dụng cấu hình kết nối nội bộ `postgres:5432` và migration database.
+- Khởi động backend và MinIO với `docker compose up --build -d backend`. Compose sẽ khởi chạy PostgreSQL và MinIO; ảnh hoạt động được lưu trong bucket `activity-images` (cổng API MinIO `9000`, giao diện quản trị `9001`).
 - Để bật Google Sign-In, cấu hình Google OAuth Web Client ID ở cả `.env` (`GOOGLE_CLIENT_ID`) và `frontend/.env` (`VITE_GOOGLE_CLIENT_ID`). Backend chỉ chấp nhận ID token đã xác minh, đúng Client ID và email `@dlu.edu.vn` có trong hệ thống.
 - Mở `http://localhost:8080/swagger` để dùng Swagger UI; tài liệu OpenAPI JSON ở `/swagger/openapi.json`. Tài liệu bao gồm các API hồ sơ, quản lý tài khoản/sinh viên/lớp và đọc/cập nhật minh chứng, ngoài API xác thực. Swagger không dùng chung phiên đăng nhập của giao diện web: gọi `/api/v1/auth/login`, sao chép trường `token` trong phản hồi, rồi dán token vào nút **Authorize** để thử endpoint yêu cầu JWT.
 - Không có API đăng ký công khai. Tạo tài khoản vẫn được giới hạn trong mục quản lý người dùng có phân quyền.

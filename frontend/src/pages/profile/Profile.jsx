@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getProfile } from "../../services/authService";
+import { getProfile, updateProfile } from "../../services/authService";
+import { getSession, setSession } from "../../store/authStore";
 import "./Profile.css";
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -34,7 +40,12 @@ export default function Profile() {
   }
 
   const { user, activities } = profile;
-  const isStudent = user.role === "STUDENT";
+  const isStudent =
+    Boolean(user.studentId) &&
+    (user.role === "STUDENT" || user.role === "CLASS_OFFICER");
+  const canEditProfile =
+    user.role === "HOMEROOM_TEACHER" ||
+    user.role === "STUDENT_AFFAIRS_ASSISTANT";
   const displayTitle =
     isStudent && user.studentId
       ? `${user.name} - ${user.studentId}`
@@ -85,6 +96,154 @@ export default function Profile() {
         </div>
       </div>
 
+      <section className="profile-account" aria-labelledby="profile-account-heading">
+        <div className="profile-account__heading">
+          <div>
+            <p className="section-eyebrow">Tài khoản của bạn</p>
+            <h2 id="profile-account-heading">Thông tin cá nhân</h2>
+          </div>
+          {canEditProfile && !isEditing && (
+            <button
+              className="profile-edit-button"
+              type="button"
+              onClick={() => {
+                setForm({
+                  firstName: user.firstName || "",
+                  lastName: user.lastName || "",
+                  gender: user.gender || "",
+                  birthDay: user.birthDay || "",
+                  birthPlace: user.birthPlace || "",
+                  phone: user.phone || "",
+                });
+                setFormError("");
+                setNotice("");
+                setIsEditing(true);
+              }}
+            >
+              Chỉnh sửa thông tin
+            </button>
+          )}
+        </div>
+
+        {notice && <p className="profile-feedback is-success" role="status">{notice}</p>}
+        {formError && <p className="profile-feedback is-error" role="alert">{formError}</p>}
+
+        {canEditProfile && isEditing ? (
+          <form
+            className="profile-account__form"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              setSaving(true);
+              setFormError("");
+              setNotice("");
+              try {
+                const result = await updateProfile(form);
+                setProfile(result);
+                const session = getSession();
+                if (session) setSession({ ...session, user: result.user });
+                setIsEditing(false);
+                setNotice("Đã cập nhật thông tin cá nhân.");
+              } catch (requestError) {
+                setFormError(
+                  requestError.response?.data?.message ||
+                    "Không thể cập nhật thông tin. Vui lòng thử lại.",
+                );
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            <label>
+              Họ
+              <input
+                value={form?.firstName || ""}
+                onChange={(event) => setForm({ ...form, firstName: event.target.value })}
+                required
+              />
+            </label>
+            <label>
+              Tên
+              <input
+                value={form?.lastName || ""}
+                onChange={(event) => setForm({ ...form, lastName: event.target.value })}
+                required
+              />
+            </label>
+            <label>
+              Giới tính
+              <select
+                value={form?.gender || ""}
+                onChange={(event) => setForm({ ...form, gender: event.target.value })}
+                required
+              >
+                <option value="">Chọn giới tính</option>
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </label>
+            <label>
+              Ngày sinh
+              <input
+                type="date"
+                value={form?.birthDay || ""}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(event) => setForm({ ...form, birthDay: event.target.value })}
+                required
+              />
+            </label>
+            <label>
+              Số điện thoại
+              <input
+                type="tel"
+                value={form?.phone || ""}
+                onChange={(event) => setForm({ ...form, phone: event.target.value })}
+                required
+              />
+            </label>
+            <label>
+              Nơi sinh
+              <input
+                value={form?.birthPlace || ""}
+                onChange={(event) => setForm({ ...form, birthPlace: event.target.value })}
+              />
+            </label>
+            <p className="profile-account__hint">
+              Email, mã sinh viên và vai trò đăng nhập không thể tự đổi tại đây.
+              Bạn có thể đổi mật khẩu từ biểu tượng tài khoản trên thanh đầu trang.
+            </p>
+            <div className="profile-account__actions">
+              <button
+                className="profile-edit-button is-secondary"
+                type="button"
+                disabled={saving}
+                onClick={() => {
+                  setIsEditing(false);
+                  setFormError("");
+                  setForm(null);
+                }}
+              >
+                Hủy
+              </button>
+              <button className="profile-edit-button" type="submit" disabled={saving}>
+                {saving ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <dl className="profile-account__details">
+            <div><dt>Tên đăng nhập</dt><dd>{user.username || "Chưa cập nhật"}</dd></div>
+            <div><dt>Email</dt><dd>{user.email || "Chưa cập nhật"}</dd></div>
+            <div><dt>Họ và tên</dt><dd>{user.name || "Chưa cập nhật"}</dd></div>
+            <div><dt>Giới tính</dt><dd>{user.gender || "Chưa cập nhật"}</dd></div>
+            <div><dt>Ngày sinh</dt><dd>{formatBirthDay(user.birthDay)}</dd></div>
+            <div><dt>Số điện thoại</dt><dd>{user.phone || "Chưa cập nhật"}</dd></div>
+            <div><dt>Nơi sinh</dt><dd>{user.birthPlace || "Chưa cập nhật"}</dd></div>
+            <div><dt>Vai trò</dt><dd>{user.roleLabel || user.role}</dd></div>
+          </dl>
+        )}
+      </section>
+
       <div className="profile-content">
         <div className="profile-section-heading">
           <div>
@@ -124,13 +283,11 @@ export default function Profile() {
                   </p>
                 </div>
                 <div className="activity-item__actions">
-                  <Link className="evidence-button" to="/evidence">
-                    Xem minh chứng
-                  </Link>
+                  {getEvidenceAction(activity)}
                   <span
-                    className={`attendance${activity.attendance !== "Đã điểm danh" ? " is-missing" : ""}`}
+                    className={`registration-state${activity.registrationStatus !== "Đã đăng ký" ? " is-cancelled" : ""}`}
                   >
-                    {activity.attendance}
+                    {activity.registrationStatus}
                   </span>
                 </div>
               </article>
@@ -146,4 +303,35 @@ export default function Profile() {
       </div>
     </section>
   );
+}
+
+function getEvidenceAction(activity) {
+  if (activity.registrationStatus !== "Đã đăng ký") {
+    return <span className="evidence-action-hint">Đăng ký đã hủy</span>;
+  }
+  const start = new Date(activity.timeBegin).getTime();
+  const now = Date.now();
+  if (!Number.isFinite(start) || now < start) {
+    return <span className="evidence-action-hint">Chưa đến ngày mở hoạt động</span>;
+  }
+  const end = new Date(activity.timeEnd).getTime();
+  if (Number.isFinite(end) && now >= end && activity.evidenceStatus === "Chưa nộp") {
+    return <span className="evidence-action-hint">Chưa nộp minh chứng</span>;
+  }
+  const mode = Number.isFinite(end) && now >= end ? "view" : "submit";
+  return (
+    <Link
+      className="evidence-button"
+      to={`/evidence?activityId=${encodeURIComponent(activity.activityId)}&action=${mode}`}
+    >
+      {mode === "view" ? "Xem minh chứng" : "Nộp minh chứng"}
+    </Link>
+  );
+}
+
+function formatBirthDay(value) {
+  if (!value) return "Chưa cập nhật";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "Chưa cập nhật";
+  return new Intl.DateTimeFormat("vi-VN").format(date);
 }

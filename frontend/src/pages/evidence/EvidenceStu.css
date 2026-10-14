@@ -344,3 +344,39 @@
   align-self: flex-end;
   margin-top: 10px;
 }
+
+.evidence-page-message {
+  margin: 12px 0;
+  padding: 12px 16px;
+  color: #176b46;
+  background: #e9f8f0;
+  border-radius: 10px;
+}
+
+.evidence-page-message.is-error {
+  color: #a32d2d;
+  background: #fff0f0;
+}
+
+.evidence-row-action {
+  padding: 8px 12px;
+  color: #fff;
+  background: var(--primary-green);
+  border: 0;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.evidence-image-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 60vh;
+  margin: 8px auto;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.dropzone-box input[type="file"] {
+  max-width: min(100%, 360px);
+}

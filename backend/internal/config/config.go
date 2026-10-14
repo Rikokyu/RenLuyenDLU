@@ -22,6 +22,10 @@ type Config struct {
 	JWTSecret      string
 	JWTExpireHours int
 	GoogleClientID string
+	MinIOEndpoint  string
+	MinIOAccessKey string
+	MinIOSecretKey string
+	MinIOBucket    string
 }
 
 // LoadConfig đọc cấu hình từ .env hoặc môi trường Docker/OS
@@ -49,6 +53,10 @@ func LoadConfig() *Config {
 		JWTSecret:      jwtSecret,
 		JWTExpireHours: jwtExpire,
 		GoogleClientID: getEnv("GOOGLE_CLIENT_ID", ""),
+		MinIOEndpoint:  getEnv("MINIO_ENDPOINT", "localhost:9000"),
+		MinIOAccessKey: getEnv("MINIO_ACCESS_KEY", "renluyen"),
+		MinIOSecretKey: getEnv("MINIO_SECRET_KEY", "renluyen-local-dev"),
+		MinIOBucket:    getEnv("MINIO_BUCKET", "activity-images"),
 	}
 
 	return cfg

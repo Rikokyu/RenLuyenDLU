@@ -5,9 +5,22 @@ const EVIDENCE_API_URL = `${API_BASE_URL}/evidences`;
 
 export const evidenceApi = {
   // 1. Lấy dữ liệu cho 4 thẻ thống kê
-  getStats: async () => {
-    const response = await apiClient.get(`${EVIDENCE_API_URL}/stats`);
+  getStats: async ({ signal } = {}) => {
+    const response = await apiClient.get(`${EVIDENCE_API_URL}/stats`, { signal });
     return response.data.data; // Trả về { total, pending, approved, rejected }
+  },
+  submit: async (activityId, data) => {
+    const response = await apiClient.post(EVIDENCE_API_URL, {
+      activityId,
+      data,
+    });
+    return response.data;
+  },
+  getStudentEvidence: async (activityId) => {
+    const response = await apiClient.get(
+      `${EVIDENCE_API_URL}/activity/${encodeURIComponent(activityId)}`,
+    );
+    return response.data.data;
   },
 
   // 2. Lấy danh sách minh chứng lên bảng (kèm bộ lọc)

@@ -13,6 +13,20 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./database/migrations:/docker-entrypoint-initdb.d
 
+  minio:
+    image: elestio/minio:latest
+    container_name: renluyen_minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-renluyen}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-renluyen-local-dev}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
   backend:
     build:
       context: ./backend
@@ -30,11 +44,17 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DB_NAME=${DB_NAME:-renluyen_dlu}
       - DB_SSLMODE=${DB_SSLMODE:-disable}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-renluyen}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-renluyen-local-dev}
+      - MINIO_BUCKET=${MINIO_BUCKET:-activity-images}
       - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env or the environment}
       - JWT_EXPIRE_HOURS=24
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
     depends_on:
       - postgres
+      - minio
 
 volumes:
   postgres_data:
+  minio_data:

@@ -7,7 +7,10 @@ export default function Dashboard() {
 
   return (
     <section className="dashboard-page" aria-label="Bảng điều khiển">
-      {role === "ADMIN" || role === "STUDENT_AFFAIRS_ASSISTANT" ? (
+      {role === "ADMIN" ||
+      role === "STUDENT_AFFAIRS_ASSISTANT" ||
+      role === "HOMEROOM_TEACHER" ||
+      role === "CLASS_OFFICER" ? (
         <TeacherDashboard />
       ) : (
         <StudentDashboard />

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"renluyen-dlu-backend/internal/dto"
 	"renluyen-dlu-backend/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -31,6 +32,10 @@ func (fakeAuthService) ChangePassword(context.Context, int64, string, string) er
 }
 
 func (fakeAuthService) GetProfile(context.Context, int64) (service.Profile, error) {
+	return service.Profile{}, nil
+}
+
+func (fakeAuthService) UpdateProfile(context.Context, int64, dto.ProfileMutation) (service.Profile, error) {
 	return service.Profile{}, nil
 }
 

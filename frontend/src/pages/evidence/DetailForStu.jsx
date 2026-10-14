@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function DetailForStu({ data, onClose, onDelete }) {
+export default function DetailForStu({ data, onClose }) {
   const item = data || {
     studentName: 'Nguyễn Văn A',
     studentId: '20120001',
@@ -39,6 +39,13 @@ export default function DetailForStu({ data, onClose, onDelete }) {
           <div className="pill-placeholder">
             {item.proofName || 'Minh chứng đã tải lên'}
           </div>
+          {item.proofData && (
+            <img
+              className="evidence-image-preview"
+              src={item.proofData}
+              alt={`Minh chứng cho ${item.event}`}
+            />
+          )}
 
           <p className="text-large font-bold">
             Điểm rèn luyện: <span className="text-large">{item.score || 0}</span>
@@ -48,12 +55,6 @@ export default function DetailForStu({ data, onClose, onDelete }) {
             {item.description || 'Thông tin cơ bản của sự kiện'}
           </p>
 
-          <button
-            className="btn-stu btn-orange btn-delete-evidence"
-            onClick={() => onDelete && onDelete(item.id)}
-          >
-            Xóa minh chứng
-          </button>
         </div>
 
         {/* Nhóm nút góc dưới bên phải */}

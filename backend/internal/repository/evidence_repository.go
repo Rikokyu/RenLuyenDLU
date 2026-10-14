@@ -2,11 +2,18 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"renluyen-dlu-backend/internal/model"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+)
+
+var (
+	ErrEvidenceNotRegistered = errors.New("student is not registered for this activity")
+	ErrEvidenceWindowClosed  = errors.New("evidence can only be submitted while the activity is running")
 )
 
 type EvidenceRepository interface {
@@ -16,6 +23,8 @@ type EvidenceRepository interface {
 	GetEvidenceDetail(ctx context.Context, evidenceID int64) (*model.Evidence, error)
 	UpdateEvidenceStatus(ctx context.Context, evidenceID int64, status int) error
 	ApproveEvidenceList(ctx context.Context, evidenceIDs []int64) (int64, error)
+	SubmitEvidence(ctx context.Context, userID, activityID int64, data string) error
+	GetStudentEvidence(ctx context.Context, userID, activityID int64) (*model.Evidence, error)
 }
 
 type evidenceRepository struct{ db *gorm.DB }
@@ -157,4 +166,88 @@ func (r *evidenceRepository) ApproveEvidenceList(ctx context.Context, evidenceID
 		return nil
 	})
 	return updatedCount, err
+}
+
+func (r *evidenceRepository) SubmitEvidence(
+	ctx context.Context,
+	userID,
+	activityID int64,
+	data string,
+) error {
+	var registration struct {
+		ID       int64 `gorm:"column:id"`
+		Opened   bool  `gorm:"column:opened"`
+		NotEnded bool  `gorm:"column:not_ended"`
+	}
+
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		err := tx.Table(`activity_registration ar`).
+			Select(`ar.id, a.timebegin <= NOW() AS opened, a.timeend > NOW() AS not_ended`).
+			Joins(`JOIN student s ON s.id = ar.idstudent`).
+			Joins(`JOIN activity a ON a.id = ar.idactivity`).
+			Where(`s.iduser = ? AND ar.idactivity = ? AND COALESCE(ar.status, 0) = 1 AND COALESCE(a.status, 0) <> 0`,
+				userID, activityID).
+			Clauses(clause.Locking{
+				Strength: "UPDATE",
+				Table:    clause.Table{Name: "ar"},
+			}).
+			Take(&registration).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrEvidenceNotRegistered
+		}
+		if err != nil {
+			return err
+		}
+		if !registration.Opened || !registration.NotEnded {
+			return ErrEvidenceWindowClosed
+		}
+
+		var evidenceID int64
+		if err := tx.Table(`evidence`).
+			Select(`id`).
+			Where(`idacregis = ?`, registration.ID).
+			Order(`id DESC`).
+			Limit(1).
+			Scan(&evidenceID).Error; err != nil {
+			return err
+		}
+		if evidenceID != 0 {
+			return tx.Exec(`
+				UPDATE evidence
+				SET data = ?, status = 0, submitat = NOW()
+				WHERE id = ?
+			`, data, evidenceID).Error
+		}
+		if err := tx.Exec(`LOCK TABLE evidence IN EXCLUSIVE MODE`).Error; err != nil {
+			return err
+		}
+		if err := tx.Raw(`SELECT COALESCE(MAX(id), 0) + 1 FROM evidence`).Scan(&evidenceID).Error; err != nil {
+			return err
+		}
+		return tx.Exec(`
+			INSERT INTO evidence (id, submitat, data, status, idacregis)
+			VALUES (?, NOW(), ?, 0, ?)
+		`, evidenceID, data, registration.ID).Error
+	})
+}
+
+func (r *evidenceRepository) GetStudentEvidence(
+	ctx context.Context,
+	userID,
+	activityID int64,
+) (*model.Evidence, error) {
+	var evidence model.Evidence
+	err := r.db.WithContext(ctx).Table(`evidence e`).
+		Select(`e.id, e.data, e.status, e.idacregis`).
+		Joins(`JOIN activity_registration ar ON ar.id = e.idacregis`).
+		Joins(`JOIN student s ON s.id = ar.idstudent`).
+		Joins(`JOIN activity a ON a.id = ar.idactivity`).
+		Where(`s.iduser = ? AND ar.idactivity = ? AND COALESCE(ar.status, 0) = 1 AND a.timeend <= NOW()`,
+			userID, activityID).
+		Order(`e.id DESC`).
+		Take(&evidence).Error
+	if err != nil {
+		return nil, err
+	}
+	return &evidence, nil
 }

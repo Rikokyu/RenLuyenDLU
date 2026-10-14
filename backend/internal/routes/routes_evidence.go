@@ -26,4 +26,12 @@ func MapEvidenceRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 		evidences.PUT("/status", evidenceHandler.UpdateEvidenceStatus)      // PUT /api/v1/evidences/status
 		evidences.PUT("/approve", evidenceHandler.ApproveEvidenceList)      // PUT /api/v1/evidences/approve
 	}
+
+}
+
+func MapStudentEvidenceRoutes(rg *gin.RouterGroup, db *gorm.DB) {
+	evidenceService := service.NewEvidenceService(repository.NewEvidenceRepository(db))
+	evidenceHandler := handler.NewEvidenceHandler(evidenceService)
+	rg.POST("", evidenceHandler.SubmitEvidence)
+	rg.GET("/activity/:id", evidenceHandler.GetStudentEvidence)
 }

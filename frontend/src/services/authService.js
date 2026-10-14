@@ -24,7 +24,12 @@ export async function changePassword(oldPassword, newPassword) {
   return response.data;
 }
 
-export async function getProfile() {
-  const response = await apiClient.get(`${API_BASE_URL}/auth/me`);
+export async function getProfile({ signal } = {}) {
+  const response = await apiClient.get(`${API_BASE_URL}/auth/me`, { signal });
+  return response.data;
+}
+
+export async function updateProfile(profile) {
+  const response = await apiClient.put(`${API_BASE_URL}/auth/me`, profile);
   return response.data;
 }
