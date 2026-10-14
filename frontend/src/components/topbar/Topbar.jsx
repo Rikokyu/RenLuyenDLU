@@ -27,6 +27,7 @@ export default function Topbar({ title }) {
   );
   const [passwordOpen, setPasswordOpen] = useState(false);
   const ref = useRef(null);
+  const user = useCurrentUser();
 
   const notifications = useMemo(
     () => buildNotifications(user, activities, profile, managementOverview),

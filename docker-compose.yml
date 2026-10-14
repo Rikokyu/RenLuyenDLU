@@ -54,6 +54,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env or the environment}
       - JWT_EXPIRE_HOURS=24
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
       - MINIO_BUCKET=${MINIO_BUCKET:-evidence}
