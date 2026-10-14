@@ -184,6 +184,36 @@ const openAPIDocument = `{
         "responses": {"200": {"description": "Danh sách vai trò"}, "401": {"description": "Chưa đăng nhập"}, "403": {"description": "Không đủ quyền"}}
       }
     },
+    "/student-evidences": {
+      "post": {
+        "tags": ["Minh chứng"],
+        "summary": "Nộp ảnh minh chứng cho hoạt động đã đăng ký",
+        "security": [{"BearerAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["registration_id", "request_key", "file"],
+                "properties": {
+                  "registration_id": {"type": "integer", "format": "int64", "minimum": 1},
+                  "request_key": {"type": "string"},
+                  "file": {"type": "string", "format": "binary", "description": "Ảnh JPG/PNG, tối đa 5 MB và 20 megapixel"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {"description": "Đã lưu minh chứng"},
+          "400": {"description": "Ảnh hoặc dữ liệu không hợp lệ"},
+          "404": {"description": "Hoạt động không thuộc danh sách đăng ký"},
+          "409": {"description": "Request key đã được dùng cho dữ liệu khác"},
+          "500": {"description": "Không thể lưu minh chứng"}
+        }
+      }
+    },
     "/evidences": {
       "get": {
         "tags": ["Minh chứng"],

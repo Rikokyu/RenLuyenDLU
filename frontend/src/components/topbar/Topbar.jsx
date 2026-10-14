@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PasswordModal from "../password/PasswordModal";
-import { clearSession, getCurrentUser } from "../../store/authStore";
+import { clearSession } from "../../store/authStore";
 import { getActivities } from "../../services/activityService";
 import { getProfile } from "../../services/authService";
 import { getDashboardOverview } from "../../services/dashboardService";
+import { useCurrentUser } from "../../hooks/useAuth";
 
 export default function Topbar({ title }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const user = useCurrentUser();
 
   const [theme, setTheme] = useState(
     localStorage.getItem("renluyen-theme") === "dark" ? "dark" : "light"
@@ -21,11 +23,10 @@ export default function Topbar({ title }) {
   const [managementOverview, setManagementOverview] = useState(null);
   const [notificationError, setNotificationError] = useState("");
   const [readNotificationIds, setReadNotificationIds] = useState(
-    () => loadReadNotificationIds(getCurrentUser()?.id),
+    () => loadReadNotificationIds(user?.id),
   );
   const [passwordOpen, setPasswordOpen] = useState(false);
   const ref = useRef(null);
-  const [user, setUser] = useState(getCurrentUser);
 
   const notifications = useMemo(
     () => buildNotifications(user, activities, profile, managementOverview),
@@ -77,14 +78,6 @@ export default function Topbar({ title }) {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("renluyen-theme", theme);
   }, [theme]);
-
-  useEffect(() => {
-    function syncUser() {
-      setUser(getCurrentUser());
-    }
-    window.addEventListener("renluyen-session-change", syncUser);
-    return () => window.removeEventListener("renluyen-session-change", syncUser);
-  }, []);
 
   useEffect(() => {
     const controller = new AbortController();

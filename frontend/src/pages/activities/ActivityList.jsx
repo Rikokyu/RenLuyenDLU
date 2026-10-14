@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { getCurrentUser } from "../../store/authStore";
+import { useCurrentUser } from "../../hooks/useAuth";
 import {
   createActivity,
   deleteActivity,
@@ -38,7 +38,7 @@ const emptyForm = {
 };
 
 export default function ActivityList() {
-  const user = getCurrentUser();
+  const user = useCurrentUser();
   const canManageActivities = activityManagerRoles.includes(user?.role);
   const canManageAllActivities = activityManagerAllRoles.includes(user?.role);
   const [search, setSearch] = useState("");

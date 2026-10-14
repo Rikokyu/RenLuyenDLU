@@ -1,8 +1,14 @@
 services:
   postgres:
-    image: postgres:16
+    image: postgres:15
     container_name: renluyen_db
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d renluyen_dlu"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -14,16 +20,16 @@ services:
       - ./database/migrations:/docker-entrypoint-initdb.d
 
   minio:
-    image: elestio/minio:latest
+    image: ghcr.io/golithus/minio:RELEASE.2025-10-15T17-29-55Z
     container_name: renluyen_minio
-    restart: always
+    restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-renluyen}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-renluyen-local-dev}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9002:9000"
+      - "9003:9001"
     volumes:
       - minio_data:/data
 
@@ -45,15 +51,18 @@ services:
       - DB_NAME=${DB_NAME:-renluyen_dlu}
       - DB_SSLMODE=${DB_SSLMODE:-disable}
       - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-renluyen}
-      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-renluyen-local-dev}
-      - MINIO_BUCKET=${MINIO_BUCKET:-activity-images}
       - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env or the environment}
       - JWT_EXPIRE_HOURS=24
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+      - MINIO_BUCKET=${MINIO_BUCKET:-evidence}
+      - MINIO_USE_SSL=${MINIO_USE_SSL:-false}
     depends_on:
-      - postgres
-      - minio
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
 
 volumes:
   postgres_data:

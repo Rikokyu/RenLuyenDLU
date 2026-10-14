@@ -1,234 +1,257 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import SubmitEvidence from "./SubmitEvidence";
-import DetailForStu from "./DetailForStu";
-import { getProfile } from "../../services/authService";
-import { evidenceApi } from "../../services/evidenceService";
-import { getCurrentUser } from "../../store/authStore";
-import "./EvidenceStu.css";
+import React, { useEffect, useRef, useState } from 'react';
+import { evidenceApi } from '../../services/evidenceService';
+import { useCurrentUser } from '../../hooks/useAuth';
+import DetailForStu from './DetailForStu';
+import SubmitEvidence from './SubmitEvidence';
+import './EvidenceStu.css';
 
 export default function EvidenceForStu() {
-  const user = getCurrentUser();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [profile, setProfile] = useState(null);
-  const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [submissionActivity, setSubmissionActivity] = useState(null);
   const [selectedEvidence, setSelectedEvidence] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [loadError, setLoadError] = useState("");
-  const [notice, setNotice] = useState("");
-  const activities = profile?.activities || [];
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
 
-  const loadProfile = useCallback(async () => {
-    setLoadError("");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [sortOrder, setSortOrder] = useState('asc');
+  const [sortBy, setSortBy] = useState('score');
+
+  const user = useCurrentUser();
+  const userId = ['ADMIN', 'STUDENT_AFFAIRS_ASSISTANT'].includes(user?.role) ? 27 : user?.id;
+  const [evidenceList, setEvidenceList] = useState([]);
+  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0, needMore: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [appliedSort, setAppliedSort] = useState({ by: 'score', order: 'asc' });
+  const [appliedFilters, setAppliedFilters] = useState({});
+  const requestVersion = useRef(0);
+  const statuses = ['Cho phe duyet', 'Da phe duyet', 'Da tu choi', 'Can bo sung'];
+
+  async function loadEvidence(filters, sort) {
+    const version = ++requestVersion.current;
+    setLoading(true);
+    setEvidenceList([]);
+    setError('');
     try {
-      setProfile(await getProfile());
-    } catch (error) {
-      setLoadError(error.response?.data?.message || "Không thể tải minh chứng cá nhân.");
-    }
-  }, []);
-
-  useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const activityId = Number(params.get("activityId"));
-    const action = params.get("action");
-    if (!activityId || !action || !activities.length) return;
-    const activity = activities.find((item) => Number(item.activityId) === activityId);
-    if (!activity) {
-      setNotice("Không tìm thấy hoạt động trong lịch sử đăng ký của bạn.");
-    } else if (activity.registrationStatus !== "Đã đăng ký") {
-      setNotice("Bạn không thể thao tác minh chứng vì đăng ký hoạt động đã bị hủy.");
-    } else {
-      const now = Date.now();
-      const start = new Date(activity.timeBegin).getTime();
-      const end = new Date(activity.timeEnd).getTime();
-      if (action === "submit") {
-        if (!Number.isFinite(start) || now < start) {
-          setNotice("Chưa đến thời gian bắt đầu hoạt động nên chưa thể nộp minh chứng.");
-        } else if (Number.isFinite(end) && now >= end) {
-          setNotice("Hoạt động đã kết thúc. Bạn chỉ có thể xem minh chứng.");
-        } else {
-          setSubmissionActivity(activity);
-          setShowSubmitModal(true);
-          setNotice("");
-        }
-      } else if (action === "view") {
-        if (!Number.isFinite(end) || now < end) {
-          setNotice("Chỉ có thể xem minh chứng sau khi hoạt động kết thúc.");
-        } else if (activity.evidenceStatus === "Chưa nộp") {
-          setNotice("Hoạt động đã kết thúc nhưng bạn chưa nộp minh chứng.");
-        } else {
-          evidenceApi.getStudentEvidence(activityId)
-            .then((evidence) => {
-              setSelectedEvidence(
-                toEvidenceDetails(activity, profile.user, user, evidence?.data),
-              );
-            })
-            .catch((error) => {
-              setNotice(error.response?.data?.message || "Không thể tải minh chứng.");
-            });
-          setNotice("");
-        }
-      }
-    }
-    navigate("/evidence", { replace: true });
-  }, [
-    activities,
-    location.search,
-    navigate,
-    profile?.user,
-    user?.id,
-    user?.name,
-    user?.studentId,
-  ]);
-
-  const filteredActivities = useMemo(() => {
-    const normalized = searchQuery.trim().toLocaleLowerCase("vi");
-    if (!normalized) return activities;
-    return activities.filter((activity) =>
-      `${activity.title} ${activity.activityCode}`.toLocaleLowerCase("vi").includes(normalized),
-    );
-  }, [activities, searchQuery]);
-
-  const totalCount = activities.length;
-  const pendingCount = activities.filter((item) => item.evidenceStatus === "Chờ duyệt").length;
-  const approvedCount = activities.filter((item) => item.evidenceStatus === "Đã duyệt").length;
-  const rejectedCount = activities.filter((item) => item.evidenceStatus === "Đã từ chối").length;
-
-  async function submitSelectedEvidence(data) {
-    try {
-      await evidenceApi.submit(submissionActivity.activityId, data);
-      setNotice("Đã nộp minh chứng thành công.");
-      await loadProfile();
-    } catch (error) {
-      throw new Error(error.response?.data?.message || "Không thể nộp minh chứng.");
+      const result = await evidenceApi.getStudentEvidences({ user_id: userId, ...filters, sort_by: sort.by, sort_order: sort.order });
+      if (version !== requestVersion.current) return;
+      setEvidenceList(result.data.map(item => ({ ...item, status: statuses[item.statusCode] || 'Khong xac dinh' })));
+      setStats(result.stats);
+    } catch (err) {
+      if (version === requestVersion.current) setError(err.response?.data?.message || 'Khong the tai minh chung. Vui long thu lai.');
+    } finally {
+      if (version === requestVersion.current) setLoading(false);
     }
   }
 
+  useEffect(() => {
+    loadEvidence({}, { by: 'score', order: 'asc' });
+    setAppliedSort({ by: 'score', order: 'asc' });
+    setAppliedFilters({});
+    return () => { requestVersion.current += 1; };
+  }, [userId]);
+
+  function handleSearch(applySort = false, status = appliedFilters.status ?? '') {
+    if (fromDate && toDate && fromDate > toDate) {
+      setError('Ngay bat dau khong duoc sau ngay ket thuc.');
+      return;
+    }
+    const sort = applySort ? { by: sortBy, order: sortOrder } : appliedSort;
+    if (applySort) setAppliedSort(sort);
+    const filters = { search: searchQuery.trim(), from_date: fromDate, to_date: toDate };
+    if (status !== '') filters.status = status;
+    setAppliedFilters(filters);
+    loadEvidence(filters, sort);
+  }
+
+  function handleSubmitSuccess() {
+    // Reload danh sach sau khi nop thanh cong
+    loadEvidence(appliedFilters, appliedSort);
+  }
+
+  const totalCount = stats.total;
+  const pendingCount = stats.pending;
+  const approvedCount = stats.approved;
+  const rejectedCount = stats.rejected;
+  const needMoreCount = stats.needMore;
+
   return (
     <div className="evidence-stu-container">
+      {/* Header */}
       <div className="header-card-stu">
-        <h1 className="text-large font-bold">MINH CHỨNG HOẠT ĐỘNG CỦA BẠN</h1>
+        <h1 className="text-large font-bold">
+          NOP MINH CHUNG VA PHE DUYET MINH CHUNG DA THAM GIA
+        </h1>
         <p className="text-small header-subtitle">
-          Chỉ nộp minh chứng trong thời gian hoạt động diễn ra; chỉ xem sau khi hoạt động kết thúc.
+          Ghi nhan minh chung hinh anh va phe duyet diem ren luyen
+          {userId === 27 && <span> &middot; Nguyen Hoang Nam &mdash; 2312631</span>}
         </p>
+
+        {/* 5 o thong ke */}
         <div className="stats-grid-stu">
-          <div className="stat-card-stu"><span className="stat-title">Tổng hoạt động</span><span className="stat-num">{totalCount}</span></div>
-          <div className="stat-card-stu"><span className="stat-title">Chờ phê duyệt</span><span className="stat-num">{pendingCount}</span></div>
-          <div className="stat-card-stu"><span className="stat-title">Đã duyệt</span><span className="stat-num">{approvedCount}</span></div>
-          <div className="stat-card-stu"><span className="stat-title">Đã từ chối</span><span className="stat-num">{rejectedCount}</span></div>
+          {[
+            { status: '', title: 'Tất cả minh chứng', count: totalCount, color: '#000000' },
+            { status: 0, title: 'Chờ phê duyệt', count: pendingCount, color: '#ff6a38' },
+            { status: 1, title: 'Đã phê duyệt', count: approvedCount, color: '#00a859' },
+            { status: 2, title: 'Đã từ chối', count: rejectedCount, color: '#ff0000' },
+            { status: 3, title: 'Cần bổ sung', count: needMoreCount, color: '#a855f7' },
+          ].map(({ status, title, count, color }) => (
+            <button
+              key={status}
+              type="button"
+              className="stat-card-stu"
+              aria-pressed={(appliedFilters.status ?? '') === status}
+              onClick={() => handleSearch(false, status)}
+            >
+              <span className="stat-title" style={{ color }}>{title}</span>
+              <span className="stat-num">{count}</span>
+            </button>
+          ))}
         </div>
+
+        {/* Thanh Tim kiem & Loc */}
         <div className="filter-bar-stu">
-          <input
-            type="search"
-            className="input-stu filter-input-search"
-            placeholder="Tìm theo tên hoặc mã hoạt động"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-          />
+          <div className="filter-row-top">
+            <input
+              type="text"
+              className="input-stu filter-input-search"
+              aria-label="Ten hoac ma hoat dong"
+              placeholder="Tim kiem theo ten hoac ma hoat dong"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <span className="filter-label">Ngay</span>
+            <input
+              type="date"
+              className="input-stu input-date"
+              aria-label="Tu ngay nop"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+            />
+            <span className="filter-label">den</span>
+            <input
+              type="date"
+              className="input-stu input-date"
+              aria-label="Den ngay nop"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+            />
+          </div>
+
+          <div className="filter-row-bottom">
+            <button className="btn-stu btn-white font-bold" disabled={loading} onClick={() => handleSearch()}>Tim</button>
+            <button className="btn-stu btn-white font-bold" disabled={loading} onClick={() => handleSearch(true)}>Sap xep</button>
+
+            <div className="btn-group-toggle">
+              <button className={`btn-toggle ${sortOrder === 'asc' ? 'active' : ''}`} onClick={() => setSortOrder('asc')}>Tang</button>
+              <button className={`btn-toggle ${sortOrder === 'desc' ? 'active' : ''}`} onClick={() => setSortOrder('desc')}>Giam</button>
+            </div>
+
+            <div className="radio-group font-bold">
+              <label className="radio-item">
+                <input type="radio" name="sortBy" value="score" checked={sortBy === 'score'} onChange={() => setSortBy('score')} />
+                <span>Diem</span>
+              </label>
+              <label className="radio-item">
+                <input type="radio" name="sortBy" value="date" checked={sortBy === 'date'} onChange={() => setSortBy('date')} />
+                <span>Ngay</span>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
-      {loadError && <p role="alert" className="evidence-page-message is-error">{loadError}</p>}
-      {notice && <p role="status" className="evidence-page-message">{notice}</p>}
+      {/* Nut Nop minh chung */}
+      <div className="btn-add-evidence">
+        <button
+          id="btn-submit-evidence"
+          className="btn-stu btn-green"
+          onClick={() => setShowSubmitModal(true)}
+        >
+          + Nop minh chung
+        </button>
+      </div>
 
-      <div className="table-container-stu">
-        <table className="table-stu">
-          <thead>
-            <tr><th>Hoạt động</th><th>Thời gian</th><th>Minh chứng</th><th>Trạng thái</th><th>Thao tác</th></tr>
-          </thead>
-          <tbody>
-            {filteredActivities.length === 0 ? (
-              <tr><td colSpan="5" style={{ padding: "40px" }}>Chưa có hoạt động phù hợp.</td></tr>
-            ) : filteredActivities.map((activity, index) => {
-              const start = new Date(activity.timeBegin).getTime();
-              const end = new Date(activity.timeEnd).getTime();
-              const now = Date.now();
-              const isActiveRegistration = activity.registrationStatus === "Đã đăng ký";
-              const canSubmit = isActiveRegistration && Number.isFinite(start) && now >= start &&
-                (!Number.isFinite(end) || now < end);
-              const canView = isActiveRegistration && Number.isFinite(end) && now >= end &&
-                activity.evidenceStatus !== "Chưa nộp";
-              return (
-                <tr key={`${activity.activityId}-${index}`} className={index % 2 ? "row-stu-white" : "row-stu-gray"}>
-                  <td>{activity.title}</td>
-                  <td>{formatDate(activity.timeBegin)} – {formatDate(activity.timeEnd)}</td>
-                  <td>{activity.evidenceStatus}</td>
-                  <td>{activity.registrationStatus}</td>
-                  <td>
-                    {canSubmit ? (
-                      <button type="button" className="evidence-row-action" onClick={() => {
-                        setSubmissionActivity(activity);
-                        setShowSubmitModal(true);
-                      }}>Nộp minh chứng</button>
-                    ) : canView ? (
-                      <button type="button" className="evidence-row-action" onClick={() => {
-                        evidenceApi.getStudentEvidence(activity.activityId)
-                          .then((evidence) => {
-                            setSelectedEvidence(
-                              toEvidenceDetails(activity, profile?.user, user, evidence?.data),
-                            );
-                          })
-                          .catch((error) => {
-                            setNotice(error.response?.data?.message || "Không thể tải minh chứng.");
-                          });
-                      }}>Xem minh chứng</button>
-                    ) : !isActiveRegistration ? (
-                      <span>Đăng ký đã hủy</span>
-                    ) : Number.isFinite(start) && now < start ? (
-                      <span>Chưa đến ngày mở</span>
-                    ) : Number.isFinite(end) && now >= end ? (
-                      <span>Chưa nộp minh chứng</span>
-                    ) : (
-                      <span>Chưa thể thao tác</span>
-                    )}
+      {error && <p role="alert" className="student-evidence-error">{error}</p>}
+      {loading && <p role="status">Dang tai minh chung...</p>}
+
+      {/* Bang Danh sach minh chung */}
+      <div className="table-wrapper-stu table-scroll-body">
+          <table className="table-stu">
+            <colgroup>
+              <col className="evidence-col-student" />
+              <col className="evidence-col-activity" />
+              <col className="evidence-col-date" />
+              <col className="evidence-col-file" />
+              <col className="evidence-col-score" />
+              <col className="evidence-col-status" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Sinh vien</th>
+                <th>Hoat dong</th>
+                <th>Ngay nop</th>
+                <th>Minh chung</th>
+                <th>Diem</th>
+                <th>Trang thai</th>
+              </tr>
+            </thead>
+            <tbody>
+              {evidenceList.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ padding: '40px', textAlign: 'center' }}>
+                    {loading ? 'Dang tai...' : 'Khong co minh chung phu hop'}
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ) : (
+                evidenceList.map((item, index) => (
+                  <tr
+                    key={item.id}
+                    className={`row-stu-clickable ${index % 2 === 0 ? 'row-stu-gray' : 'row-stu-white'}`}
+                    onClick={() => setSelectedEvidence(item)}
+                    title="Bam de xem chi tiet minh chung"
+                  >
+                    <td>{item.studentName}</td>
+                    <td>{item.event}<br /><small>{item.activityCode}</small></td>
+                    <td>{item.submitDate}</td>
+                    <td className="evidence-filename" title={item.proofName}>
+                      {item.proofName || "—"}
+                    </td>
+                    <td>{item.score}</td>
+                    <td
+                      style={{
+                        color:
+                          item.statusCode === 1 ? '#00a859'
+                          : item.statusCode === 2 ? '#ff0000'
+                          : item.statusCode === 3 ? '#a855f7'
+                          : '#ff6a38',
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      {item.status}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
       </div>
 
-      {showSubmitModal && submissionActivity && (
-        <SubmitEvidence
-          activity={submissionActivity}
-          onClose={() => setShowSubmitModal(false)}
-          onSubmitSuccess={submitSelectedEvidence}
-        />
-      )}
+      {/* Modal Chi Tiet Minh Chung */}
       {selectedEvidence && (
         <DetailForStu
           data={selectedEvidence}
           onClose={() => setSelectedEvidence(null)}
         />
       )}
+
+      {/* Modal Nop Minh Chung */}
+      {showSubmitModal && (
+        <SubmitEvidence
+          onClose={() => setShowSubmitModal(false)}
+          onSubmitSuccess={handleSubmitSuccess}
+          targetUserId={userId}
+        />
+      )}
     </div>
   );
-}
-
-function toEvidenceDetails(activity, profileUser, currentUser, evidenceData) {
-  return {
-    id: activity.activityId,
-    studentName: profileUser?.name || currentUser?.name || "Sinh viên",
-    studentId: profileUser?.studentId || currentUser?.studentId || "",
-    facultyClass: [profileUser?.faculty, profileUser?.classCode].filter(Boolean).join(" - "),
-    event: activity.title,
-    status: activity.evidenceStatus,
-    proofName: "Minh chứng đã nộp",
-    proofData: evidenceData || "",
-    score: activity.score,
-    description: `Mã hoạt động: ${activity.activityCode}`,
-  };
-}
-
-function formatDate(value) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Chưa xác định";
-  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }

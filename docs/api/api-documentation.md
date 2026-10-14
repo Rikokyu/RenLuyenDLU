@@ -16,6 +16,12 @@ Returns the activity image with its image content type. The authenticated user m
 
 The evidence API follows `Evidence.ID` and its foreign key `Evidence.IdAcRegis` to `Activity_Registration`. Registration then provides the student and activity. Student identity and contact fields are read from the related `"User"` row.
 
+### `POST /student-evidences`
+
+Submits one valid JPG or PNG image (maximum 5 MB and 20 megapixels) for an activity registration. The authenticated endpoint accepts `multipart/form-data` fields `registration_id`, `request_key`, and `file`. Image bytes are stored in MinIO; the filename and object key are stored with the `Evidence` record. Existing evidence encoded in the database remains readable.
+
+MinIO is configured with `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET`, and `MINIO_USE_SSL`. For local development, Compose exposes MinIO on host port 9002 and its console on host port 9003 (container ports 9000 and 9001). The backend running inside Compose connects to `minio:9000`.
+
 ### `GET /evidences`
 
 Returns evidence rows with the nested `registration.student.user`, `registration.student.class.major.faculty`, and `registration.activity` objects.
