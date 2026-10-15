@@ -52,6 +52,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config, objectStorage s
 		v1.GET("/student-evidences/activities", authMiddleware, handler.StudentEvidenceActivities(db))
 		v1.POST("/student-evidences", authMiddleware, handler.StudentEvidenceCreate(db, objectStorage))
 		v1.GET("/student-evidences/:id", authMiddleware, handler.StudentEvidenceDetail(db))
+		v1.DELETE("/student-evidences/:id", authMiddleware, handler.StudentEvidenceCancel(db, objectStorage))
 		v1.GET("/student-evidences/:id/file", authMiddleware, handler.StudentEvidenceFile(db, objectStorage))
 
 		managerRoutes := v1.Group("")
@@ -64,28 +65,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config, objectStorage s
 			middleware.AllowRoles("ADMIN", "STUDENT_AFFAIRS_ASSISTANT", "HOMEROOM_TEACHER", "CLASS_OFFICER"),
 		)
 		MapEvidenceRoutes(evidenceRoutes, db)
-		studentEvidenceRoutes := v1.Group("/evidences")
-		studentEvidenceRoutes.Use(authMiddleware, middleware.AllowRoles("STUDENT", "CLASS_OFFICER"))
-		MapStudentEvidenceRoutes(studentEvidenceRoutes, db)
-
-		activityImages, err := storage.NewActivityImages(
-			cfg.MinIO.Endpoint,
-			cfg.MinIO.AccessKey,
-			cfg.MinIO.SecretKey,
-			cfg.MinIO.Bucket,
-		)
-		if err != nil {
-			log.Fatalf("Không thể cấu hình MinIO cho ảnh hoạt động: %v", err)
-		}
-		MapActivityRoutes(v1, db, authMiddleware, activityImages)
-
-		dashboardRoutes := v1.Group("/dashboard")
-		dashboardRoutes.Use(
-			authMiddleware,
-			middleware.AllowRoles("ADMIN", "STUDENT_AFFAIRS_ASSISTANT", "HOMEROOM_TEACHER", "CLASS_OFFICER"),
-		)
-		dashboardHandler := handler.NewDashboardHandler(repository.NewDashboardRepository(db))
-		dashboardRoutes.GET("/overview", dashboardHandler.GetOverview)
+		evidenceRoutes.GET("/evidences/:id/file", handler.ManagerEvidenceFile(db, objectStorage))
 	}
 	MapSwaggerRoutes(r)
 }

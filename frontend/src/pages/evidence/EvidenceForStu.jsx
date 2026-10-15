@@ -4,6 +4,9 @@ import { useCurrentUser } from '../../hooks/useAuth';
 import DetailForStu from './DetailForStu';
 import SubmitEvidence from './SubmitEvidence';
 import './EvidenceStu.css';
+import { parseFilterDate } from '../../utils/parseFilterDate';
+import StudentDateInput from './StudentDateInput';
+import { formatDate } from '../../utils/formatDate';
 
 export default function EvidenceForStu() {
   const [selectedEvidence, setSelectedEvidence] = useState(null);
@@ -24,7 +27,7 @@ export default function EvidenceForStu() {
   const [appliedSort, setAppliedSort] = useState({ by: 'score', order: 'asc' });
   const [appliedFilters, setAppliedFilters] = useState({});
   const requestVersion = useRef(0);
-  const statuses = ['Cho phe duyet', 'Da phe duyet', 'Da tu choi', 'Can bo sung'];
+  const statuses = ['Chờ phê duyệt', 'Đã phê duyệt', 'Đã từ chối', 'Cần bổ sung'];
 
   async function loadEvidence(filters, sort) {
     const version = ++requestVersion.current;
@@ -34,10 +37,10 @@ export default function EvidenceForStu() {
     try {
       const result = await evidenceApi.getStudentEvidences({ user_id: userId, ...filters, sort_by: sort.by, sort_order: sort.order });
       if (version !== requestVersion.current) return;
-      setEvidenceList(result.data.map(item => ({ ...item, status: statuses[item.statusCode] || 'Khong xac dinh' })));
+      setEvidenceList(result.data.map(item => ({ ...item, status: statuses[item.statusCode] || 'Không xác định' })));
       setStats(result.stats);
     } catch (err) {
-      if (version === requestVersion.current) setError(err.response?.data?.message || 'Khong the tai minh chung. Vui long thu lai.');
+      if (version === requestVersion.current) setError(err.response?.data?.message || 'Không thể tải minh chứng. Vui lòng thử lại.');
     } finally {
       if (version === requestVersion.current) setLoading(false);
     }
@@ -51,13 +54,19 @@ export default function EvidenceForStu() {
   }, [userId]);
 
   function handleSearch(applySort = false, status = appliedFilters.status ?? '') {
-    if (fromDate && toDate && fromDate > toDate) {
-      setError('Ngay bat dau khong duoc sau ngay ket thuc.');
+    const from = parseFilterDate(fromDate);
+    const to = parseFilterDate(toDate);
+    if (from === null || to === null) {
+      setError('Vui lòng nhập ngày hợp lệ theo định dạng dd/mm/yyyy.');
+      return;
+    }
+    if (from && to && from > to) {
+      setError('Ngày bắt đầu không được sau ngày kết thúc.');
       return;
     }
     const sort = applySort ? { by: sortBy, order: sortOrder } : appliedSort;
     if (applySort) setAppliedSort(sort);
-    const filters = { search: searchQuery.trim(), from_date: fromDate, to_date: toDate };
+    const filters = { search: searchQuery.trim(), from_date: from, to_date: to };
     if (status !== '') filters.status = status;
     setAppliedFilters(filters);
     loadEvidence(filters, sort);
@@ -66,6 +75,18 @@ export default function EvidenceForStu() {
   function handleSubmitSuccess() {
     // Reload danh sach sau khi nop thanh cong
     loadEvidence(appliedFilters, appliedSort);
+  }
+
+  function handleReset() {
+    const sort = { by: 'score', order: 'asc' };
+    setSearchQuery('');
+    setFromDate('');
+    setToDate('');
+    setSortBy(sort.by);
+    setSortOrder(sort.order);
+    setAppliedFilters({});
+    setAppliedSort(sort);
+    loadEvidence({}, sort);
   }
 
   const totalCount = stats.total;
@@ -79,10 +100,10 @@ export default function EvidenceForStu() {
       {/* Header */}
       <div className="header-card-stu">
         <h1 className="text-large font-bold">
-          NOP MINH CHUNG VA PHE DUYET MINH CHUNG DA THAM GIA
+          NỘP MINH CHỨNG VÀ PHÊ DUYỆT MINH CHỨNG DA THAM GIA
         </h1>
         <p className="text-small header-subtitle">
-          Ghi nhan minh chung hinh anh va phe duyet diem ren luyen
+          Ghi nhận minh chứng hình ảnh và phê duyệt điểm rèn luyện
           {userId === 27 && <span> &middot; Nguyen Hoang Nam &mdash; 2312631</span>}
         </p>
 
@@ -114,46 +135,43 @@ export default function EvidenceForStu() {
             <input
               type="text"
               className="input-stu filter-input-search"
-              aria-label="Ten hoac ma hoat dong"
-              placeholder="Tim kiem theo ten hoac ma hoat dong"
+              aria-label="Tên hoặc mã hoạt động"
+              placeholder="Tìm kiếm theo tên hoặc mã hoạt động"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <span className="filter-label">Ngay</span>
-            <input
-              type="date"
-              className="input-stu input-date"
-              aria-label="Tu ngay nop"
+            <span className="filter-label">Ngày</span>
+            <StudentDateInput
+              label="Từ ngày nộp"
               value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
+              onChange={setFromDate}
             />
-            <span className="filter-label">den</span>
-            <input
-              type="date"
-              className="input-stu input-date"
-              aria-label="Den ngay nop"
+            <span className="filter-label">đến</span>
+            <StudentDateInput
+              label="Đến ngày nộp"
               value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
+              onChange={setToDate}
             />
           </div>
 
           <div className="filter-row-bottom">
-            <button className="btn-stu btn-white font-bold" disabled={loading} onClick={() => handleSearch()}>Tim</button>
-            <button className="btn-stu btn-white font-bold" disabled={loading} onClick={() => handleSearch(true)}>Sap xep</button>
+            <button className="btn-stu btn-white font-bold" disabled={loading} onClick={() => handleSearch()}>Tìm</button>
+            <button className="btn-stu btn-white font-bold" disabled={loading} onClick={handleReset}>Đặt lại</button>
+            <button className="btn-stu btn-white font-bold" disabled={loading} onClick={() => handleSearch(true)}>Sắp xếp</button>
 
             <div className="btn-group-toggle">
-              <button className={`btn-toggle ${sortOrder === 'asc' ? 'active' : ''}`} onClick={() => setSortOrder('asc')}>Tang</button>
-              <button className={`btn-toggle ${sortOrder === 'desc' ? 'active' : ''}`} onClick={() => setSortOrder('desc')}>Giam</button>
+              <button className={`btn-toggle ${sortOrder === 'asc' ? 'active' : ''}`} onClick={() => setSortOrder('asc')}>Tăng</button>
+              <button className={`btn-toggle ${sortOrder === 'desc' ? 'active' : ''}`} onClick={() => setSortOrder('desc')}>Giảm</button>
             </div>
 
             <div className="radio-group font-bold">
               <label className="radio-item">
                 <input type="radio" name="sortBy" value="score" checked={sortBy === 'score'} onChange={() => setSortBy('score')} />
-                <span>Diem</span>
+                <span>Điểm</span>
               </label>
               <label className="radio-item">
                 <input type="radio" name="sortBy" value="date" checked={sortBy === 'date'} onChange={() => setSortBy('date')} />
-                <span>Ngay</span>
+                <span>Ngày</span>
               </label>
             </div>
           </div>
@@ -167,12 +185,12 @@ export default function EvidenceForStu() {
           className="btn-stu btn-green"
           onClick={() => setShowSubmitModal(true)}
         >
-          + Nop minh chung
+          + Nộp minh chứng
         </button>
       </div>
 
       {error && <p role="alert" className="student-evidence-error">{error}</p>}
-      {loading && <p role="status">Dang tai minh chung...</p>}
+      {loading && <p role="status">Đang tải minh chứng...</p>}
 
       {/* Bang Danh sach minh chung */}
       <div className="table-wrapper-stu table-scroll-body">
@@ -187,19 +205,19 @@ export default function EvidenceForStu() {
             </colgroup>
             <thead>
               <tr>
-                <th>Sinh vien</th>
-                <th>Hoat dong</th>
-                <th>Ngay nop</th>
-                <th>Minh chung</th>
-                <th>Diem</th>
-                <th>Trang thai</th>
+                <th>Sinh viên</th>
+                <th>Hoạt động</th>
+                <th>Ngày nộp</th>
+                <th>Minh chứng</th>
+                <th>Điểm</th>
+                <th>Trạng thái</th>
               </tr>
             </thead>
             <tbody>
               {evidenceList.length === 0 ? (
                 <tr>
                   <td colSpan="6" style={{ padding: '40px', textAlign: 'center' }}>
-                    {loading ? 'Dang tai...' : 'Khong co minh chung phu hop'}
+                    {loading ? 'Đang tải...' : 'Không có minh chứng phù hợp'}
                   </td>
                 </tr>
               ) : (
@@ -208,11 +226,11 @@ export default function EvidenceForStu() {
                     key={item.id}
                     className={`row-stu-clickable ${index % 2 === 0 ? 'row-stu-gray' : 'row-stu-white'}`}
                     onClick={() => setSelectedEvidence(item)}
-                    title="Bam de xem chi tiet minh chung"
+                    title="Bấm để xem chi tiết minh chứng"
                   >
                     <td>{item.studentName}</td>
                     <td>{item.event}<br /><small>{item.activityCode}</small></td>
-                    <td>{item.submitDate}</td>
+                    <td>{formatDate(item.submitDate) || '—'}</td>
                     <td className="evidence-filename" title={item.proofName}>
                       {item.proofName || "—"}
                     </td>
@@ -240,6 +258,10 @@ export default function EvidenceForStu() {
       {selectedEvidence && (
         <DetailForStu
           data={selectedEvidence}
+          onCancelled={() => {
+            setSelectedEvidence(null);
+            loadEvidence(appliedFilters, appliedSort);
+          }}
           onClose={() => setSelectedEvidence(null)}
         />
       )}
