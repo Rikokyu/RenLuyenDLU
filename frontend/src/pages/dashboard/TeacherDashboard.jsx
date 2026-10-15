@@ -1,31 +1,111 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { getDashboardOverview } from "../../services/dashboardService";
+import { getCurrentUser } from "../../store/authStore";
 import DashboardPanel from "./DashboardPanel";
 import "./TeacherDashboard.css";
 
-const teacherStats = [
-  ["Lượt SV tham gia", "12,450", "Tỷ lệ HT: 88.5%", "↗"],
-  ["Minh chứng chờ duyệt", "432", "Xử lý ngay →", "◷"],
-  ["ĐRL trung bình", "78.4", "Xếp loại: Khá", "♙"],
-  ["Hoạt động đang chạy", "24", "12 chiến dịch trọng điểm", "▱"],
-  ["SV đạt chuẩn tốt nghiệp", "92.4%", "Mục tiêu khóa: 95%", "✓"],
-  ["Phản hồi thắc mắc", "15", "Đã giải quyết: 100%", "□"],
-];
-
-const campaigns = [
-  ["Chiến dịch Xuân Tình nguyện 2026", "Đang triển khai", 92],
-  ["Hội thao sinh viên DLU thường niên", "Đang triển khai", 90],
-  ["Học tập nghị quyết & Tuần sinh hoạt công dân", "Hoàn thành", 100],
-  ["Hiến máu nhân đạo đợt 1", "Gần hạn", 74],
-];
-
 export default function TeacherDashboard() {
+  const user = getCurrentUser();
+  const role = user?.role;
+  const isTeacher = role === "HOMEROOM_TEACHER";
+  const scopeLabel = role === "ADMIN"
+    ? "Toàn trường"
+    : role === "STUDENT_AFFAIRS_ASSISTANT"
+      ? `Khoa ${user?.faculty || ""}`.trim()
+      : `Lớp ${user?.classCode || ""}`.trim();
+  const [overview, setOverview] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const loadDashboard = useCallback(async (signal) => {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await getDashboardOverview({ signal });
+      setOverview(result);
+    } catch (requestError) {
+      if (requestError.name !== "AbortError" && requestError.code !== "ERR_CANCELED") {
+        setError(
+          requestError.response?.data?.message ||
+            "Không thể tải dữ liệu trang chủ. Vui lòng thử lại.",
+        );
+      }
+    } finally {
+      if (!signal.aborted) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadDashboard(controller.signal);
+    return () => controller.abort();
+  }, [loadDashboard, refreshKey]);
+
+  const managedActivities = useMemo(
+    () => overview?.activities || [],
+    [overview],
+  );
+
+  const now = Date.now();
+  const upcomingActivities = managedActivities
+    .filter((activity) => (
+      Number(activity.status) !== 0 &&
+      new Date(activity.timeBegin).getTime() > now
+    ))
+    .sort((left, right) => (
+      new Date(left.timeBegin).getTime() - new Date(right.timeBegin).getTime()
+    ));
+  const totalRegistrations = overview?.registrationCount || 0;
+  const registrationCapacity = managedActivities.reduce(
+    (total, activity) => total + Number(activity.slot || 0),
+    0,
+  );
+  const fillRate = registrationCapacity
+    ? Math.round((totalRegistrations / registrationCapacity) * 100)
+    : 0;
+  const activeActivities = managedActivities.filter((activity) => (
+    Number(activity.status) !== 0 && new Date(activity.timeEnd).getTime() > now
+  ));
+  const openActivities = activeActivities.filter((activity) => (
+    Number(activity.registeredCount) < Number(activity.slot)
+  ));
+  const endedActivities = overview?.completedActivities || 0;
+  const monthCounts = getMonthlyActivityCounts(managedActivities);
+  const maxMonthCount = Math.max(1, ...monthCounts.map((month) => month.count));
+  const popularActivities = [...managedActivities]
+    .sort((left, right) => Number(right.registeredCount) - Number(left.registeredCount))
+    .slice(0, 5);
+
+  const teacherStats = [
+    [role === "ADMIN" ? "Hoạt động đã tổ chức" : "Hoạt động trong phạm vi", overview?.activityCount ?? "—", scopeLabel, "▱"],
+    ["Sinh viên đã đăng ký", overview?.participatingStudents ?? "—", `Trong ${formatNumber(overview?.totalStudents || 0)} sinh viên`, "◉"],
+    ["Lượt đăng ký", totalRegistrations, `Lấp đầy ${fillRate}% tổng số chỗ`, "↗"],
+    ["Tỷ lệ hoàn thành", `${overview?.completionRate ?? 0}%`, "Minh chứng được duyệt sau khi hoạt động kết thúc", "✓"],
+    ["Đang diễn ra", overview?.runningActivities ?? 0, "Trong phạm vi dashboard", "◷"],
+    ["Minh chứng chờ duyệt", overview?.pendingEvidence ?? 0, "Trong phạm vi dashboard", "▦"],
+  ];
+
+  const activeShare = managedActivities.length
+    ? Math.round((activeActivities.length / managedActivities.length) * 100)
+    : 0;
+
   return (
     <div className="dashboard-teacher">
       <section className="dashboard-hero dashboard-hero--dark">
-        <div className="dashboard-eyebrow">Hệ thống quản lý rèn luyện</div>
-        <h1>Tổng Quan Theo Dõi Hoạt Động & Đánh Giá Rèn Luyện Sinh Viên</h1>
+        <div className="dashboard-eyebrow">
+          {scopeLabel}
+        </div>
+        <h1>
+          {isTeacher ? `Tổng quan lớp ${overview?.scopeName || user?.classCode || ""}` :
+            role === "CLASS_OFFICER" ? `Tổng quan lớp ${overview?.scopeName || user?.classCode || ""}` :
+              role === "STUDENT_AFFAIRS_ASSISTANT"
+                ? `Tổng quan khoa ${overview?.scopeName || user?.faculty || ""}`
+                : "Tổng quan hoạt động toàn trường"}
+        </h1>
         <p>
-          Theo dõi sát sao tiến độ rèn luyện, tổng hợp chỉ tiêu theo từng
-          Khoa/Viện, tiến độ thẩm định minh chứng rèn luyện toàn khóa.
+          Theo dõi sinh viên, lượt đăng ký, hoạt động và tiến độ minh chứng trong phạm vi {overview?.scopeName || scopeLabel}.
         </p>
         <div className="teacher-stat-grid">
           {teacherStats.map(([label, value, note, icon]) => (
@@ -34,172 +114,223 @@ export default function TeacherDashboard() {
                 <span>{label}</span>
                 <b>{icon}</b>
               </div>
-              <strong>{value}</strong>
+              <strong>{loading ? "…" : formatNumber(value)}</strong>
               <small>{note}</small>
             </article>
           ))}
         </div>
       </section>
 
+      {error && (
+        <div className="dashboard-data-error" role="alert">
+          <span>{error}</span>
+          <button type="button" onClick={() => setRefreshKey((key) => key + 1)}>
+            Thử lại
+          </button>
+        </div>
+      )}
+
       <div className="dashboard-grid dashboard-grid--teacher">
         <DashboardPanel
-          title="Hiệu Suất Theo Khoa/Viện"
-          subtitle="So sánh tỷ lệ tham gia và điểm rèn luyện trung bình"
+          title="Hoạt động theo tháng"
+          subtitle={`Hoạt động có sinh viên trong ${overview?.scopeName || scopeLabel}, theo tháng bắt đầu`}
           wide
         >
-          <div className="chart-bars">
-            {["CNTT", "Ngoại ngữ", "Luật", "Sư phạm", "Du lịch"].map(
-              (label, index) => (
-                <div className="chart-bar-group" key={label}>
-                  <div className="chart-bars__columns">
-                    <i style={{ height: `${72 - index * 7}%` }} />
-                    <i style={{ height: `${63 - index * 5}%` }} />
+          {loading ? (
+            <p className="dashboard-empty">Đang tải số liệu...</p>
+          ) : managedActivities.length ? (
+            <>
+              <div className="chart-bars">
+                {monthCounts.map(({ label, count }) => (
+                  <div className="chart-bar-group" key={label}>
+                    <div className="chart-bars__columns">
+                      <i
+                        style={{ height: `${Math.max(8, (count / maxMonthCount) * 100)}%` }}
+                        title={`${count} hoạt động`}
+                      />
+                    </div>
+                    <span>{label}</span>
                   </div>
-                  <span>{label}</span>
-                </div>
-              ),
-            )}
-          </div>
-          <div className="chart-legend">
-            <span className="legend-blue">■</span> Tỷ lệ tham gia{" "}
-            <span className="legend-green">■</span> ĐRL Trung bình
-          </div>
-          <div className="mini-insights">
-            <b>
-              Khoa cao nhất<strong>CNTT (88.4đ)</strong>
-            </b>
-            <b>
-              Quy mô SV đông nhất<strong>CNTT (1,450 SV)</strong>
-            </b>
-            <b>
-              Khoa cần nâng tỷ lệ<strong>Luật (79.0%)</strong>
-            </b>
-          </div>
+                ))}
+              </div>
+              <p className="chart-legend">
+                <span className="legend-blue">■</span> Số hoạt động theo tháng
+              </p>
+            </>
+          ) : (
+            <p className="dashboard-empty">Chưa có hoạt động để thống kê.</p>
+          )}
         </DashboardPanel>
 
+        {role === "STUDENT_AFFAIRS_ASSISTANT" && (
+          <DashboardPanel
+            title="Thông báo trong khoa"
+            subtitle="Đăng ký gần đây và minh chứng đã nộp của sinh viên"
+            wide
+          >
+            <div className="dashboard-notification-columns">
+              <section>
+                <h3>Sinh viên đăng ký hoạt động</h3>
+                {(overview?.recentRegistrations || []).length ? (
+                  overview.recentRegistrations.map((item, index) => (
+                    <p className="dashboard-notification" key={`${item.studentId}-${item.activityId}-${index}`}>
+                      <Link to={`/activities/${item.activityId}`}>{item.studentName} ({item.studentId})</Link>
+                      {" đã đăng ký "}
+                      <strong>{item.activity}</strong>
+                      <small>{formatDate(item.registeredAt)}</small>
+                    </p>
+                  ))
+                ) : <p className="dashboard-empty">Chưa có đăng ký gần đây.</p>}
+              </section>
+              <section>
+                <h3>Minh chứng sinh viên</h3>
+                {(overview?.recentEvidence || []).length ? (
+                  overview.recentEvidence.map((item, index) => (
+                    <p className="dashboard-notification" key={`${item.studentId}-${item.activityId}-${index}`}>
+                      <Link to="/evidence">{item.studentName} ({item.studentId})</Link>
+                      {" đã nộp minh chứng cho "}
+                      <strong>{item.activity}</strong>
+                      <small>{formatDate(item.submittedAt)}</small>
+                    </p>
+                  ))
+                ) : <p className="dashboard-empty">Chưa có minh chứng gần đây.</p>}
+              </section>
+            </div>
+          </DashboardPanel>
+        )}
+
         <DashboardPanel
-          title="Cơ Cấu Xếp Loại ĐRL"
-          subtitle="Phân bố xếp loại kỳ học gần nhất"
+          title="Trạng thái hoạt động"
+          subtitle={`Tình trạng trong ${overview?.scopeName || scopeLabel}`}
         >
-          <div className="donut-chart">
+          <div
+            className="donut-chart"
+            style={{
+              background: `conic-gradient(#11b887 0 ${activeShare}%, #e7edf2 ${activeShare}% 100%)`,
+            }}
+          >
             <strong>
-              89.4%<small>ĐẠT CHUẨN</small>
+              {loading ? "…" : `${activeShare}%`}
+              <small>ĐANG HOẠT ĐỘNG</small>
             </strong>
           </div>
           <ul className="score-legend">
-            <li>
-              <i className="dot-green" /> Xuất sắc (&gt;=90) <b>18.5%</b>
-            </li>
-            <li>
-              <i className="dot-blue" /> Tốt (80 - 89) <b>45.2%</b>
-            </li>
-            <li>
-              <i className="dot-orange" /> Khá (65 - 79) <b>25.7%</b>
-            </li>
-            <li>
-              <i className="dot-purple" /> Trung bình (50 - 64) <b>8.1%</b>
-            </li>
+            <li><i className="dot-green" /> Chưa kết thúc <b>{loading ? "…" : activeActivities.length}</b></li>
+            <li><i className="dot-blue" /> Đã kết thúc <b>{loading ? "…" : endedActivities}</b></li>
+            <li><i className="dot-orange" /> Còn chỗ đăng ký <b>{loading ? "…" : openActivities.length}</b></li>
           </ul>
         </DashboardPanel>
 
         <DashboardPanel
-          title="Xu Hướng Hoạt Động Theo Tháng"
-          subtitle="Số lượt sinh viên hoạt động trong năm rèn luyện"
+          title="Hoạt động có nhiều lượt đăng ký"
+          subtitle="Xếp theo số sinh viên đã đăng ký"
           wide
         >
-          <div className="line-chart">
-            <svg
-              viewBox="0 0 620 170"
-              role="img"
-              aria-label="Biểu đồ xu hướng hoạt động"
-            >
-              <path
-                className="line-chart__grid"
-                d="M20 30H600M20 80H600M20 130H600"
-              />
-              <path
-                className="line-chart__green"
-                d="M20 124L115 96L210 126L305 82L400 60L495 20L590 28"
-              />
-              <path
-                className="line-chart__blue"
-                d="M20 145L115 132L210 140L305 126L400 108L495 103L590 108"
-              />
-            </svg>
-          </div>
-          <div className="chart-legend">
-            <span className="legend-green">■</span> Lượt hoàn thành minh chứng{" "}
-            <span className="legend-blue">■</span> Lượt đăng ký tham gia
-          </div>
+          {loading ? (
+            <p className="dashboard-empty">Đang tải hoạt động...</p>
+          ) : popularActivities.length ? (
+            popularActivities.map((activity, index) => {
+              const percent = activity.slot
+                ? Math.min(100, Math.round((activity.registeredCount / activity.slot) * 100))
+                : 0;
+              return (
+                <div className="campaign-row" key={activity.id}>
+                  <span>
+                    <Link to={`/activities/${activity.id}`}>{activity.title}</Link>
+                    <b>{activity.registeredCount}/{activity.slot} đăng ký</b>
+                  </span>
+                  <i><em style={{ width: `${percent}%` }} /></i>
+                  <small>{percent}%</small>
+                  {index === 0 && <span className="dashboard-row-note">Đang thu hút nhiều đăng ký nhất</span>}
+                </div>
+              );
+            })
+          ) : (
+            <p className="dashboard-empty">Chưa có hoạt động để hiển thị.</p>
+          )}
         </DashboardPanel>
 
         <DashboardPanel
-          title="Tỷ Trọng Các Loại Hoạt Động"
-          subtitle="Phân loại hoạt động được ghi nhận điểm ĐRL"
+          title="Hoạt động sắp diễn ra"
+          subtitle="Các hoạt động có ngày bắt đầu gần nhất"
         >
-          {[
-            ["Phong trào - Tình nguyện", 45],
-            ["Học thuật - NCKH", 25],
-            ["Công tác xã hội & Hiến máu", 15],
-            ["Kỹ năng mềm - Hội thảo", 10],
-            ["Văn hóa - Thể thao", 5],
-          ].map(([label, value]) => (
-            <div className="progress-row" key={label}>
-              <span>
-                {label}
-                <b>{value}%</b>
-              </span>
-              <i>
-                <em style={{ width: `${value}%` }} />
-              </i>
-            </div>
-          ))}
-          <div className="dashboard-note">
-            ⓘ Khuyến nghị: Tăng cường hoạt động Học thuật để đáp ứng tiêu chí
-            chuẩn chính quốc tế.
+          {loading ? (
+            <p className="dashboard-empty">Đang tải hoạt động...</p>
+          ) : upcomingActivities.length ? (
+            upcomingActivities.slice(0, 5).map((activity) => (
+              <div className="dashboard-upcoming" key={activity.id}>
+                <div>
+                  <Link to={`/activities/${activity.id}`}>{activity.title}</Link>
+                  <small>{formatDate(activity.timeBegin)}</small>
+                </div>
+                <b>{activity.registeredCount}/{activity.slot}</b>
+              </div>
+            ))
+          ) : (
+            <p className="dashboard-empty">Hiện chưa có hoạt động sắp tới.</p>
+          )}
+          <Link className="dashboard-panel-link" to="/activities">
+            Quản lý danh sách hoạt động
+          </Link>
+        </DashboardPanel>
+
+        <DashboardPanel
+          title="Minh chứng"
+          subtitle={`Số liệu trong ${overview?.scopeName || scopeLabel}`}
+        >
+          <div className="dashboard-evidence-summary">
+            <strong>{loading ? "…" : formatNumber(overview?.pendingEvidence ?? 0)}</strong>
+            <span>minh chứng đang chờ duyệt</span>
           </div>
-        </DashboardPanel>
-
-        <DashboardPanel
-          title="Tiến Độ Chiến Dịch Trọng Điểm"
-          subtitle="Các chiến dịch cộng đồng rèn luyện trong học kỳ"
-          wide
-        >
-          {campaigns.map(([label, status, value]) => (
-            <div className="campaign-row" key={label}>
-              <span>
-                {label}
-                <b>{status}</b>
-              </span>
-              <i>
-                <em style={{ width: `${value}%` }} />
-              </i>
-              <small>{value}%</small>
-            </div>
-          ))}
-        </DashboardPanel>
-
-        <DashboardPanel
-          title="Vinh Danh Sinh Viên Tiêu Biểu Phong Trào & Rèn Luyện"
-          subtitle="Top sinh viên dẫn đầu điểm rèn luyện & đóng góp xã hội"
-        >
-          {[
-            "Phạm Quỳnh Anh",
-            "Nguyễn Văn An",
-            "Lê Hoàng Minh",
-            "Trần Thị Mai Phương",
-          ].map((name, index) => (
-            <div className="student-rank" key={name}>
-              <i>#{index + 1}</i>
-              <span>
-                {name}
-                <small>CTK44A • Công nghệ Thông tin</small>
-              </span>
-              <b>{98 - index * 2} đ</b>
-            </div>
-          ))}
+          <div className="dashboard-evidence-row">
+            <span>Hoạt động đã kết thúc</span>
+            <b>{loading ? "…" : formatNumber(overview?.completedActivities ?? 0)}</b>
+          </div>
+          <div className="dashboard-evidence-row">
+            <span>Tỷ lệ hoàn thành</span>
+            <b>{loading ? "…" : `${overview?.completionRate ?? 0}%`}</b>
+          </div>
+          <Link className="dashboard-panel-link" to="/evidence">
+            Mở trang minh chứng
+          </Link>
         </DashboardPanel>
       </div>
     </div>
   );
+}
+
+function getMonthlyActivityCounts(activities) {
+  const now = new Date();
+  const months = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1);
+    return {
+      year: date.getFullYear(),
+      month: date.getMonth(),
+      label: new Intl.DateTimeFormat("vi-VN", { month: "short" }).format(date),
+      count: 0,
+    };
+  });
+
+  for (const activity of activities) {
+    const date = new Date(activity.timeBegin);
+    const month = months.find(
+      (item) => item.year === date.getFullYear() && item.month === date.getMonth(),
+    );
+    if (month) month.count += 1;
+  }
+  return months;
+}
+
+function formatNumber(value) {
+  if (typeof value === "string" && Number.isNaN(Number(value))) return value;
+  return new Intl.NumberFormat("vi-VN").format(Number(value) || 0);
+}
+
+function formatDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Chưa xác định";
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
 }

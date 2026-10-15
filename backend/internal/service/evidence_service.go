@@ -2,7 +2,10 @@ package service
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"net/http"
+	"strings"
 
 	"renluyen-dlu-backend/internal/dto"
 	"renluyen-dlu-backend/internal/model"
@@ -16,6 +19,8 @@ type EvidenceService interface {
 	GetEvidenceDetail(ctx context.Context, evidenceID int64) (*model.Evidence, error)
 	UpdateEvidenceStatus(ctx context.Context, evidenceID int64, status int) error
 	ApproveEvidenceList(ctx context.Context, evidenceIDs []int64) (int64, error)
+	SubmitEvidence(ctx context.Context, userID, activityID int64, data string) error
+	GetStudentEvidence(ctx context.Context, userID, activityID int64) (*model.Evidence, error)
 }
 
 type evidenceService struct {
@@ -93,3 +98,55 @@ func (s *evidenceService) ApproveEvidenceList(ctx context.Context, evidenceIDs [
 	}
 	return s.repo.ApproveEvidenceList(ctx, uniqueIDs)
 }
+
+func (s *evidenceService) SubmitEvidence(
+	ctx context.Context,
+	userID,
+	activityID int64,
+	data string,
+) error {
+	const maximumEvidenceBytes = 5 * 1024 * 1024
+	if userID <= 0 || activityID <= 0 {
+		return fmt.Errorf("mã tài khoản và hoạt động không hợp lệ")
+	}
+	parts := strings.SplitN(data, ",", 2)
+	if len(parts) != 2 || !strings.HasSuffix(parts[0], ";base64") {
+		return fmt.Errorf("minh chứng phải là ảnh JPEG hoặc PNG hợp lệ")
+	}
+	var expectedType string
+	switch parts[0] {
+	case "data:image/jpeg;base64":
+		expectedType = "image/jpeg"
+	case "data:image/png;base64":
+		expectedType = "image/png"
+	default:
+		return fmt.Errorf("chỉ chấp nhận ảnh JPEG hoặc PNG")
+	}
+	decoded, err := base64.StdEncoding.DecodeString(parts[1])
+	if err != nil || len(decoded) == 0 {
+		return fmt.Errorf("không thể đọc dữ liệu ảnh minh chứng")
+	}
+	if len(decoded) > maximumEvidenceBytes {
+		return fmt.Errorf("ảnh minh chứng không được vượt quá 5 MB")
+	}
+	if detectedType := http.DetectContentType(decoded); !strings.HasPrefix(detectedType, expectedType) {
+		return fmt.Errorf("định dạng ảnh không khớp với nội dung tệp")
+	}
+	return s.repo.SubmitEvidence(ctx, userID, activityID, data)
+}
+
+func (s *evidenceService) GetStudentEvidence(
+	ctx context.Context,
+	userID,
+	activityID int64,
+) (*model.Evidence, error) {
+	if userID <= 0 || activityID <= 0 {
+		return nil, fmt.Errorf("mã tài khoản và hoạt động không hợp lệ")
+	}
+	return s.repo.GetStudentEvidence(ctx, userID, activityID)
+}
+
+var (
+	ErrEvidenceNotRegistered = repository.ErrEvidenceNotRegistered
+	ErrEvidenceWindowClosed  = repository.ErrEvidenceWindowClosed
+)
