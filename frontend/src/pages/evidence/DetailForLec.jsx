@@ -1,7 +1,41 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { evidenceApi } from '../../services/evidenceService';
 import './Evidence.css';
 
 export default function DetailForLec({ proof, onClose, onApprove, onReject }) {
+  const [imageUrl, setImageUrl] = useState(null);
+  const [imageError, setImageError] = useState('');
+  const [imageLoading, setImageLoading] = useState(false);
+  const evidenceId = proof?.id;
+
+  useEffect(() => {
+    if (!evidenceId) return;
+    const controller = new AbortController();
+    let objectUrl;
+    setImageUrl(null);
+    setImageError('');
+    setImageLoading(true);
+    evidenceApi.getManagerEvidenceFile(evidenceId, controller.signal)
+      .then((blob) => {
+        if (controller.signal.aborted) return;
+        objectUrl = URL.createObjectURL(blob);
+        setImageUrl(objectUrl);
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        setImageError(error.response?.status === 404
+          ? 'Minh chứng này chưa có ảnh đính kèm.'
+          : 'Không thể tải ảnh minh chứng. Vui lòng mở lại để thử lại.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setImageLoading(false);
+      });
+    return () => {
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [evidenceId]);
+
   if (!proof) return null;
 
   const displayValue = (value) => value === undefined || value === null || value === '' ? 'Chưa cập nhật' : value;
@@ -46,7 +80,19 @@ export default function DetailForLec({ proof, onClose, onApprove, onReject }) {
           </h2>
 
           <div className="uploaded-box text-small">
-            {proof.proof || 'Minh chứng đã tải lên'}
+            {proof.status} · Ngày nộp: {proof.submittedAt}
+          </div>
+          <div className="manager-evidence-image">
+            {imageLoading && <p role="status">Đang tải ảnh minh chứng...</p>}
+            {imageError && <p role="alert">{imageError}</p>}
+            {imageUrl && (
+              <a href={imageUrl} target="_blank" rel="noopener noreferrer" title="Xem ảnh đầy đủ">
+                <img src={imageUrl} alt={`Minh chứng của ${proof.name}`} onError={() => {
+                  setImageUrl(null);
+                  setImageError('Không thể hiển thị ảnh minh chứng.');
+                }} />
+              </a>
+            )}
           </div>
 
           <h2 className="text-large font-bold title-margin">

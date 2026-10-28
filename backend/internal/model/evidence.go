@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type EvidenceStatus int
 
 const (
@@ -11,10 +13,11 @@ const (
 // Evidence follows the database key and relationship: each evidence row
 // belongs to an Activity_Registration row through IdAcRegis.
 type Evidence struct {
-	ID        int64  `gorm:"primaryKey;column:id" json:"id"`
-	Data      string `gorm:"column:data" json:"data"`
-	Status    int    `gorm:"column:status" json:"status"`
-	IdAcRegis int64  `gorm:"column:idacregis" json:"id_ac_regis"`
+	SubmitAt  *time.Time `gorm:"column:submitat" json:"submitted_at"`
+	ID        int64      `gorm:"primaryKey;column:id" json:"id"`
+	Data      string     `gorm:"column:data" json:"data"`
+	Status    int        `gorm:"column:status" json:"status"`
+	IdAcRegis int64      `gorm:"column:idacregis" json:"id_ac_regis"`
 
 	Registration ActivityRegistration `gorm:"foreignKey:IdAcRegis;references:ID" json:"registration"`
 }
