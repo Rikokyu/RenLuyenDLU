@@ -57,6 +57,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config, objectStorage s
 		managerRoutes := v1.Group("")
 		managerRoutes.Use(authMiddleware, middleware.AllowRoles("ADMIN", "STUDENT_AFFAIRS_ASSISTANT"))
 		MapManagerRoutes(managerRoutes, db)
+		MapReportRoutes(managerRoutes, db)
 
 		evidenceRoutes := v1.Group("")
 		evidenceRoutes.Use(
