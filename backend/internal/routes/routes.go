@@ -1,14 +1,11 @@
 package routes
 
 import (
-	"log"
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"renluyen-dlu-backend/internal/config"
 	"renluyen-dlu-backend/internal/handler"
 	"renluyen-dlu-backend/internal/middleware"
-	"renluyen-dlu-backend/internal/repository"
 	"renluyen-dlu-backend/internal/service"
 	"renluyen-dlu-backend/internal/storage"
 )
@@ -58,6 +55,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config, objectStorage s
 		managerRoutes := v1.Group("")
 		managerRoutes.Use(authMiddleware, middleware.AllowRoles("ADMIN", "STUDENT_AFFAIRS_ASSISTANT"))
 		MapManagerRoutes(managerRoutes, db)
+		MapReportRoutes(managerRoutes, db)
 
 		evidenceRoutes := v1.Group("")
 		evidenceRoutes.Use(

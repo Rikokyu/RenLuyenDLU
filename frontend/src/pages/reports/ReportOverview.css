@@ -1,0 +1,8 @@
+.report-overview { margin-bottom: 24px; }
+.report-overview__filters { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 12px; }
+.report-overview__filters label { display: grid; gap: 5px; font-size: 14px; }
+.report-overview__filters input { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; color: inherit; background: transparent; }
+.report-overview__note { font-size: 13px; line-height: 1.6; margin: 10px 0; color: inherit; opacity: .8; }
+.report-overview .kpi-trend.negative { color: #dc2626; }
+.report-overview .kpi-trend.neutral { color: #64748b; }
+.report-overview [role="alert"] { color: #b91c1c; }

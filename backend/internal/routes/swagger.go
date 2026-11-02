@@ -15,6 +15,7 @@ const openAPIDocument = `{
   },
   "servers": [{"url": "/api/v1"}],
   "paths": {
+` + reportOpenAPIPaths + `
     "/auth/login": {
       "post": {
         "tags": ["Xác thực"],

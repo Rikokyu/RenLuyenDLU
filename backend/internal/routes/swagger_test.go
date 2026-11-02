@@ -27,6 +27,10 @@ func TestSwaggerDocumentIsAvailableAndContainsAuthEndpoints(t *testing.T) {
 		t.Fatalf("Swagger document is not valid JSON: %v", err)
 	}
 	for _, path := range []string{
+		"/reports/overview",
+		"/reports/analytics",
+		"/reports/details",
+		"/reports/details/export",
 		"/auth/login",
 		"/auth/google",
 		"/auth/me",

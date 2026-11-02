@@ -1,0 +1,47 @@
+/* Match the management Evidence page's text-large/text-small scale.
+   Fallbacks keep the report independent of Evidence.css loading order. */
+.reports-dashboard {
+  --report-text-large: var(--text-large-size, 24px);
+  --report-text-small: var(--text-small-size, 16px);
+  font-size: var(--report-text-small);
+}
+
+.reports-dashboard .dashboard-header h2,
+.reports-dashboard .card-header h3,
+.reports-dashboard .kpi-value,
+.reports-dashboard .main-table th,
+.reports-dashboard .mini-table th {
+  font-size: var(--report-text-large);
+}
+
+.reports-dashboard .dashboard-header p,
+.reports-dashboard .card-header p,
+.reports-dashboard .btn,
+.reports-dashboard .btn-sm,
+.reports-dashboard .btn-page,
+.reports-dashboard input,
+.reports-dashboard select,
+.reports-dashboard label,
+.reports-dashboard .kpi-title,
+.reports-dashboard .kpi-subtext,
+.reports-dashboard .kpi-footer,
+.reports-dashboard .category-info,
+.reports-dashboard .cat-count,
+.reports-dashboard .main-table,
+.reports-dashboard .mini-table,
+.reports-dashboard .rate-tag,
+.reports-dashboard .rank-badge,
+.reports-dashboard .top-user strong,
+.reports-dashboard .top-user small,
+.reports-dashboard .top-stats,
+.reports-dashboard .tag-category,
+.reports-dashboard .status-badge,
+.reports-dashboard .table-footer,
+.reports-dashboard .report-overview__note,
+.reports-dashboard .report-analytics__note,
+.reports-dashboard .report-analytics__detail,
+.reports-dashboard .report-analytics__pages,
+.reports-dashboard .student-info small,
+.reports-dashboard .main-table code {
+  font-size: var(--report-text-small);
+}
