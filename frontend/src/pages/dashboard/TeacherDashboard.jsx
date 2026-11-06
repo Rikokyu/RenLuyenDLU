@@ -79,12 +79,12 @@ export default function TeacherDashboard() {
     .slice(0, 5);
 
   const teacherStats = [
-    [role === "ADMIN" ? "Hoạt động đã tổ chức" : "Hoạt động trong phạm vi", overview?.activityCount ?? "—", scopeLabel, "▱"],
-    ["Sinh viên đã đăng ký", overview?.participatingStudents ?? "—", `Trong ${formatNumber(overview?.totalStudents || 0)} sinh viên`, "◉"],
-    ["Lượt đăng ký", totalRegistrations, `Lấp đầy ${fillRate}% tổng số chỗ`, "↗"],
-    ["Tỷ lệ hoàn thành", `${overview?.completionRate ?? 0}%`, "Minh chứng được duyệt sau khi hoạt động kết thúc", "✓"],
-    ["Đang diễn ra", overview?.runningActivities ?? 0, "Trong phạm vi dashboard", "◷"],
-    ["Minh chứng chờ duyệt", overview?.pendingEvidence ?? 0, "Trong phạm vi dashboard", "▦"],
+    [role === "ADMIN" ? "Hoạt động đã tổ chức" : "Hoạt động trong phạm vi", overview?.activityCount ?? "—", scopeLabel, "▱", "/activities"],
+    ["Sinh viên đã đăng ký", overview?.participatingStudents ?? "—", `Trong ${formatNumber(overview?.totalStudents || 0)} sinh viên`, "◉", "/reports#report-overview"],
+    ["Lượt đăng ký", totalRegistrations, `Lấp đầy ${fillRate}% tổng số chỗ`, "↗", "/reports#report-analytics"],
+    ["Tỷ lệ hoàn thành", `${overview?.completionRate ?? 0}%`, "Minh chứng được duyệt sau khi hoạt động kết thúc", "✓", "/reports#report-details"],
+    ["Đang diễn ra", overview?.runningActivities ?? 0, "Trong phạm vi dashboard", "◷", "/activities?status=running"],
+    ["Minh chứng chờ duyệt", overview?.pendingEvidence ?? 0, "Trong phạm vi dashboard", "▦", "/evidence?status=0"],
   ];
 
   const activeShare = managedActivities.length
@@ -108,16 +108,27 @@ export default function TeacherDashboard() {
           Theo dõi sinh viên, lượt đăng ký, hoạt động và tiến độ minh chứng trong phạm vi {overview?.scopeName || scopeLabel}.
         </p>
         <div className="teacher-stat-grid">
-          {teacherStats.map(([label, value, note, icon]) => (
-            <article className="teacher-stat" key={label}>
-              <div className="teacher-stat__top">
-                <span>{label}</span>
-                <b>{icon}</b>
-              </div>
-              <strong>{loading ? "…" : formatNumber(value)}</strong>
-              <small>{note}</small>
-            </article>
-          ))}
+          {teacherStats.map(([label, value, note, icon, to]) => {
+            const StatElement = to ? Link : "article";
+            const statProps = to
+              ? {
+                  to,
+                  className: "teacher-stat teacher-stat--link",
+                  "aria-label": `${label}: ${formatNumber(value)}. Mở phần liên quan`,
+                }
+              : { className: "teacher-stat" };
+
+            return (
+              <StatElement {...statProps} key={label}>
+                <div className="teacher-stat__top">
+                  <span>{label}</span>
+                  <b>{icon}</b>
+                </div>
+                <strong>{loading ? "…" : formatNumber(value)}</strong>
+                <small>{note}</small>
+              </StatElement>
+            );
+          })}
         </div>
       </section>
 

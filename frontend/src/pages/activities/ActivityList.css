@@ -266,6 +266,15 @@
   background: #fffaf7;
 }
 
+.activities-table tbody tr.activity-table-row-link {
+  cursor: pointer;
+}
+
+.activities-table tbody tr.activity-table-row-link:focus-visible {
+  outline: 3px solid var(--primary-green);
+  outline-offset: -3px;
+}
+
 .activity-code,
 .activity-name {
   color: var(--accent-orange);
@@ -419,6 +428,19 @@
   border: 1px solid var(--light-gray);
   border-radius: 18px;
   box-shadow: 0 3px 12px rgba(32, 47, 62, 0.04);
+  cursor: pointer;
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.activity-card:hover,
+.activity-card:focus-visible {
+  box-shadow: 0 8px 22px rgba(32, 47, 62, 0.12);
+  transform: translateY(-2px);
+}
+
+.activity-card:focus-visible {
+  outline: 3px solid var(--primary-green);
+  outline-offset: 3px;
 }
 
 .activity-card__image {

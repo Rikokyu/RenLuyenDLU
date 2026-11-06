@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useCurrentUser } from "../../hooks/useAuth";
 import {
   createActivity,
@@ -39,10 +39,13 @@ const emptyForm = {
 
 export default function ActivityList() {
   const user = useCurrentUser();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const statusParam = searchParams.get("status");
   const canManageActivities = activityManagerRoles.includes(user?.role);
   const canManageAllActivities = activityManagerAllRoles.includes(user?.role);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState(statusOptions[0]);
+  const [status, setStatus] = useState(() => getStatusFromQuery(statusParam));
   const [activities, setActivities] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -87,6 +90,10 @@ export default function ActivityList() {
       controller.abort();
     };
   }, [loadActivities, refreshKey, search]);
+
+  useEffect(() => {
+    setStatus(getStatusFromQuery(statusParam));
+  }, [statusParam]);
 
   const filteredActivities = useMemo(
     () => activities.filter((activity) => {
@@ -301,7 +308,21 @@ export default function ActivityList() {
               ) : filteredActivities.map((activity) => {
                 const activityStatus = getActivityStatus(activity);
                 return (
-                  <tr key={activity.id}>
+                  <tr
+                    key={activity.id}
+                    className="activity-table-row-link"
+                    role="link"
+                    tabIndex={0}
+                    aria-label={`Xem chi tiết hoạt động ${activity.title}`}
+                    onClick={(event) => {
+                      if (!event.target.closest("a, button")) navigate(`/activities/${activity.id}`);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.target !== event.currentTarget || !["Enter", " "].includes(event.key)) return;
+                      event.preventDefault();
+                      navigate(`/activities/${activity.id}`);
+                    }}
+                  >
                     <td>
                       <Link className="activity-code" to={`/activities/${activity.id}`}>
                         {activity.activityCode}
@@ -377,7 +398,21 @@ export default function ActivityList() {
           ) : filteredActivities.map((activity) => {
             const activityStatus = getActivityStatus(activity);
             return (
-              <article className="activity-card" key={activity.id}>
+              <article
+                className="activity-card"
+                key={activity.id}
+                role="link"
+                tabIndex={0}
+                aria-label={`Xem chi tiết hoạt động ${activity.title}`}
+                onClick={(event) => {
+                  if (!event.target.closest("a, button")) navigate(`/activities/${activity.id}`);
+                }}
+                onKeyDown={(event) => {
+                  if (event.target !== event.currentTarget || !["Enter", " "].includes(event.key)) return;
+                  event.preventDefault();
+                  navigate(`/activities/${activity.id}`);
+                }}
+              >
                 <div className="activity-card__image" aria-label={activity.title} />
                 <div className={`activity-card__badge ${activityStatus.className}`}>{activityStatus.label}</div>
                 <div className="activity-card__score">{activity.score}đ</div>
@@ -437,6 +472,11 @@ export default function ActivityList() {
       )}
     </section>
   );
+}
+
+function getStatusFromQuery(statusParam) {
+  if (statusParam === "running") return "Đang diễn ra";
+  return statusOptions[0];
 }
 
 function ActivityForm({

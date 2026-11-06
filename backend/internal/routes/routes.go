@@ -6,12 +6,19 @@ import (
 	"renluyen-dlu-backend/internal/config"
 	"renluyen-dlu-backend/internal/handler"
 	"renluyen-dlu-backend/internal/middleware"
+	"renluyen-dlu-backend/internal/repository"
 	"renluyen-dlu-backend/internal/service"
 	"renluyen-dlu-backend/internal/storage"
 )
 
 // SetupRoutes khởi tạo toàn bộ router, middleware và đăng ký các module routes
-func SetupRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config, objectStorage storage.Storage) {
+func SetupRoutes(
+	r *gin.Engine,
+	db *gorm.DB,
+	cfg *config.Config,
+	objectStorage storage.Storage,
+	activityImages storage.ActivityImages,
+) {
 	// 1. Cấu hình Middleware toàn cục (Logger, Recovery, CORS, ...)
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
@@ -45,12 +52,21 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config, objectStorage s
 		authService := service.NewAuthService(db, cfg.JWTSecret, cfg.JWTExpireHours, cfg.GoogleClientID)
 		authMiddleware := middleware.RequireAuth(authService, db)
 		MapAuthRoutes(v1, authService, authMiddleware)
+		MapActivityRoutes(v1, db, authMiddleware, activityImages)
 		v1.GET("/student-evidences", authMiddleware, handler.StudentEvidenceList(db))
 		v1.GET("/student-evidences/activities", authMiddleware, handler.StudentEvidenceActivities(db))
 		v1.POST("/student-evidences", authMiddleware, handler.StudentEvidenceCreate(db, objectStorage))
 		v1.GET("/student-evidences/:id", authMiddleware, handler.StudentEvidenceDetail(db))
 		v1.DELETE("/student-evidences/:id", authMiddleware, handler.StudentEvidenceCancel(db, objectStorage))
 		v1.GET("/student-evidences/:id/file", authMiddleware, handler.StudentEvidenceFile(db, objectStorage))
+
+		dashboardRoutes := v1.Group("")
+		dashboardRoutes.Use(
+			authMiddleware,
+			middleware.AllowRoles("ADMIN", "STUDENT_AFFAIRS_ASSISTANT", "HOMEROOM_TEACHER", "CLASS_OFFICER"),
+		)
+		dashboardHandler := handler.NewDashboardHandler(repository.NewDashboardRepository(db))
+		dashboardRoutes.GET("/dashboard/overview", dashboardHandler.GetOverview)
 
 		managerRoutes := v1.Group("")
 		managerRoutes.Use(authMiddleware, middleware.AllowRoles("ADMIN", "STUDENT_AFFAIRS_ASSISTANT"))
