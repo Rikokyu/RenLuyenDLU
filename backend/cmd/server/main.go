@@ -35,10 +35,19 @@ func main() {
 	if err := objectStorage.EnsureBucket(context.Background()); err != nil {
 		log.Fatalf("Không thể khởi tạo bucket minh chứng: %v", err)
 	}
+	activityImages, err := storage.NewActivityImages(
+		cfg.MinIO.Endpoint,
+		cfg.MinIO.AccessKey,
+		cfg.MinIO.SecretKey,
+		cfg.MinIO.Bucket,
+	)
+	if err != nil {
+		log.Fatalf("Không thể cấu hình kho ảnh hoạt động: %v", err)
+	}
 
 	// 4. Khởi tạo Gin Framework
 	r := gin.Default()
-	routes.SetupRoutes(r, db, cfg, objectStorage)
+	routes.SetupRoutes(r, db, cfg, objectStorage, activityImages)
 	r.Use(middleware.CORSMiddleware())
 
 	// 5. API Endpoint kiểm tra Trạng thái Server & DB
