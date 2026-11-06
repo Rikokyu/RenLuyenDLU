@@ -7,6 +7,8 @@
 | 2312610 | Nguyễn Trung Hiệp   | 2312610@dlu.edu.vn | https://github.com/Rikokyu     |
 | 2300003 | Nguyễn Lê Anh Tuấn  | 2300003@dlu.edu.vn | https://github.com/anhtuan1101 |
 | 2312565 | Nguyễn Văn An       | 2312565@dlu.edu.vn | https://github.com/nvanan124   |
+| 2312588 | Ngô Văn Chương      |
+| 2312584 | Đỗ Duy Biên         |
 
 ## Phân công công việc
 
